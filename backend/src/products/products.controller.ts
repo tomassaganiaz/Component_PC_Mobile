@@ -10,6 +10,7 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { CreateProductDto, UpdateProductDto, FilterProductDto } from './dto';
@@ -24,8 +25,8 @@ export class ProductsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Publicar nuevo producto' })
-  create(@Body() createProductDto: CreateProductDto, @Request() req) {
-    return this.productsService.create(createProductDto, req.user.id);
+  create(@Body() createProductDto: CreateProductDto, @Request() req: ExpressRequest) {
+    return this.productsService.create(createProductDto, (req.user as any).id);
   }
 
   @Get()

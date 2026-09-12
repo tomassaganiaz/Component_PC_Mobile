@@ -9,6 +9,7 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto, UpdateReviewStatusDto, FilterReviewDto } from './dto';
@@ -29,8 +30,8 @@ export class ReviewsController {
   @ApiResponse({ status: 201, description: 'Reseña creada exitosamente' })
   @ApiResponse({ status: 400, description: 'Datos inválidos o compra no verificada' })
   @ApiResponse({ status: 409, description: 'Ya existe una reseña para esta compra' })
-  create(@Body() createReviewDto: CreateReviewDto, @Request() req) {
-    return this.reviewsService.create(createReviewDto, req.user.id);
+  create(@Body() createReviewDto: CreateReviewDto, @Request() req: ExpressRequest) {
+    return this.reviewsService.create(createReviewDto, (req.user as any).id);
   }
 
   @Get()
@@ -97,8 +98,8 @@ export class ReviewsController {
   updateStatus(
     @Param('id') id: string,
     @Body() updateDto: UpdateReviewStatusDto,
-    @Request() req,
+    @Request() req: ExpressRequest,
   ) {
-    return this.reviewsService.updateStatus(id, updateDto, req.user.id);
+    return this.reviewsService.updateStatus(id, updateDto, (req.user as any).id);
   }
 }

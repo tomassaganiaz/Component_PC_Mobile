@@ -46,7 +46,7 @@ describe('OrdersController', () => {
 
       mockOrdersService.create.mockResolvedValue(expectedOrder);
 
-      const result = await controller.create(createDto, { user: { id: 'buyer-uuid' } });
+      const result = await controller.create(createDto, { user: { id: 'buyer-uuid' } } as any);
 
       expect(result).toEqual(expectedOrder);
     });
@@ -61,7 +61,7 @@ describe('OrdersController', () => {
 
       mockOrdersService.findByBuyer.mockResolvedValue(expectedOrders);
 
-      const result = await controller.findMyOrders({ user: { id: 'buyer-uuid' } });
+      const result = await controller.findMyOrders({ user: { id: 'buyer-uuid' } } as any);
 
       expect(result).toEqual(expectedOrders);
     });

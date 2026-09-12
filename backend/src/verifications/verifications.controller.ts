@@ -7,6 +7,7 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { VerificationsService } from './verifications.service';
 import { CreateVerificationDto } from './dto';
@@ -24,8 +25,8 @@ export class VerificationsController {
   @Post()
   @Roles('admin')
   @ApiOperation({ summary: 'Crear verificación de producto (solo admin)' })
-  create(@Body() createVerificationDto: CreateVerificationDto, @Request() req) {
-    return this.verificationsService.create(createVerificationDto, req.user.id);
+  create(@Body() createVerificationDto: CreateVerificationDto, @Request() req: ExpressRequest) {
+    return this.verificationsService.create(createVerificationDto, (req.user as any).id);
   }
 
   @Get('product/:productId')

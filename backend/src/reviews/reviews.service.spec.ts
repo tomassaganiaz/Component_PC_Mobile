@@ -16,6 +16,7 @@ describe('ReviewsService', () => {
     save: jest.fn(),
     find: jest.fn(),
     findOne: jest.fn(),
+    createQueryBuilder: jest.fn(),
   };
 
   const mockOrdersService = {

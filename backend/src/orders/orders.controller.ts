@@ -8,6 +8,7 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto, UpdateOrderDto } from './dto';
@@ -22,14 +23,14 @@ export class OrdersController {
 
   @Post()
   @ApiOperation({ summary: 'Crear orden de compra' })
-  create(@Body() createOrderDto: CreateOrderDto, @Request() req) {
-    return this.ordersService.create(createOrderDto, req.user.id);
+  create(@Body() createOrderDto: CreateOrderDto, @Request() req: ExpressRequest) {
+    return this.ordersService.create(createOrderDto, (req.user as any).id);
   }
 
   @Get()
   @ApiOperation({ summary: 'Obtener órdenes del usuario' })
-  findMyOrders(@Request() req) {
-    return this.ordersService.findByBuyer(req.user.id);
+  findMyOrders(@Request() req: ExpressRequest) {
+    return this.ordersService.findByBuyer((req.user as any).id);
   }
 
   @Get(':id')

@@ -43,7 +43,7 @@ describe('VerificationsController', () => {
 
       mockVerificationsService.create.mockResolvedValue(expectedVerification);
 
-      const result = await controller.create(createDto, { user: { id: 'admin-uuid' } });
+      const result = await controller.create(createDto, { user: { id: 'admin-uuid' } } as any);
 
       expect(result).toEqual(expectedVerification);
     });

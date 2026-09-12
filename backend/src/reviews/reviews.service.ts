@@ -131,7 +131,7 @@ export class ReviewsService {
     const review = await this.findOne(id);
 
     review.status = updateDto.status as ReviewStatus;
-    review.resolutionNotes = updateDto.resolutionNotes;
+    review.resolutionNotes = updateDto.resolutionNotes as string;
     review.resolvedBy = resolvedBy;
 
     return this.reviewRepository.save(review);

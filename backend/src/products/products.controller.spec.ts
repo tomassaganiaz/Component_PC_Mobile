@@ -49,7 +49,7 @@ describe('ProductsController', () => {
 
       mockProductsService.create.mockResolvedValue(expectedProduct);
 
-      const result = await controller.create(createDto, { user: { id: 'seller-uuid' } });
+      const result = await controller.create(createDto, { user: { id: 'seller-uuid' } } as any);
 
       expect(result).toEqual(expectedProduct);
       expect(mockProductsService.create).toHaveBeenCalledWith(createDto, 'seller-uuid');

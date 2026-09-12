@@ -85,6 +85,16 @@ export class UpdateProductDto {
   @IsArray()
   @IsString({ each: true })
   images?: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  hoursOfUse?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  physicalState?: string;
 }
 
 export class FilterProductDto {

@@ -52,7 +52,7 @@ describe('ReviewsController', () => {
 
       mockReviewsService.create.mockResolvedValue(expectedReview);
 
-      const result = await controller.create(createDto, { user: { id: 'buyer-uuid' } });
+      const result = await controller.create(createDto, { user: { id: 'buyer-uuid' } } as any);
 
       expect(result).toEqual(expectedReview);
     });
@@ -170,7 +170,7 @@ describe('ReviewsController', () => {
       const result = await controller.updateStatus(
         'review-uuid',
         updateDto,
-        { user: { id: 'admin-uuid' } },
+        { user: { id: 'admin-uuid' } } as any,
       );
 
       expect(result).toEqual(expectedReview);
