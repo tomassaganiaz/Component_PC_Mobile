@@ -24,7 +24,7 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    delete user.password;
+    delete (user as any).password;
     return user;
   }
 

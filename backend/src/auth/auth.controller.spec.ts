@@ -100,7 +100,7 @@ describe('AuthController', () => {
 
       mockAuthService.getProfile.mockResolvedValue(expectedProfile);
 
-      const result = await controller.getProfile(mockRequest);
+      const result = await controller.getProfile(mockRequest as any);
 
       expect(result).toEqual(expectedProfile);
       expect(mockAuthService.getProfile).toHaveBeenCalledWith('uuid-123');

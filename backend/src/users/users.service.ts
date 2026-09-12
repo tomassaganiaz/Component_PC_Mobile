@@ -29,7 +29,7 @@ export class UsersService {
     });
 
     const savedUser = await this.userRepository.save(user);
-    delete savedUser.password;
+    delete (savedUser as any).password;
     return savedUser;
   }
 
