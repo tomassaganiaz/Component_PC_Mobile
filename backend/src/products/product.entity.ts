@@ -44,6 +44,12 @@ export enum ProductStatus {
   SOLD = 'sold',
 }
 
+export enum SellerSecurityTier {
+  SECURE = 'secure',
+  NORMAL = 'normal',
+  NOT_SECURE = 'not_secure',
+}
+
 @Entity('products')
 @Index(['status', 'category'])
 @Index(['sellerId', 'status'])
@@ -76,6 +82,33 @@ export class Product {
 
   @Column({ type: 'integer', nullable: true, name: 'hours_of_use' })
   hoursOfUse: number;
+
+  @Column({ type: 'integer', nullable: true, name: 'reported_hours_of_use' })
+  reportedHoursOfUse: number;
+
+  @Column({ type: 'varchar', length: 100, nullable: true, name: 'usage_type' })
+  usageType: string;
+
+  @Column({ type: 'varchar', length: 500, nullable: true, name: 'stress_test' })
+  stressTest: string;
+
+  @Column({ type: 'varchar', length: 20, nullable: true, name: 'condition_grade' })
+  conditionGrade: string;
+
+  @Column({ type: 'boolean', default: false })
+  verified: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  sealed: boolean;
+
+  @Column({ type: 'integer', default: 90, name: 'warranty_days' })
+  warrantyDays: number;
+
+  @Column({ type: 'boolean', default: false, name: 'coverage_extended' })
+  coverageExtended: boolean;
+
+  @Column({ type: 'boolean', default: true, name: 'escrow_protected' })
+  escrowProtected: boolean;
 
   @Column({ type: 'varchar', length: 500, nullable: true, name: 'physical_state' })
   physicalState: string;

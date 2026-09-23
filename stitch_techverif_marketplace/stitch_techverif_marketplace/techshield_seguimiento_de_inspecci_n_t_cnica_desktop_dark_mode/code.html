@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "secondary-container": "#00a572", "on-tertiary-fixed-variant": "#004e5c", "on-primary": "#002e6a", "accent-emerald-bright": "#34d399", "tertiary-container": "#009eb9", "on-primary-container": "#00285d", "on-secondary-fixed-variant": "#005236", "error": "#ffb4ab", "on-secondary-container": "#00311f", "tertiary-fixed": "#acedff", "on-tertiary-fixed": "#001f26", "surface-container-lowest": "#060e20", "surface-container-low": "#131b2e", "surface-variant": "#2d3449", "border-active": "#334155", "surface-bright": "#31394d", "on-primary-fixed": "#001a42", "outline": "#8c909f", "on-error": "#690005", "outline-variant": "#424754", "surface-dim": "#0b1326", "on-surface-variant": "#c2c6d6", "surface-container-high": "#222a3d", "tertiary": "#4cd7f6", "diagnostic-amber": "#f59e0b", "surface-card": "#111827", "primary-container": "#4d8eff", "surface-elevated": "#1e293b", "surface-tint": "#adc6ff", "inverse-primary": "#005ac2", "accent-cyan": "#06b6d4", "text-muted": "#64748b", "on-tertiary": "#003640", "error-container": "#93000a", "secondary-fixed-dim": "#4edea3", "inverse-on-surface": "#283044", "on-tertiary-container": "#002f38", "primary": "#adc6ff", "tertiary-fixed-dim": "#4cd7f6", "surface": "#0b1326", "accent-blue-bright": "#60a5fa", "on-secondary-fixed": "#002113", "on-error-container": "#ffdad6", "surface-container": "#171f33", "on-primary-fixed-variant": "#004395", "on-secondary": "#003824", "on-surface": "#dae2fd", "text-secondary": "#94a3b8", "background": "#0b1326", "on-background": "#dae2fd", "secondary-fixed": "#6ffbbe", "text-primary": "#f8fafc", "surface-container-highest": "#2d3449", "diagnostic-red": "#ef4444", "primary-fixed-dim": "#adc6ff", "inverse-surface": "#dae2fd", "border-subtle": "#1e293b", "secondary": "#4edea3", "canvas-base": "#0a0f1d", "primary-fixed": "#d8e2ff" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "space-md": "1rem", "gutter": "1.5rem", "gutter-sm": "1rem", "space-lg": "1.5rem", "margin-sm": "1rem", "space-xs": "0.25rem", "space-sm": "0.5rem", "margin": "2rem", "space-xl": "2.5rem" }, "fontFamily": { "display": [ "Inter" ], "body-sm": [ "Inter" ], "headline-lg-mobile": [ "Inter" ], "headline-sm": [ "Inter" ], "body-md": [ "Inter" ], "headline-lg": [ "Inter" ], "body-lg": [ "Inter" ], "label-mono-md": [ "JetBrains Mono" ], "label-mono-sm": [ "JetBrains Mono" ], "headline-md": [ "Inter" ], "label-mono-lg": [ "JetBrains Mono" ] }, "fontSize": { "display": [ "3rem", { "lineHeight": "3.5rem", "letterSpacing": "-0.03em", "fontWeight": "700" } ], "body-sm": [ "0.75rem", { "lineHeight": "1.25rem", "letterSpacing": "0.01em", "fontWeight": "400" } ], "headline-lg-mobile": [ "1.75rem", { "lineHeight": "2.25rem", "letterSpacing": "-0.02em", "fontWeight": "700" } ], "headline-sm": [ "1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.015em", "fontWeight": "600" } ], "body-md": [ "0.875rem", { "lineHeight": "1.5rem", "letterSpacing": "0em", "fontWeight": "400" } ], "headline-lg": [ "2.25rem", { "lineHeight": "2.75rem", "letterSpacing": "-0.025em", "fontWeight": "700" } ], "body-lg": [ "1.125rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.01em", "fontWeight": "400" } ], "label-mono-md": [ "0.75rem", { "lineHeight": "1.125rem", "letterSpacing": "0.02em", "fontWeight": "500" } ], "label-mono-sm": [ "0.6875rem", { "lineHeight": "1rem", "letterSpacing": "0.05em", "fontWeight": "500" } ], "headline-md": [ "1.5rem", { "lineHeight": "2rem", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "label-mono-lg": [ "0.875rem", { "lineHeight": "1.25rem", "letterSpacing": "-0.01em", "fontWeight": "600" } ] } } } };</script></head><body class="bg-background font-body-md text-on-surface antialiased selection:bg-secondary selection:text-on-secondary"><header class="fixed top-0 left-0 right-0 w-full z-50 bg-[#060e20]/90 backdrop-blur-xl border-b border-border-subtle shadow-[0_4px_20px_rgba(0,0,0,0.4)]"><div class="h-20 max-w-7xl mx-auto px-margin flex items-center justify-between gap-space-lg"><div class="flex items-center gap-space-md shrink-0"><a class="flex items-center gap-space-sm" data-path="explorar-mercado" href="#"><img alt="TechShield Hardware &amp; Mobile Exchange" class="h-8 w-auto object-contain brightness-110 drop-shadow-[0_0_8px_rgba(78,222,163,0.35)]" src="https://lh3.googleusercontent.com/aida/AEtjO1VOXNagpsFrICWmiTbOWuLsB5bG2Y4miKwXXygSH9jruLFlxj9sx56eUnBMn_shwAQEE1ZBI6QnrEcFH_d98bhrh4BV05mJhJnyQ7gUC_lJVdi5kuzFVyr7qacg8NQhpJ2auCeGtL0D1rh00-w5c672PrQ20kiFD68NOQvqC6HLysRobCY_nmffimDpxGzhLgaNzYIGTS-ll4PDrnSrWAJ7Lwaq0qQxEv7xlsjaYhzmk45WTC2NF4QyjA"/><div class="flex flex-col"><span class="font-headline-sm text-headline-sm tracking-tight text-text-primary leading-none">TechShield</span><span class="font-label-mono-sm text-label-mono-sm text-secondary uppercase tracking-wider">Hardware Exchange</span></div></a></div><div class="flex-1 max-w-xl mx-space-sm hidden lg:block"><div class="relative flex items-center w-full bg-surface-container-low border border-border-subtle rounded-lg shadow-inner px-space-md py-space-xs focus-within:border-accent-blue-bright transition-colors"><span class="material-symbols-outlined text-text-muted text-lg mr-space-sm">search</span><input class="w-full bg-transparent border-0 text-text-primary placeholder:text-text-muted font-body-md text-body-md focus:outline-none focus:ring-0" placeholder="Buscar procesadores, GPUs, smartphones verificados..." type="text"/><span class="shrink-0 font-label-mono-sm text-label-mono-sm bg-surface-container-high text-text-secondary border border-border-subtle px-space-xs py-0.5 rounded-DEFAULT">Ctrl + K</span></div></div><nav class="hidden xl:flex items-center gap-space-md shrink-0" data-active-classes="bg-surface-container-high text-accent-blue-bright border border-border-active font-bold rounded-lg"><a class="font-body-md text-body-md text-text-secondary hover:text-text-primary px-space-sm py-space-xs transition-colors" data-path="explorar-mercado" href="#">Explorar Mercado</a><a aria-current="page" class="px-space-sm py-space-xs transition-colors bg-surface-container-high text-accent-blue-bright border border-border-active font-bold rounded-lg" data-path="custodia-escrow" href="#">Cómo Funciona la Custodia</a><a class="font-body-md text-body-md text-text-secondary hover:text-text-primary px-space-sm py-space-xs transition-colors" data-path="servicios-de-auditoria" href="#">Servicios de Auditoría</a><a class="font-body-md text-body-md text-text-secondary hover:text-text-primary px-space-sm py-space-xs transition-colors" data-path="vender-hardware" href="#">Vender Hardware</a></nav><div class="flex items-center gap-space-md shrink-0"><div class="hidden sm:flex items-center gap-space-xs bg-surface-container-low border border-border-subtle px-space-sm py-space-xs rounded-lg"><span class="material-symbols-outlined text-secondary text-sm">verified_user</span><div class="flex flex-col"><span class="font-label-mono-sm text-label-mono-sm text-secondary font-bold uppercase leading-none">Custodia Escrow</span><span class="font-label-mono-sm text-label-mono-sm text-text-secondary leading-none">100% Protegida</span></div></div><button aria-label="Notificaciones" class="relative p-space-xs rounded-full hover:bg-surface-container-high border border-transparent hover:border-border-subtle text-text-secondary hover:text-text-primary transition-colors"><span class="material-symbols-outlined text-xl">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-diagnostic-red shadow-[0_0_6px_#ef4444]"></span></button><a class="flex items-center gap-space-xs p-space-xs rounded-full hover:bg-surface-container-high transition-colors" data-path="perfil-de-usuario" href="#"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-1 ring-border-active" src="https://lh3.googleusercontent.com/aida/AEtjO1XThamQfshHmydO60Wwsa5jRy2EEA9tmIoJlC0wlVkUonGH4ywqzynRuMO5o1AKDZ8b14Pb7dhBItqpYql3uyZ-kKsMDNjaoQToO9jrrWXaIGoyzNih-C_ODkNR9IxKElymn4Ep1d4VbaIgI-hRRPZGMFXjbzE6acEAx24D9ghqkmFfmaaAyYCkl4HK1B2_ptztZuFkDoYDgU-kGwh4tbV_6mqXtL-WxItK1kIhaLnEq4l_4WeQGIAS8w"/><span class="material-symbols-outlined text-text-secondary text-base hidden sm:block">expand_more</span></a></div></div></header><main class="w-full pt-20 bg-background min-h-screen"><div class="flex flex-col w-full">
+<!-- Interactive Toast / Stream Live Alert -->
+<section class="max-w-7xl mx-auto px-margin w-full py-space-sm">
+<div class="flex items-center justify-between bg-surface-container-lowest border border-border-subtle px-space-md py-space-xs rounded-xl shadow-lg">
+<div class="flex items-center gap-space-sm">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-secondary shadow-[0_0_8px_#4edea3]"></span>
+</span>
+<span class="font-label-mono-sm text-label-mono-sm uppercase text-secondary font-bold tracking-wider">Telemetría en Vivo • Banco de Pruebas #04</span>
+<span class="font-body-sm text-body-sm text-text-secondary hidden md:inline">Conexión cifrada TLS 1.3 con estación de diagnóstico automatizada TechShield Lab Central</span>
+</div>
+<div class="flex items-center gap-space-sm font-label-mono-sm text-label-mono-sm text-text-muted">
+<span class="text-accent-cyan">LATENCIA: 14ms</span>
+<span class="hidden sm:inline">• SHA-256: 8A4E90B</span>
+</div>
+</div>
+</section>
+<!-- Top Order Header Card -->
+<section class="max-w-7xl mx-auto px-margin w-full pb-space-lg">
+<div class="bg-surface-container-low border border-border-subtle rounded-xl shadow-xl p-space-lg">
+<div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-space-md">
+<!-- Order ID & Hardware Subject -->
+<div class="space-y-space-xs min-w-0">
+<div class="flex flex-wrap items-center gap-space-xs">
+<span class="font-label-mono-sm text-label-mono-sm bg-surface-container-high border border-border-active text-accent-blue-bright px-space-xs py-0.5 rounded-DEFAULT font-bold tracking-wider">
+              ORDEN #TS-40922-LAB
+            </span>
+<span class="font-label-mono-sm text-label-mono-sm bg-secondary/15 border border-secondary/30 text-secondary px-space-xs py-0.5 rounded-DEFAULT font-bold uppercase flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">lock</span> Custodia Activa 100%
+            </span>
+<span class="font-label-mono-sm text-label-mono-sm text-text-muted">Lote Ingreso: Hoy 09:15 CET</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-text-primary tracking-tight">
+            AMD Ryzen 7 5800X3D + Placa Base Bundle Enthusiast
+          </h1>
+<p class="font-body-sm text-body-sm text-text-secondary flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-sm text-secondary">shield_with_heart</span>
+            Fondos blindados en bóveda bancaria escrow: <strong class="font-label-mono-lg text-label-mono-lg text-text-primary font-bold">$310.00 USD</strong> retenidos hasta la aprobación de peritaje.
+          </p>
+</div>
+<!-- Assigned Specialist & Direct Comms -->
+<div class="bg-surface-container-lowest border border-border-subtle p-space-md rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-md shrink-0">
+<div class="flex items-center gap-space-sm">
+<div class="relative">
+<img class="w-12 h-12 rounded-full object-cover ring-2 ring-border-active" data-alt="Portrait of an experienced electronics hardware inspection specialist in cleanroom attire with optical magnification glasses and TechShield corporate badge, natural workshop lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCXePgvnbQB5iASPrvfSuuR8zRbRKaMo8Vs94LQsC5SkYWrT746hQFy_BJaY8_0_Q8gfEgE4HnXsFYNCOPGwQlMgH0DAKkZTfZSjRXCrcQWIlXbCRHUSO3044-s0o82Asx6B-KXpyuJOK6b-8zvcemcOFPRDSIlkCA2nVu2RHSHEn_j7W4l_qLAPfzfARlXB2Go-qatYgrITs71yoZvXSjCzYwKyZz-KRcx-Af06JHZ-ea9y5WbxPU"/>
+<span class="absolute bottom-0 right-0 w-3 h-3 bg-secondary rounded-full shadow-[0_0_0_2px_#060e20] ring-1 ring-secondary"></span>
+</div>
+<div>
+<div class="font-label-mono-sm text-label-mono-sm text-secondary uppercase font-bold">Perito Certificado IPC-A-610G</div>
+<div class="font-headline-sm text-headline-sm text-text-primary">Ing. Marcos Varela</div>
+<div class="font-body-sm text-body-sm text-text-secondary">Lab Forense #2 • Silicon &amp; SMT</div>
+</div>
+</div>
+<div class="flex items-center gap-space-xs w-full sm:w-auto">
+<button class="flex-1 sm:flex-initial flex items-center justify-center gap-space-xs bg-surface-container-high hover:bg-surface-container-highest border border-border-subtle text-text-primary px-space-md py-space-xs rounded-lg shadow-sm transition-colors text-body-sm font-body-sm font-medium" id="btnChatPerito">
+<span class="material-symbols-outlined text-sm text-accent-blue-bright">chat</span>
+              Chat Directo
+            </button>
+<button class="flex-1 sm:flex-initial flex items-center justify-center gap-space-xs bg-primary-container text-white hover:bg-blue-600 shadow-[0_0_12px_rgba(59,130,246,0.35)] px-space-md py-space-xs rounded-lg transition-all text-body-sm font-body-sm font-medium" id="btnCallPerito">
+<span class="material-symbols-outlined text-sm">videocam</span>
+              Comprobación en Vivo
+            </button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Main 2-Column Split -->
+<section class="max-w-7xl mx-auto px-margin w-full pb-space-xl">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+<!-- LEFT COLUMN: Security Traceability & Interactive Test Breakdown (w-7/12) -->
+<div class="lg:col-span-7 space-y-space-lg min-w-0">
+<!-- Progress Overview Banner -->
+<div class="bg-surface-container-low border border-border-subtle rounded-xl shadow-lg p-space-md">
+<div class="flex items-center justify-between mb-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-xl">biotech</span>
+<span class="font-label-mono-lg text-label-mono-lg font-bold text-text-primary">Fase 3 de 5: Peritaje de Silicio &amp; VRM</span>
+</div>
+<span class="font-label-mono-lg text-label-mono-lg text-secondary font-bold">85% COMPLETADO</span>
+</div>
+<div class="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden mb-space-xs">
+<div class="h-full bg-secondary shadow-[0_0_10px_#4edea3] rounded-full transition-all duration-700" style="width: 85%;"></div>
+</div>
+<p class="font-body-sm text-body-sm text-text-secondary">
+            3 de 4 pruebas forenses concluidas satisfactoriamente. Pruebas térmicas de transitorios en etapas de potencia en ejecución final.
+          </p>
+</div>
+<!-- Vertical Step Traceability Timeline -->
+<div class="bg-surface-container-low border border-border-subtle rounded-xl shadow-lg p-space-lg">
+<h2 class="font-headline-sm text-headline-sm text-text-primary mb-space-md flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-accent-blue-bright">route</span>
+            Línea de Vida &amp; Trazabilidad Criptográfica
+          </h2>
+<div class="space-y-space-md relative">
+<!-- Step 1: Completed -->
+<div class="flex items-start gap-space-md">
+<div class="flex flex-col items-center">
+<div class="w-8 h-8 rounded-full bg-secondary/20 border border-secondary text-secondary flex items-center justify-center font-bold shadow-[0_0_10px_rgba(78,222,163,0.3)]">
+<span class="material-symbols-outlined text-base">check</span>
+</div>
+<div class="w-0.5 h-16 bg-secondary/30 my-1"></div>
+</div>
+<div class="flex-1 bg-surface-container-lowest border border-border-subtle p-space-md rounded-lg min-w-0">
+<div class="flex flex-wrap items-center justify-between gap-1">
+<span class="font-label-mono-sm text-label-mono-sm text-secondary font-bold uppercase">Paso 01 • Completado</span>
+<span class="font-label-mono-sm text-label-mono-sm text-text-muted">Ayer 14:10:22 CET</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-text-primary text-base">Pago Confirmado y Fondos en Bóveda Escrow</h3>
+<p class="font-body-sm text-body-sm text-text-secondary mt-1">
+                  Transacción asegurada de $310.00 USD asentada en ledger custodial TechShield. Bloque de contrato de compraventa activado legalmente.
+                </p>
+</div>
+</div>
+<!-- Step 2: Completed -->
+<div class="flex items-start gap-space-md">
+<div class="flex flex-col items-center">
+<div class="w-8 h-8 rounded-full bg-secondary/20 border border-secondary text-secondary flex items-center justify-center font-bold shadow-[0_0_10px_rgba(78,222,163,0.3)]">
+<span class="material-symbols-outlined text-base">check</span>
+</div>
+<div class="w-0.5 h-16 bg-secondary/30 my-1"></div>
+</div>
+<div class="flex-1 bg-surface-container-lowest border border-border-subtle p-space-md rounded-lg min-w-0">
+<div class="flex flex-wrap items-center justify-between gap-1">
+<span class="font-label-mono-sm text-label-mono-sm text-secondary font-bold uppercase">Paso 02 • Completado</span>
+<span class="font-label-mono-sm text-label-mono-sm text-text-muted">Ayer 18:45:00 CET</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-text-primary text-base">Recepción e Inspección de Precintos TechShield</h3>
+<p class="font-body-sm text-body-sm text-text-secondary mt-1">
+                  Recepción de bulto en Centro Logístico de Custodia. Empaque de origen intacto, caja OEM con sellos holográficos cotejados sin indicios de manipulación previa.
+                </p>
+</div>
+</div>
+<!-- Step 3: Active Stage -->
+<div class="flex items-start gap-space-md">
+<div class="flex flex-col items-center">
+<div class="w-8 h-8 rounded-full bg-blue-600 border border-accent-blue-bright text-white flex items-center justify-center font-bold shadow-[0_0_12px_rgba(59,130,246,0.6)] animate-pulse">
+<span class="material-symbols-outlined text-base">sync</span>
+</div>
+<div class="w-0.5 h-64 bg-border-subtle my-1"></div>
+</div>
+<div class="flex-1 bg-surface-container-lowest border-2 border-accent-blue-bright/40 p-space-md rounded-lg min-w-0 shadow-lg relative">
+<div class="flex flex-wrap items-center justify-between gap-1">
+<span class="font-label-mono-sm text-label-mono-sm text-accent-blue-bright font-bold uppercase">Paso 03 • Fase Activa en Laboratorio</span>
+<span class="font-label-mono-sm text-label-mono-sm bg-blue-950/80 border border-accent-blue-bright/50 text-accent-blue-bright px-space-xs py-0.5 rounded-DEFAULT font-bold">EN BANCO DE ENSAYO</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-text-primary text-base">Peritaje Técnico de Silicio, Pines &amp; VRM</h3>
+<p class="font-body-sm text-body-sm text-text-secondary mt-1 mb-space-md">
+                  Inspección microelectrónica no destructiva bajo estándar IPC-A-610G y banco de carga controlada.
+                </p>
+<!-- Detailed Sub-test cards -->
+<div class="space-y-space-sm">
+<!-- Test 1 -->
+<div class="bg-surface-container-low border border-border-subtle p-space-sm rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-7 h-7 rounded-full bg-secondary/20 border border-secondary/40 text-secondary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-sm">smb_share</span>
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm text-sm text-text-primary">Pines PGA / Socket AM4 (40x Óptico)</div>
+<div class="font-body-sm text-body-sm text-text-secondary">1,331 pines inspeccionados. Sin flexiones mecánicas.</div>
+</div>
+</div>
+<span class="font-label-mono-sm text-label-mono-sm bg-secondary/15 border border-secondary/30 text-secondary px-space-xs py-1 rounded-DEFAULT font-bold self-start sm:self-center shrink-0">
+                      APROBADO • 0 DEFECTOS
+                    </span>
+</div>
+<!-- Test 2 -->
+<div class="bg-surface-container-low border border-border-subtle p-space-sm rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-7 h-7 rounded-full bg-secondary/20 border border-secondary/40 text-secondary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-sm">thermostat</span>
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm text-sm text-text-primary">Stress Cinebench R23 (Loop 30 Minutos)</div>
+<div class="font-body-sm text-body-sm text-text-secondary">Pico 67.4°C en Die. 0 thermal throttling reportado.</div>
+</div>
+</div>
+<span class="font-label-mono-sm text-label-mono-sm bg-secondary/15 border border-secondary/30 text-secondary px-space-xs py-1 rounded-DEFAULT font-bold self-start sm:self-center shrink-0">
+                      APROBADO • ESTABLE
+                    </span>
+</div>
+<!-- Test 3 -->
+<div class="bg-surface-container-low border border-border-subtle p-space-sm rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-7 h-7 rounded-full bg-secondary/20 border border-secondary/40 text-secondary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-sm">qr_code_scanner</span>
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm text-sm text-text-primary">Número de Serie e IHS Original</div>
+<div class="font-body-sm text-body-sm text-text-secondary">Coincidencia exacta con base de datos AMD Stepping B2.</div>
+</div>
+</div>
+<span class="font-label-mono-sm text-label-mono-sm bg-secondary/15 border border-secondary/30 text-secondary px-space-xs py-1 rounded-DEFAULT font-bold self-start sm:self-center shrink-0">
+                      APROBADO • GENUINO
+                    </span>
+</div>
+<!-- Test 4: Currently Running -->
+<div class="bg-surface-container-low border border-border-subtle p-space-sm rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-7 h-7 rounded-full bg-blue-950/70 border border-accent-blue-bright/40 text-accent-blue-bright flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-sm animate-spin">rotate_right</span>
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm text-sm text-text-primary">Test de Fases VRM Placa Base (120W Sostenido)</div>
+<div class="font-body-sm text-body-sm text-text-secondary">Termografía de MOSFETs a 58°C máx. Minuto 28 de 30.</div>
+</div>
+</div>
+<span class="font-label-mono-sm text-label-mono-sm bg-blue-950/80 border border-accent-blue-bright/50 text-accent-blue-bright px-space-xs py-1 rounded-DEFAULT font-bold self-start sm:self-center shrink-0">
+                      FINALIZANDO • 92%
+                    </span>
+</div>
+</div>
+</div>
+</div>
+<!-- Step 4: Pending -->
+<div class="flex items-start gap-space-md">
+<div class="flex flex-col items-center">
+<div class="w-8 h-8 rounded-full bg-surface-container-high border border-border-subtle text-text-muted flex items-center justify-center font-bold">
+<span class="material-symbols-outlined text-base">shield</span>
+</div>
+<div class="w-0.5 h-16 bg-border-subtle my-1"></div>
+</div>
+<div class="flex-1 bg-surface-container-lowest border border-border-subtle/70 p-space-md rounded-lg min-w-0 opacity-75">
+<div class="flex flex-wrap items-center justify-between gap-1">
+<span class="font-label-mono-sm text-label-mono-sm text-text-muted font-bold uppercase">Paso 04 • Programado Hoy 17:30 CET</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-text-primary text-base">Sellado Antiestático &amp; Precinto Criptográfico</h3>
+<p class="font-body-sm text-body-sm text-text-secondary mt-1">
+                  Colocación de blindaje anti-ESD grado militar y etiqueta con hash SHA-256 inviolable antes de cierre de caja.
+                </p>
+</div>
+</div>
+<!-- Step 5: Pending -->
+<div class="flex items-start gap-space-md">
+<div class="flex flex-col items-center">
+<div class="w-8 h-8 rounded-full bg-surface-container-high border border-border-subtle text-text-muted flex items-center justify-center font-bold">
+<span class="material-symbols-outlined text-base">local_shipping</span>
+</div>
+</div>
+<div class="flex-1 bg-surface-container-lowest border border-border-subtle/70 p-space-md rounded-lg min-w-0 opacity-75">
+<div class="flex flex-wrap items-center justify-between gap-1">
+<span class="font-label-mono-sm text-label-mono-sm text-text-muted font-bold uppercase">Paso 05 • Estimado Mañana</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-text-primary text-base">Despacho Asegurado a Domicilio</h3>
+<p class="font-body-sm text-body-sm text-text-secondary mt-1">
+                  Envío prioritario con seguro total contra pérdidas o daños por $310.00 USD con código de seguimiento en vivo.
+                </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Photographic Hardware Evidence from the Lab -->
+<div class="bg-surface-container-low border border-border-subtle rounded-xl shadow-lg p-space-lg">
+<div class="flex items-center justify-between mb-space-md">
+<div>
+<h2 class="font-headline-sm text-headline-sm text-text-primary">Registro Fotográfico del Peritaje</h2>
+<p class="font-body-sm text-body-sm text-text-secondary">Capturas de alta definición tomadas en tiempo real en la cabina de inspección</p>
+</div>
+<span class="font-label-mono-sm text-label-mono-sm text-accent-blue-bright font-bold uppercase">3 FOTOS AUDITADAS</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-space-md">
+<div class="group relative rounded-lg overflow-hidden bg-surface-container-lowest border border-border-subtle">
+<img class="w-full h-36 object-cover group-hover:scale-105 transition-transform duration-300" data-alt="Microscopic 40x macro photograph of straight undamaged gold-plated PGA pins on an AMD Ryzen processor, perfectly aligned grid under precision laboratory ring light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAB8gG7JOsfRFP6vqlLy_OmyflHZ2N9_ui3QvcI4gl0Uzq22g0PZeApx6wPvx5RsIN0xvjqUs4muZIBu8JGciZyxVttlUxhRfpn-_L1s6qljze79E-phQy4OgNaY9ZW0yCttZ7hJMryclji0IhMfkHANU0BGbgJu9lD-D83vFTVbOEo1fy5gzHL3mCXeK9J4pEsqY5oHLwaic3eTT72E-YHDKgYFAG5oapoW5vuFcPt6n-Lln6eGH8"/>
+<div class="p-space-xs bg-surface-container-lowest border-t border-border-subtle">
+<div class="font-label-mono-sm text-label-mono-sm font-bold text-text-primary">Pines PGA AM4 (40x)</div>
+<div class="font-body-sm text-body-sm text-secondary font-medium">100% Alineados</div>
+</div>
+</div>
+<div class="group relative rounded-lg overflow-hidden bg-surface-container-lowest border border-border-subtle">
+<img class="w-full h-36 object-cover group-hover:scale-105 transition-transform duration-300" data-alt="High angle shot of high-end ATX motherboard VRM heatsinks under thermal infrared camera showing cool uniform green-blue heat distribution under sustained current load" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAevm8GbbMxzw95VhGyfFLYzEJ-Wv1zUQZIwRoJ4uTLM5EdhYGzW3jMQ4oByxdOrYzasjPgnu3sHab_1HpXToCv-uf_s3uw0ycEWu5Y9SD6hnO5UcAXrdbklApPHxy6pCcvi4ukp7zrj6PjpQIRIcrnUPhMJ9PKF1KcpqGFV4laQVVLsbbEACoEGWEu8do_RFGH0FK8Gguc_ARh-fV-g0ODly3bu7JnsqYROhOOC2mc_c1Q_pYkI7c"/>
+<div class="p-space-xs bg-surface-container-lowest border-t border-border-subtle">
+<div class="font-label-mono-sm text-label-mono-sm font-bold text-text-primary">Termografía VRM Placa</div>
+<div class="font-body-sm text-body-sm text-secondary font-medium">58.1°C Max Carga</div>
+</div>
+</div>
+<div class="group relative rounded-lg overflow-hidden bg-surface-container-lowest border border-border-subtle">
+<img class="w-full h-36 object-cover group-hover:scale-105 transition-transform duration-300" data-alt="Crisp close-up view of an AMD Ryzen 7 5800X3D integrated heat spreader with laser-etched serial numbers and holographic QR code validation on TechShield anti-static workbench" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0r48dJPQZCajHc-G3YjsIourz0JgFBrwhNTYCnDvcD77SBKyAi-XGAp-OLfnSakyvzPx5KFSRqBol7pTxzI2nas3D0TuvNh5IwmeoR1SF6kzyPXtx8dTzeMYPMSxmLYEsbjTi58NGRLnhOaJHYlA381GC6dQsAcEVym4yJvPzVSWnAbHJBWw6sUyX-VUxLrNpxDwF9vYjfVgDuo421KEFya4EyJt1_u4MTwiCehCXbRyqUi4IFAg"/>
+<div class="p-space-xs bg-surface-container-lowest border-t border-border-subtle">
+<div class="font-label-mono-sm text-label-mono-sm font-bold text-text-primary">IHS &amp; Número de Serie</div>
+<div class="font-body-sm text-body-sm text-secondary font-medium">Coincidencia Genuina</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: Live Lab Telemetry & Zero-Risk Guarantee (w-5/12) -->
+<div class="lg:col-span-5 space-y-space-lg min-w-0">
+<!-- Live Telemetry Widget -->
+<div class="bg-surface-container-low border border-border-subtle rounded-xl shadow-lg p-space-lg">
+<div class="flex items-center justify-between mb-space-md">
+<div>
+<div class="font-label-mono-sm text-label-mono-sm text-secondary font-bold uppercase">SENSORES EN LÍNEA</div>
+<h2 class="font-headline-sm text-headline-sm text-text-primary">Telemetría de la Muestra</h2>
+</div>
+<div class="bg-surface-container-high border border-border-subtle px-space-xs py-1 rounded-DEFAULT">
+<span class="font-label-mono-sm text-label-mono-sm text-accent-blue-bright font-bold">HASH #9a4f-88e2</span>
+</div>
+</div>
+<!-- 4-metric grid -->
+<div class="grid grid-cols-2 gap-space-sm mb-space-md">
+<div class="bg-surface-container-lowest border border-border-subtle p-space-md rounded-lg">
+<div class="flex items-center justify-between text-text-secondary mb-1">
+<span class="font-label-mono-sm text-label-mono-sm uppercase">Temp Máx Die</span>
+<span class="material-symbols-outlined text-secondary text-base">device_thermostat</span>
+</div>
+<div class="font-headline-lg text-headline-lg text-text-primary font-bold">67.4<span class="text-sm font-normal text-text-secondary">°C</span></div>
+<div class="font-body-sm text-body-sm text-secondary mt-1">Óptimo (&lt;85°C límite)</div>
+</div>
+<div class="bg-surface-container-lowest border border-border-subtle p-space-md rounded-lg">
+<div class="flex items-center justify-between text-text-secondary mb-1">
+<span class="font-label-mono-sm text-label-mono-sm uppercase">Cinebench R23</span>
+<span class="material-symbols-outlined text-accent-blue-bright text-base">speed</span>
+</div>
+<div class="font-headline-lg text-headline-lg text-text-primary font-bold">14,890</div>
+<div class="font-body-sm text-body-sm text-text-secondary mt-1">Multi-core nominal</div>
+</div>
+<div class="bg-surface-container-lowest border border-border-subtle p-space-md rounded-lg">
+<div class="flex items-center justify-between text-text-secondary mb-1">
+<span class="font-label-mono-sm text-label-mono-sm uppercase">Pines AM4</span>
+<span class="material-symbols-outlined text-secondary text-base">pin</span>
+</div>
+<div class="font-headline-lg text-headline-lg text-text-primary font-bold">1331<span class="text-sm font-normal text-text-secondary">/1331</span></div>
+<div class="font-body-sm text-body-sm text-secondary mt-1">100% integridad física</div>
+</div>
+<div class="bg-surface-container-lowest border border-border-subtle p-space-md rounded-lg">
+<div class="flex items-center justify-between text-text-secondary mb-1">
+<span class="font-label-mono-sm text-label-mono-sm uppercase">Eficiencia VRM</span>
+<span class="material-symbols-outlined text-secondary text-base">bolt</span>
+</div>
+<div class="font-headline-lg text-headline-lg text-text-primary font-bold">94.2<span class="text-sm font-normal text-text-secondary">%</span></div>
+<div class="font-body-sm text-body-sm text-secondary mt-1">Ripple &lt;18mV (Estable)</div>
+</div>
+</div>
+<!-- Real-time Thermal Sparkline (Inline SVG) -->
+<div class="bg-surface-container-lowest border border-border-subtle p-space-md rounded-lg">
+<div class="flex items-center justify-between mb-space-xs font-label-mono-sm text-label-mono-sm">
+<span class="text-text-primary font-bold uppercase">Curva Térmica (Últimos 30 Minutos)</span>
+<span class="text-secondary font-bold">Delta T: +31.4°C</span>
+</div>
+<div class="w-full h-16 flex items-end">
+<svg class="w-full h-full text-secondary" fill="none" viewbox="0 0 320 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<lineargradient id="gradThermal" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#4edea3" stop-opacity="0.35"></stop>
+<stop offset="100%" stop-color="#4edea3" stop-opacity="0.0"></stop>
+</lineargradient>
+</defs>
+<path d="M0,56 Q40,54 60,38 T120,24 T180,22 T240,20 T300,18 L320,18" stroke="#4edea3" stroke-linecap="round" stroke-width="2.5"></path>
+<path d="M0,56 Q40,54 60,38 T120,24 T180,22 T240,20 T300,18 L320,18 L320,64 L0,64 Z" fill="url(#gradThermal)"></path>
+<circle class="fill-secondary drop-shadow-[0_0_6px_#4edea3]" cx="320" cy="18" r="4"></circle>
+</svg>
+</div>
+<div class="flex justify-between text-text-muted font-label-mono-sm text-label-mono-sm mt-1">
+<span>0m: Reposo (36°C)</span>
+<span>15m: Carga Full (66°C)</span>
+<span>30m: Meseta (67.4°C)</span>
+</div>
+</div>
+</div>
+<!-- Official Preliminary Technical Certificate Card -->
+<div class="bg-surface-container-low border border-border-subtle rounded-xl shadow-lg p-space-lg space-y-space-md">
+<div class="flex items-start gap-space-sm">
+<div class="p-space-xs bg-surface-container-high border border-border-subtle rounded-lg text-accent-blue-bright">
+<span class="material-symbols-outlined text-2xl">verified_user</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-text-primary">Certificado Técnico Preliminar</h3>
+<p class="font-body-sm text-body-sm text-text-secondary">
+                Documento de peritaje avalado con clave pública del perito y sello criptográfico TechShield.
+              </p>
+</div>
+</div>
+<div class="p-space-sm bg-surface-container-lowest border border-border-subtle rounded-lg font-label-mono-sm text-label-mono-sm space-y-1">
+<div class="flex justify-between">
+<span class="text-text-muted">SERIAL DEL PROCESADOR:</span>
+<span class="text-text-primary font-bold">9JG8471T20491</span>
+</div>
+<div class="flex justify-between">
+<span class="text-text-muted">SERIAL DE PLACA BASE:</span>
+<span class="text-text-primary font-bold">B550-PRO-99824X</span>
+</div>
+<div class="flex justify-between">
+<span class="text-text-muted">FIRMA SHA-256:</span>
+<span class="text-secondary font-bold">e7a4...98b2c1</span>
+</div>
+</div>
+<button class="w-full flex items-center justify-center gap-space-xs bg-primary-container text-white hover:bg-blue-600 shadow-[0_0_14px_rgba(59,130,246,0.35)] px-space-md py-space-sm rounded-lg transition-all font-headline-sm text-headline-sm text-sm" id="btnDownloadPDF">
+<span class="material-symbols-outlined text-lg">download</span>
+            Descargar Certificado Preliminar (PDF Firmado)
+          </button>
+</div>
+<!-- Guarantee & Refund Policy Box (Garantía TechShield Zero-Riesgo) -->
+<div class="bg-surface-container-low border border-border-subtle rounded-xl shadow-lg p-space-lg">
+<div class="flex items-center gap-space-xs mb-space-sm">
+<span class="material-symbols-outlined text-secondary text-2xl">security</span>
+<h3 class="font-headline-sm text-headline-sm text-text-primary">Garantía TechShield Zero-Riesgo</h3>
+</div>
+<p class="font-body-sm text-body-sm text-text-secondary mb-space-md">
+            Si el hardware reprueba el peritaje en las pruebas finales de VRM o presenta inestabilidad oculta, la orden se cancela inmediatamente y tus <strong class="text-text-primary">$310.00 USD</strong> son devueltos a tu método de pago sin deducciones.
+          </p>
+<div class="space-y-space-xs mb-space-md">
+<div class="flex items-center gap-space-xs text-body-sm font-body-sm text-text-primary">
+<span class="material-symbols-outlined text-secondary text-sm">check_circle</span>
+<span>Reembolso 100% Express en menos de 2 horas</span>
+</div>
+<div class="flex items-center gap-space-xs text-body-sm font-body-sm text-text-primary">
+<span class="material-symbols-outlined text-secondary text-sm">check_circle</span>
+<span>Retorno sin costo logístico al vendedor original</span>
+</div>
+<div class="flex items-center gap-space-xs text-body-sm font-body-sm text-text-primary">
+<span class="material-symbols-outlined text-secondary text-sm">check_circle</span>
+<span>Garantía de funcionamiento de 90 días tras la entrega</span>
+</div>
+</div>
+<!-- Quick Action Buttons -->
+<div class="flex flex-col sm:flex-row gap-space-xs">
+<button class="flex-1 bg-surface-container-lowest hover:bg-surface-container-high border border-border-subtle text-text-primary font-medium py-space-xs px-space-sm rounded-lg text-body-sm font-body-sm transition-colors text-center" id="btnEscrowDetails">
+              Ver Detalle de Custodia
+            </button>
+<button class="flex-1 bg-surface-container-lowest hover:bg-surface-container-high border border-border-subtle text-accent-blue-bright font-medium py-space-xs px-space-sm rounded-lg text-body-sm font-body-sm transition-colors text-center flex items-center justify-center gap-1" id="btnNotifyMe">
+<span class="material-symbols-outlined text-sm">notifications_active</span>
+              Avisarme al Finalizar
+            </button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Interactive Modal / Dialog for Video Call Comprobación -->
+<dialog class="p-0 rounded-xl bg-surface-container-low border border-border-subtle shadow-2xl backdrop:bg-[#060e20]/80 max-w-lg w-full text-on-surface" id="modalVideoPerito">
+<div class="p-space-lg space-y-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-accent-blue-bright text-xl">videocam</span>
+<h3 class="font-headline-sm text-headline-sm text-text-primary">Solicitar Comprobación en Vivo</h3>
+</div>
+<button class="text-text-muted hover:text-text-primary p-1 transition-colors" onclick="document.getElementById('modalVideoPerito').close()">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<p class="font-body-sm text-body-sm text-text-secondary">
+        Conéctate en directo mediante cámara en streaming de alta definición al banco de trabajo del <strong class="text-text-primary">Ing. Marcos Varela</strong>. Podrás verificar en tiempo real los números de serie y las mediciones de voltaje con osciloscopio.
+      </p>
+<div class="bg-surface-container-lowest border border-border-subtle p-space-md rounded-lg space-y-space-xs">
+<div class="flex items-center justify-between font-label-mono-sm text-label-mono-sm">
+<span class="text-text-muted">TIEMPO ESTIMADO DE ESPERA:</span>
+<span class="text-secondary font-bold">Inmediato (&lt; 2 min)</span>
+</div>
+<div class="flex items-center justify-between font-label-mono-sm text-label-mono-sm">
+<span class="text-text-muted">DISPOSITIVO AUDITADO:</span>
+<span class="text-text-primary font-bold">AMD Ryzen 7 5800X3D</span>
+</div>
+</div>
+<div class="flex gap-space-xs">
+<button class="flex-1 py-space-xs px-space-sm bg-surface-container-high hover:bg-surface-container-highest border border-border-subtle rounded-lg text-text-primary font-medium text-body-sm transition-colors" onclick="document.getElementById('modalVideoPerito').close()">
+          Cancelar
+        </button>
+<button class="flex-1 py-space-xs px-space-sm bg-primary-container hover:bg-blue-600 text-white rounded-lg font-medium text-body-sm transition-all shadow-[0_0_12px_rgba(59,130,246,0.3)]" onclick="alert('Iniciando sesión segura WebRTC con Banco de Ensayos #04...'); document.getElementById('modalVideoPerito').close();">
+          Iniciar Transmisión
+        </button>
+</div>
+</div>
+</dialog>
+<!-- Interactive JavaScript for micro-interactions -->
+<script>
+    (function() {
+      const btnCall = document.getElementById('btnCallPerito');
+      const modal = document.getElementById('modalVideoPerito');
+      if (btnCall && modal) {
+        btnCall.addEventListener('click', () => {
+          modal.showModal();
+        });
+      }
+
+      const btnChat = document.getElementById('btnChatPerito');
+      if (btnChat) {
+        btnChat.addEventListener('click', () => {
+          alert('Canal de mensajería directa pericial abierto. Ing. Marcos Varela está activo en el puesto #04.');
+        });
+      }
+
+      const btnDownload = document.getElementById('btnDownloadPDF');
+      if (btnDownload) {
+        btnDownload.addEventListener('click', () => {
+          btnDownload.innerHTML = '<span class="material-symbols-outlined text-lg animate-spin">sync</span> Generando Hash Criptográfico...';
+          setTimeout(() => {
+            btnDownload.innerHTML = '<span class="material-symbols-outlined text-lg">check_circle</span> Certificado Descargado';
+            setTimeout(() => {
+              btnDownload.innerHTML = '<span class="material-symbols-outlined text-lg">download</span> Descargar Certificado Preliminar (PDF Firmado)';
+            }, 3000);
+          }, 1200);
+        });
+      }
+
+      const btnNotify = document.getElementById('btnNotifyMe');
+      if (btnNotify) {
+        btnNotify.addEventListener('click', () => {
+          btnNotify.innerHTML = '<span class="material-symbols-outlined text-sm">done</span> Notificaciones Activas';
+          btnNotify.classList.add('text-secondary');
+        });
+      }
+
+      const btnEscrow = document.getElementById('btnEscrowDetails');
+      if (btnEscrow) {
+        btnEscrow.addEventListener('click', () => {
+          alert('Bóveda Escrow TechShield #ESC-40922: $310.00 USD resguardados con garantía fiduciaria bancaria. Liberación sujeta al dictamen pericial aprobatorio.');
+        });
+      }
+    })();
+  </script>
+</div></main><footer class="w-full bg-surface-container-lowest border-t border-border-subtle py-space-xl"><div class="max-w-7xl mx-auto px-margin"><div class="bg-surface-container-low border border-border-subtle rounded-xl p-space-lg mb-space-xl shadow-lg"><div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-space-md items-center"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-secondary text-2xl">verified</span><div><div class="font-label-mono-sm text-label-mono-sm font-bold uppercase text-text-primary">Auditoría ISO/IPC</div><div class="font-body-sm text-body-sm text-text-secondary">Hardware certificado</div></div></div><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-accent-blue-bright text-2xl">lock</span><div><div class="font-label-mono-sm text-label-mono-sm font-bold uppercase text-text-primary">Fondos en Custodia</div><div class="font-body-sm text-body-sm text-text-secondary">Escrow institucional</div></div></div><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-secondary text-2xl">fingerprint</span><div><div class="font-label-mono-sm text-label-mono-sm font-bold uppercase text-text-primary">Firma SHA-256</div><div class="font-body-sm text-body-sm text-text-secondary">Inmutabilidad de pruebas</div></div></div><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-accent-blue-bright text-2xl">health_and_safety</span><div><div class="font-label-mono-sm text-label-mono-sm font-bold uppercase text-text-primary">Garantía 90 Días</div><div class="font-body-sm text-body-sm text-text-secondary">Cobertura total de fallas</div></div></div><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-secondary text-2xl">support_agent</span><div><div class="font-label-mono-sm text-label-mono-sm font-bold uppercase text-text-primary">Peritaje 24/7</div><div class="font-body-sm text-body-sm text-text-secondary">Soporte técnico forense</div></div></div></div></div><div class="grid grid-cols-1 md:grid-cols-4 gap-space-lg mb-space-lg"><div class="space-y-space-sm"><div class="flex items-center gap-space-sm"><span class="font-headline-sm text-headline-sm tracking-tight text-text-primary">TechShield</span></div><p class="font-body-sm text-body-sm text-text-secondary">Plataforma de intermediación y auditoría forense para hardware informático y dispositivos móviles de alta gama con garantía escrow.</p></div><div><h4 class="font-label-mono-lg text-label-mono-lg text-text-primary mb-space-sm uppercase">Plataforma</h4><ul class="space-y-space-xs"><li class="font-body-sm text-body-sm text-text-secondary hover:text-text-primary cursor-pointer transition-colors">Protocolo de Custodia</li><li class="font-body-sm text-body-sm text-text-secondary hover:text-text-primary cursor-pointer transition-colors">Verificación de Socket &amp; VRAM</li><li class="font-body-sm text-body-sm text-text-secondary hover:text-text-primary cursor-pointer transition-colors">Auditoría de Batería OEM</li><li class="font-body-sm text-body-sm text-text-secondary hover:text-text-primary cursor-pointer transition-colors">Resolución de Disputas</li></ul></div><div><h4 class="font-label-mono-lg text-label-mono-lg text-text-primary mb-space-sm uppercase">Ecosistema</h4><ul class="space-y-space-xs"><li class="font-body-sm text-body-sm text-text-secondary hover:text-text-primary cursor-pointer transition-colors">Tarjetas Gráficas Certificadas</li><li class="font-body-sm text-body-sm text-text-secondary hover:text-text-primary cursor-pointer transition-colors">Procesadores &amp; Kits de Memoria</li><li class="font-body-sm text-body-sm text-text-secondary hover:text-text-primary cursor-pointer transition-colors">Smartphones Grado A/B</li><li class="font-body-sm text-body-sm text-text-secondary hover:text-text-primary cursor-pointer transition-colors">Laboratorios de Ensayo</li></ul></div><div><h4 class="font-label-mono-lg text-label-mono-lg text-text-primary mb-space-sm uppercase">Cumplimiento &amp; Seguridad</h4><ul class="space-y-space-xs"><li class="font-body-sm text-body-sm text-text-secondary hover:text-text-primary cursor-pointer transition-colors">Términos de Escrow Mercantil</li><li class="font-body-sm text-body-sm text-text-secondary hover:text-text-primary cursor-pointer transition-colors">Políticas de Devolución Técnica</li><li class="font-body-sm text-body-sm text-text-secondary hover:text-text-primary cursor-pointer transition-colors">Claves Criptográficas Públicas</li><li class="font-body-sm text-body-sm text-text-secondary hover:text-text-primary cursor-pointer transition-colors">Centro de Transparencia</li></ul></div></div><div class="flex flex-col md:flex-row items-center justify-between pt-space-lg text-text-secondary font-body-sm text-body-sm gap-space-sm border-t border-border-subtle"><div>© 2025 TechShield Hardware &amp; Mobile Exchange Inc. Todos los derechos reservados.</div><div class="flex items-center gap-space-md font-label-mono-sm text-label-mono-sm text-text-muted"><span>HASH: 8F2A9B1C</span><span>VERIFIED BUILD V2.4.1</span></div></div></div></footer></body></html>

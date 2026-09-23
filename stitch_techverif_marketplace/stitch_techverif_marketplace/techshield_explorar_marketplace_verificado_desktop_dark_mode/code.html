@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "secondary-container": "#00a572",
+          "on-tertiary-fixed-variant": "#004e5c",
+          "on-primary": "#002e6a",
+          "accent-emerald-bright": "#34d399",
+          "tertiary-container": "#009eb9",
+          "on-primary-container": "#00285d",
+          "on-secondary-fixed-variant": "#005236",
+          "error": "#ffb4ab",
+          "on-secondary-container": "#00311f",
+          "tertiary-fixed": "#acedff",
+          "on-tertiary-fixed": "#001f26",
+          "surface-container-lowest": "#060e20",
+          "surface-container-low": "#131b2e",
+          "surface-variant": "#2d3449",
+          "border-active": "#334155",
+          "surface-bright": "#31394d",
+          "on-primary-fixed": "#001a42",
+          "outline": "#8c909f",
+          "on-error": "#690005",
+          "outline-variant": "#424754",
+          "surface-dim": "#0b1326",
+          "on-surface-variant": "#94a3b8",
+          "surface-container-high": "#222a3d",
+          "tertiary": "#4cd7f6",
+          "diagnostic-amber": "#f59e0b",
+          "surface-card": "#111827",
+          "primary-container": "#1e40af",
+          "surface-elevated": "#1e293b",
+          "surface-tint": "#adc6ff",
+          "inverse-primary": "#005ac2",
+          "accent-cyan": "#06b6d4",
+          "text-muted": "#64748b",
+          "on-tertiary": "#003640",
+          "error-container": "#93000a",
+          "secondary-fixed-dim": "#4edea3",
+          "inverse-on-surface": "#283044",
+          "on-tertiary-container": "#002f38",
+          "primary": "#3b82f6",
+          "tertiary-fixed-dim": "#4cd7f6",
+          "surface": "#0b1326",
+          "accent-blue-bright": "#60a5fa",
+          "on-secondary-fixed": "#002113",
+          "on-error-container": "#ffdad6",
+          "surface-container": "#171f33",
+          "on-primary-fixed-variant": "#004395",
+          "on-secondary": "#003824",
+          "on-surface": "#f1f5f9",
+          "text-secondary": "#94a3b8",
+          "background": "#0b1326",
+          "on-background": "#f1f5f9",
+          "secondary-fixed": "#6ffbbe",
+          "text-primary": "#f8fafc",
+          "surface-container-highest": "#2d3449",
+          "diagnostic-red": "#ef4444",
+          "primary-fixed-dim": "#adc6ff",
+          "inverse-surface": "#dae2fd",
+          "border-subtle": "#1e293b",
+          "secondary": "#10b981",
+          "canvas-base": "#0a0f1d",
+          "primary-fixed": "#d8e2ff"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.125rem",
+          "lg": "0.25rem",
+          "xl": "0.5rem",
+          "full": "0.75rem"
+        },
+        "spacing": {
+          "space-md": "1rem",
+          "gutter": "1.5rem",
+          "gutter-sm": "1rem",
+          "space-lg": "1.5rem",
+          "margin-sm": "1rem",
+          "space-xs": "0.25rem",
+          "space-sm": "0.5rem",
+          "margin": "2rem",
+          "space-xl": "2.5rem"
+        },
+        "fontFamily": {
+          "display": [
+            "Inter"
+          ],
+          "body-sm": [
+            "Inter"
+          ],
+          "headline-lg-mobile": [
+            "Inter"
+          ],
+          "headline-sm": [
+            "Inter"
+          ],
+          "body-md": [
+            "Inter"
+          ],
+          "headline-lg": [
+            "Inter"
+          ],
+          "body-lg": [
+            "Inter"
+          ],
+          "label-mono-md": [
+            "JetBrains Mono"
+          ],
+          "label-mono-sm": [
+            "JetBrains Mono"
+          ],
+          "headline-md": [
+            "Inter"
+          ],
+          "label-mono-lg": [
+            "JetBrains Mono"
+          ]
+        },
+        "fontSize": {
+          "display": [
+            "3rem",
+            {
+              "lineHeight": "3.5rem",
+              "letterSpacing": "-0.03em",
+              "fontWeight": "700"
+            }
+          ],
+          "body-sm": [
+            "0.75rem",
+            {
+              "lineHeight": "1.25rem",
+              "letterSpacing": "0.01em",
+              "fontWeight": "400"
+            }
+          ],
+          "headline-lg-mobile": [
+            "1.75rem",
+            {
+              "lineHeight": "2.25rem",
+              "letterSpacing": "-0.02em",
+              "fontWeight": "700"
+            }
+          ],
+          "headline-sm": [
+            "1.25rem",
+            {
+              "lineHeight": "1.75rem",
+              "letterSpacing": "-0.015em",
+              "fontWeight": "600"
+            }
+          ],
+          "body-md": [
+            "0.875rem",
+            {
+              "lineHeight": "1.5rem",
+              "letterSpacing": "0em",
+              "fontWeight": "400"
+            }
+          ],
+          "headline-lg": [
+            "2.25rem",
+            {
+              "lineHeight": "2.75rem",
+              "letterSpacing": "-0.025em",
+              "fontWeight": "700"
+            }
+          ],
+          "body-lg": [
+            "1.125rem",
+            {
+              "lineHeight": "1.75rem",
+              "letterSpacing": "-0.01em",
+              "fontWeight": "400"
+            }
+          ],
+          "label-mono-md": [
+            "0.75rem",
+            {
+              "lineHeight": "1.125rem",
+              "letterSpacing": "0.02em",
+              "fontWeight": "500"
+            }
+          ],
+          "label-mono-sm": [
+            "0.6875rem",
+            {
+              "lineHeight": "1rem",
+              "letterSpacing": "0.05em",
+              "fontWeight": "500"
+            }
+          ],
+          "headline-md": [
+            "1.5rem",
+            {
+              "lineHeight": "2rem",
+              "letterSpacing": "-0.02em",
+              "fontWeight": "600"
+            }
+          ],
+          "label-mono-lg": [
+            "0.875rem",
+            {
+              "lineHeight": "1.25rem",
+              "letterSpacing": "-0.01em",
+              "fontWeight": "600"
+            }
+          ]
+        }
+      },
+    },
+  }
+</script></head><body class="bg-background font-body-md text-on-surface antialiased selection:bg-secondary/30 selection:text-secondary"><header class="fixed top-0 left-0 right-0 w-full z-50 bg-[#060e20]/90 backdrop-blur-xl border-b border-[#1e293b] shadow-[0_4px_20px_rgba(0,0,0,0.4)]"><div class="h-20 max-w-7xl mx-auto px-margin flex items-center justify-between gap-space-lg"><div class="flex items-center gap-space-md shrink-0"><a class="flex items-center gap-space-sm" data-path="explorar-mercado" href="#"><div class="p-1 rounded-lg bg-[#131b2e] border border-[#1e293b] flex items-center justify-center"><img alt="Modern minimalist tech logo for 'TechShield Hardware &amp; Mobile Exchange'" class="h-7 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1VOXNagpsFrICWmiTbOWuLsB5bG2Y4miKwXXygSH9jruLFlxj9sx56eUnBMn_shwAQEE1ZBI6QnrEcFH_d98bhrh4BV05mJhJnyQ7gUC_lJVdi5kuzFVyr7qacg8NQhpJ2auCeGtL0D1rh00-w5c672PrQ20kiFD68NOQvqC6HLysRobCY_nmffimDpxGzhLgaNzYIGTS-ll4PDrnSrWAJ7Lwaq0qQxEv7xlsjaYhzmk45WTC2NF4QyjA"/></div><div class="flex flex-col"><span class="font-headline-sm text-headline-sm tracking-tight text-on-surface leading-none">TechShield</span><span class="font-label-mono-sm text-label-mono-sm text-secondary uppercase tracking-wider">Hardware Exchange</span></div></a></div><div class="flex-1 max-w-xl mx-space-sm hidden lg:block"><div class="relative flex items-center w-full bg-[#131b2e] border border-[#1e293b] focus-within:border-primary/70 rounded-lg px-space-md py-space-xs transition-colors"><span class="material-symbols-outlined text-[#94a3b8] text-lg mr-space-sm">search</span><input class="w-full bg-transparent border-0 text-on-surface placeholder:text-text-muted font-body-md text-body-md focus:outline-none focus:ring-0" placeholder="Buscar procesadores, GPUs, smartphones verificados..." type="text"/><span class="shrink-0 font-label-mono-sm text-label-mono-sm bg-[#1e293b] text-[#94a3b8] border border-[#334155] px-space-xs py-0.5 rounded-DEFAULT">Ctrl + K</span></div></div><nav class="hidden xl:flex items-center gap-space-md shrink-0"><a aria-current="page" class="px-space-sm py-space-xs transition-colors bg-[#131b2e] border border-[#334155] text-primary font-bold rounded-lg" data-path="explorar-mercado" href="#">Explorar Mercado</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface px-space-sm py-space-xs transition-colors" data-path="custodia-escrow" href="#">Cómo Funciona la Custodia</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface px-space-sm py-space-xs transition-colors" data-path="servicios-de-auditoria" href="#">Servicios de Auditoría</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface px-space-sm py-space-xs transition-colors" data-path="vender-hardware" href="#">Vender Hardware</a></nav><div class="flex items-center gap-space-md shrink-0"><div class="hidden sm:flex items-center gap-space-xs bg-[#131b2e] border border-secondary/30 px-space-sm py-space-xs rounded-lg"><span class="material-symbols-outlined text-secondary text-sm">verified_user</span><div class="flex flex-col"><span class="font-label-mono-sm text-label-mono-sm text-secondary font-bold uppercase leading-none">Custodia Escrow</span><span class="font-label-mono-sm text-label-mono-sm text-on-surface-variant leading-none">100% Protegida</span></div></div><button aria-label="Notificaciones" class="relative p-space-xs rounded-full hover:bg-[#131b2e] border border-transparent hover:border-[#1e293b] text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-xl">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-diagnostic-red ring-2 ring-[#060e20]"></span></button><a class="flex items-center gap-space-xs p-space-xs rounded-full hover:bg-[#131b2e] border border-[#1e293b] transition-colors" data-path="perfil-de-usuario" href="#"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-1 ring-[#334155]" src="https://lh3.googleusercontent.com/aida/AEtjO1XThamQfshHmydO60Wwsa5jRy2EEA9tmIoJlC0wlVkUonGH4ywqzynRuMO5o1AKDZ8b14Pb7dhBItqpYql3uyZ-kKsMDNjaoQToO9jrrWXaIGoyzNih-C_ODkNR9IxKElymn4Ep1d4VbaIgI-hRRPZGMFXjbzE6acEAx24D9ghqkmFfmaaAyYCkl4HK1B2_ptztZuFkDoYDgU-kGwh4tbV_6mqXtL-WxItK1kIhaLnEq4l_4WeQGIAS8w"/><span class="material-symbols-outlined text-on-surface-variant text-base hidden sm:block">expand_more</span></a></div></div></header><main class="w-full pt-20 bg-background min-h-screen"><div class="flex flex-col w-full">
+<!-- Top Trust & Protocol Escrow Banner -->
+<section class="w-full bg-[#060e20] border-b border-[#1e293b] py-space-md">
+<div class="max-w-7xl mx-auto px-margin">
+<div class="bg-[#131b2e] border border-[#1e293b] rounded-xl p-space-lg shadow-lg flex flex-col xl:flex-row items-start xl:items-center justify-between gap-space-lg">
+<div class="flex items-start gap-space-md max-w-2xl">
+<div class="w-12 h-12 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-secondary text-2xl" style="font-variation-settings: 'FILL' 1;">shield_lock</span>
+</div>
+<div class="space-y-1">
+<div class="flex items-center gap-space-sm flex-wrap">
+<span class="font-label-mono-sm text-label-mono-sm text-secondary uppercase font-bold tracking-wider">Protocolo Fiduciario Institucional</span>
+<span class="px-space-xs py-0.5 bg-secondary/20 border border-secondary/40 text-secondary font-label-mono-sm text-label-mono-sm rounded-DEFAULT font-bold">ESTADO ACTIVO</span>
+</div>
+<h1 class="font-headline-sm text-headline-sm text-on-surface">Garantía Técnica Blindada &amp; Custodia Escrow</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Tus fondos permanecen asegurados en cuenta transitoria fiduciaria. El pago no se transfiere al vendedor hasta que el laboratorio certifica integridad de pines, prueba de estrés de silicio y reporte criptográfico inmutable.
+            </p>
+</div>
+</div>
+<!-- Metric Badges Array -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-space-sm w-full xl:w-auto shrink-0">
+<div class="bg-[#0b1326] border border-[#1e293b] p-space-sm rounded-lg flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-xl">biotech</span>
+<div>
+<div class="font-label-mono-sm text-label-mono-sm font-bold text-on-surface">Micro 40x</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Pines &amp; Balling</div>
+</div>
+</div>
+<div class="bg-[#0b1326] border border-[#1e293b] p-space-sm rounded-lg flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-xl">speed</span>
+<div>
+<div class="font-label-mono-sm text-label-mono-sm font-bold text-on-surface">Estrés Furmark</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">45 min carga 100%</div>
+</div>
+</div>
+<div class="bg-[#0b1326] border border-[#1e293b] p-space-sm rounded-lg flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-tertiary text-xl">qr_code_2</span>
+<div>
+<div class="font-label-mono-sm text-label-mono-sm font-bold text-on-surface">SHA-256</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Hash pericial</div>
+</div>
+</div>
+<div class="bg-[#0b1326] border border-[#1e293b] p-space-sm rounded-lg flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-xl">verified</span>
+<div>
+<div class="font-label-mono-sm text-label-mono-sm font-bold text-on-surface">90 Días</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Reemplazo directo</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Marketplace Main Layout (Sidebar + Grid) -->
+<section class="w-full py-space-lg">
+<div class="max-w-7xl mx-auto px-margin">
+<div class="flex flex-col lg:flex-row gap-space-lg items-start">
+<!-- Left Diagnostic & Specs Filter Sidebar (w-72 shrink-0) -->
+<aside class="w-full lg:w-72 shrink-0 space-y-space-md">
+<div class="bg-[#131b2e] border border-[#1e293b] rounded-xl p-space-md shadow-sm space-y-space-md">
+<!-- Filter Header -->
+<div class="flex items-center justify-between pb-space-xs border-b border-[#1e293b]">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-lg">tune</span>
+<span class="font-label-mono-lg text-label-mono-lg uppercase font-bold text-on-surface">Filtro Forense</span>
+</div>
+<button class="font-label-mono-sm text-label-mono-sm text-primary hover:text-accent-blue-bright hover:underline" type="button">Reiniciar</button>
+</div>
+<!-- Categories -->
+<div class="space-y-space-xs">
+<label class="font-label-mono-sm text-label-mono-sm uppercase text-text-muted font-semibold tracking-wider">Categoría</label>
+<div class="space-y-1">
+<label class="flex items-center justify-between p-space-xs rounded-lg hover:bg-[#1a2238] cursor-pointer transition-colors group">
+<div class="flex items-center gap-space-xs">
+<input checked="" class="w-4 h-4 rounded-DEFAULT text-secondary bg-[#0b1326] border-[#334155] focus:ring-0 focus:ring-offset-0" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors">CPUs / Procesadores</span>
+</div>
+<span class="font-label-mono-sm text-label-mono-sm text-text-muted">148</span>
+</label>
+<label class="flex items-center justify-between p-space-xs rounded-lg hover:bg-[#1a2238] cursor-pointer transition-colors group">
+<div class="flex items-center gap-space-xs">
+<input checked="" class="w-4 h-4 rounded-DEFAULT text-secondary bg-[#0b1326] border-[#334155] focus:ring-0 focus:ring-offset-0" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors">GPUs / Gráficas</span>
+</div>
+<span class="font-label-mono-sm text-label-mono-sm text-text-muted">94</span>
+</label>
+<label class="flex items-center justify-between p-space-xs rounded-lg hover:bg-[#1a2238] cursor-pointer transition-colors group">
+<div class="flex items-center gap-space-xs">
+<input checked="" class="w-4 h-4 rounded-DEFAULT text-secondary bg-[#0b1326] border-[#334155] focus:ring-0 focus:ring-offset-0" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors">Celulares / Móviles</span>
+</div>
+<span class="font-label-mono-sm text-label-mono-sm text-text-muted">212</span>
+</label>
+<label class="flex items-center justify-between p-space-xs rounded-lg hover:bg-[#1a2238] cursor-pointer transition-colors group">
+<div class="flex items-center gap-space-xs">
+<input class="w-4 h-4 rounded-DEFAULT text-secondary bg-[#0b1326] border-[#334155] focus:ring-0 focus:ring-offset-0" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors">Placas Base &amp; VRM</span>
+</div>
+<span class="font-label-mono-sm text-label-mono-sm text-text-muted">63</span>
+</label>
+<label class="flex items-center justify-between p-space-xs rounded-lg hover:bg-[#1a2238] cursor-pointer transition-colors group">
+<div class="flex items-center gap-space-xs">
+<input class="w-4 h-4 rounded-DEFAULT text-secondary bg-[#0b1326] border-[#334155] focus:ring-0 focus:ring-offset-0" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors">Memorias RAM &amp; SSD</span>
+</div>
+<span class="font-label-mono-sm text-label-mono-sm text-text-muted">87</span>
+</label>
+</div>
+</div>
+<!-- Certification Level -->
+<div class="space-y-space-xs pt-space-xs border-t border-[#1e293b]">
+<label class="font-label-mono-sm text-label-mono-sm uppercase text-text-muted font-semibold tracking-wider">Nivel Certificación</label>
+<div class="space-y-1">
+<label class="flex items-center gap-space-xs p-space-xs rounded-lg hover:bg-[#1a2238] cursor-pointer">
+<input class="w-4 h-4 text-primary bg-[#0b1326] border-[#334155] focus:ring-0" name="cert_lvl" type="radio"/>
+<span class="font-body-sm text-body-sm text-on-surface">Sellado de Fábrica (Nuevo)</span>
+</label>
+<label class="flex items-center gap-space-xs p-space-xs rounded-lg hover:bg-[#1a2238] cursor-pointer bg-[#0b1326] border border-secondary/30">
+<input checked="" class="w-4 h-4 text-secondary bg-[#0b1326] border-secondary focus:ring-0" name="cert_lvl" type="radio"/>
+<span class="font-body-sm text-body-sm font-semibold text-secondary">Grado A+ Laboratorio TechShield</span>
+</label>
+<label class="flex items-center gap-space-xs p-space-xs rounded-lg hover:bg-[#1a2238] cursor-pointer">
+<input class="w-4 h-4 text-primary bg-[#0b1326] border-[#334155] focus:ring-0" name="cert_lvl" type="radio"/>
+<span class="font-body-sm text-body-sm text-on-surface">Grado B (Marcas cosméticas)</span>
+</label>
+</div>
+</div>
+<!-- Audit Status Checkboxes -->
+<div class="space-y-space-xs pt-space-xs border-t border-[#1e293b]">
+<label class="font-label-mono-sm text-label-mono-sm uppercase text-text-muted font-semibold tracking-wider">Telemetría de Auditoría</label>
+<div class="space-y-1.5">
+<label class="flex items-center gap-space-xs cursor-pointer text-on-surface hover:text-primary transition-colors">
+<input checked="" class="w-4 h-4 rounded-DEFAULT text-secondary bg-[#0b1326] border-[#334155] focus:ring-0" type="checkbox"/>
+<span class="font-body-sm text-body-sm">Telemetría térmica en vivo</span>
+</label>
+<label class="flex items-center gap-space-xs cursor-pointer text-on-surface hover:text-primary transition-colors">
+<input checked="" class="w-4 h-4 rounded-DEFAULT text-secondary bg-[#0b1326] border-[#334155] focus:ring-0" type="checkbox"/>
+<span class="font-body-sm text-body-sm">Informe pericial PDF incluido</span>
+</label>
+<label class="flex items-center gap-space-xs cursor-pointer text-on-surface hover:text-primary transition-colors">
+<input checked="" class="w-4 h-4 rounded-DEFAULT text-secondary bg-[#0b1326] border-[#334155] focus:ring-0" type="checkbox"/>
+<span class="font-body-sm text-body-sm">Batería ≥ 90% (Móviles)</span>
+</label>
+</div>
+</div>
+<!-- Price Range -->
+<div class="space-y-space-xs pt-space-xs border-t border-[#1e293b]">
+<div class="flex justify-between items-center">
+<label class="font-label-mono-sm text-label-mono-sm uppercase text-text-muted font-semibold tracking-wider">Rango Precio</label>
+<span class="font-label-mono-sm text-label-mono-sm text-primary font-bold">$150 - $750 USD</span>
+</div>
+<input class="w-full accent-primary h-1.5 bg-[#0b1326] border border-[#1e293b] rounded-lg cursor-pointer" max="1200" min="100" type="range" value="750"/>
+<div class="flex items-center justify-between text-text-muted font-label-mono-sm text-label-mono-sm">
+<span>$100</span>
+<span>$500</span>
+<span>$1200+</span>
+</div>
+</div>
+<!-- Socket & Architecture Tags -->
+<div class="space-y-space-xs pt-space-xs border-t border-[#1e293b]">
+<label class="font-label-mono-sm text-label-mono-sm uppercase text-text-muted font-semibold tracking-wider">Socket &amp; Arquitectura</label>
+<div class="flex flex-wrap gap-1.5">
+<button class="px-space-xs py-1 bg-primary text-white font-label-mono-sm text-label-mono-sm rounded-DEFAULT font-bold" type="button">AM5</button>
+<button class="px-space-xs py-1 bg-[#0b1326] hover:bg-[#1a2238] border border-[#1e293b] text-on-surface-variant hover:text-on-surface font-label-mono-sm text-label-mono-sm rounded-DEFAULT transition-colors" type="button">LGA1700</button>
+<button class="px-space-xs py-1 bg-[#0b1326] hover:bg-[#1a2238] border border-[#1e293b] text-on-surface-variant hover:text-on-surface font-label-mono-sm text-label-mono-sm rounded-DEFAULT transition-colors" type="button">AM4</button>
+<button class="px-space-xs py-1 bg-[#0b1326] hover:bg-[#1a2238] border border-[#1e293b] text-on-surface-variant hover:text-on-surface font-label-mono-sm text-label-mono-sm rounded-DEFAULT transition-colors" type="button">Apple Silicon</button>
+<button class="px-space-xs py-1 bg-[#0b1326] hover:bg-[#1a2238] border border-[#1e293b] text-on-surface-variant hover:text-on-surface font-label-mono-sm text-label-mono-sm rounded-DEFAULT transition-colors" type="button">Snapdragon 8 Gen 2</button>
+</div>
+</div>
+</div>
+<!-- Lab Inspection Trust Widget -->
+<div class="bg-gradient-to-br from-[#131b2e] to-[#0b1326] border border-[#1e293b] p-space-md rounded-xl space-y-space-xs shadow-md">
+<div class="flex items-center gap-space-xs text-secondary font-label-mono-sm text-label-mono-sm uppercase font-bold">
+<span class="material-symbols-outlined text-base">verified_user</span>
+<span>Laboratorio Central</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Tasa de rechazo técnico del 14.8%: sólo los componentes con 100% de integridad pasan la custodia y se publican con seguro.
+            </p>
+<div class="pt-space-xs">
+<a class="inline-flex items-center gap-1 font-label-mono-sm text-label-mono-sm text-primary hover:text-accent-blue-bright font-bold hover:underline" href="#">
+<span>Ver protocolo de laboratorio</span>
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Right Main Content Canvas -->
+<div class="flex-1 w-full space-y-space-md">
+<!-- Quick Filters & Sorting Bar -->
+<div class="bg-[#131b2e] border border-[#1e293b] p-space-sm sm:p-space-md rounded-xl shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-xs flex-wrap">
+<span class="font-label-mono-sm text-label-mono-sm text-text-muted uppercase font-semibold">Vistas rápidas:</span>
+<button class="px-space-sm py-1 rounded-DEFAULT bg-primary/20 border border-primary/50 text-accent-blue-bright font-label-mono-sm text-label-mono-sm font-bold" type="button">Todos (6)</button>
+<button class="px-space-sm py-1 rounded-DEFAULT bg-[#0b1326] border border-[#1e293b] hover:border-[#334155] text-on-surface-variant hover:text-on-surface font-label-mono-sm text-label-mono-sm transition-colors" type="button">GPU furmark &lt; 70°C</button>
+<button class="px-space-sm py-1 rounded-DEFAULT bg-[#0b1326] border border-[#1e293b] hover:border-[#334155] text-on-surface-variant hover:text-on-surface font-label-mono-sm text-label-mono-sm transition-colors" type="button">CPUs Delid / 3D V-Cache</button>
+<button class="px-space-sm py-1 rounded-DEFAULT bg-[#0b1326] border border-[#1e293b] hover:border-[#334155] text-on-surface-variant hover:text-on-surface font-label-mono-sm text-label-mono-sm transition-colors" type="button">Batería &gt; 95%</button>
+</div>
+<div class="flex items-center gap-space-xs self-end md:self-auto shrink-0">
+<span class="font-label-mono-sm text-label-mono-sm text-text-muted uppercase">Ordenar:</span>
+<select class="bg-[#0b1326] border border-[#1e293b] text-on-surface font-label-mono-sm text-label-mono-sm py-1 px-space-sm rounded-DEFAULT focus:outline-none focus:border-primary cursor-pointer">
+<option>Puntaje Auditoría (42/42 pts)</option>
+<option>Precio: menor a mayor</option>
+<option>Precio: mayor a menor</option>
+<option>Más recientes verificados</option>
+</select>
+</div>
+</div>
+<!-- Product Grid (3 Columns) -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-space-md">
+<!-- Card 1: AMD Ryzen 7 7800X3D -->
+<article class="bg-[#131b2e] border border-[#1e293b] hover:border-[#334155] rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:shadow-black/40 transition-all flex flex-col group">
+<div class="relative aspect-[4/3] bg-[#060e20] overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90 group-hover:opacity-100" data-alt="Close up forensic lab photograph of an authentic AMD Ryzen 7 7800X3D AM5 processor resting on a sterile anti-static foam tray, immaculate golden contact pads visible, clean silver heat spreader with clear laser engraved serial markings, precision tech workshop lighting, cool cobalt tone." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCNVfu6zQNkweOgqcd8RfB2MtGYyDwekTLUPsdQT5fEOtRYqeLzXpx4uEcC9HxKw8beV5_XlCihpArhIckqDA7FvMJs28MP8UvXNWJxqSSKY9dpl75Eo5SE1jy0BRTcse18rFbgWaUIcS5gfGWY2aRD2MZVWJUzDmefwzQJX4uaGmnToqiaM_3VmZdgYKUxq85j0fC6cxM5Nl7PRPxKOoyBBayDqMr6szJ7cUgXULOoo0diPdsGZA"/>
+<div class="absolute top-2 left-2 flex flex-col gap-1">
+<span class="px-space-xs py-0.5 bg-secondary text-[#002113] font-label-mono-sm text-label-mono-sm rounded-DEFAULT font-bold flex items-center gap-1 shadow-md">
+<span class="material-symbols-outlined text-xs">verified</span> GRADO A+ LAB
+                  </span>
+<span class="px-space-xs py-0.5 bg-[#060e20]/90 border border-[#1e293b] text-on-surface font-label-mono-sm text-label-mono-sm rounded-DEFAULT">AM5 • 8C/16T</span>
+</div>
+<div class="absolute bottom-2 right-2 bg-[#060e20]/95 border border-secondary/30 backdrop-blur-sm px-space-xs py-0.5 rounded-DEFAULT font-label-mono-sm text-label-mono-sm text-secondary font-bold">
+                  HASH: 0x8F9B..42
+                </div>
+</div>
+<div class="p-space-md flex-1 flex flex-col justify-between space-y-space-sm">
+<div>
+<div class="flex items-center justify-between">
+<span class="font-label-mono-sm text-label-mono-sm text-text-muted uppercase font-semibold">Procesador Gaming</span>
+<span class="font-label-mono-sm text-label-mono-sm text-secondary font-bold">SCORE: 42/42 PTS</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface mt-1 group-hover:text-primary transition-colors">
+                    AMD Ryzen 7 7800X3D
+                  </h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+                    Arquitectura Zen 4 con 3D V-Cache. Caja original, pines AM5 y capacitores SMD inspeccionados a 40x.
+                  </p>
+</div>
+<!-- Forensic Diagnostic Indicators -->
+<div class="bg-[#0b1326] border border-[#1e293b] p-space-xs rounded-lg space-y-1">
+<div class="flex justify-between items-center font-label-mono-sm text-label-mono-sm">
+<span class="text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-secondary text-xs">check_circle</span> V-Cache &amp; Pines
+                    </span>
+<span class="text-secondary font-bold">100% Sin daños</span>
+</div>
+<div class="flex justify-between items-center font-label-mono-sm text-label-mono-sm">
+<span class="text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-primary text-xs">thermostat</span> Temp Max Cinebench
+                    </span>
+<span class="text-on-surface font-bold">78.2°C (AIO 240)</span>
+</div>
+</div>
+<!-- Price & Escrow Action -->
+<div class="pt-space-xs flex items-center justify-between border-t border-[#1e293b]">
+<div>
+<div class="font-headline-sm text-headline-sm font-bold text-on-surface">$340 <span class="text-body-sm font-normal text-on-surface-variant">USD</span></div>
+<span class="font-label-mono-sm text-label-mono-sm text-secondary">Envío con seguro incluido</span>
+</div>
+<button class="bg-secondary hover:bg-emerald-500 text-[#002113] px-space-sm py-space-xs rounded-lg font-label-mono-sm text-label-mono-sm font-bold flex items-center gap-1 transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-sm">lock</span>
+<span>Comprar Escrow</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Card 2: Samsung Galaxy S23 Ultra -->
+<article class="bg-[#131b2e] border border-[#1e293b] hover:border-[#334155] rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:shadow-black/40 transition-all flex flex-col group">
+<div class="relative aspect-[4/3] bg-[#060e20] overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90 group-hover:opacity-100" data-alt="Studio technical product display of a pristine Samsung Galaxy S23 Ultra smartphone in Phantom Black color, angled front to back showcasing spotless Dynamic AMOLED screen and pristine triple camera lenses, studio softbox illumination, reflection-free surface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAe8xBtG1o8jy9PsVlt__mX31ip397U-Z5yip7l9_4mcsDC-0qxABwjVY3zQZ2mJETkm1JSI-Wm2IR17VO6o6TX1DGdHgtRD_VgC3xEdlBobdsjxJRCMXMvN7mWUIBXzLz98EIQEnSMqXvyPSIv6w_3yU3nynLrIhUnrMO0mqo-jhIj6asbkuI4wgmi4HYp_mSv74kNmQQW2wt4tD9kftzzht3Oj4WSrKVwJioeNbQ01Oey3tj_lEE"/>
+<div class="absolute top-2 left-2 flex flex-col gap-1">
+<span class="px-space-xs py-0.5 bg-secondary text-[#002113] font-label-mono-sm text-label-mono-sm rounded-DEFAULT font-bold flex items-center gap-1 shadow-md">
+<span class="material-symbols-outlined text-xs">verified</span> GRADO A+ IMPECABLE
+                  </span>
+<span class="px-space-xs py-0.5 bg-[#060e20]/90 border border-[#1e293b] text-on-surface font-label-mono-sm text-label-mono-sm rounded-DEFAULT">256GB • 12GB RAM</span>
+</div>
+<div class="absolute bottom-2 right-2 bg-[#060e20]/95 border border-secondary/30 backdrop-blur-sm px-space-xs py-0.5 rounded-DEFAULT font-label-mono-sm text-label-mono-sm text-secondary font-bold">
+                  IMEI LIMPIO GSMA
+                </div>
+</div>
+<div class="p-space-md flex-1 flex flex-col justify-between space-y-space-sm">
+<div>
+<div class="flex items-center justify-between">
+<span class="font-label-mono-sm text-label-mono-sm text-text-muted uppercase font-semibold">Smartphone Flagship</span>
+<span class="font-label-mono-sm text-label-mono-sm text-secondary font-bold">SCORE: 41/42 PTS</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface mt-1 group-hover:text-primary transition-colors">
+                    Galaxy S23 Ultra
+                  </h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+                    Snapdragon 8 Gen 2 for Galaxy. Pantalla Dynamic AMOLED 2X calibrada, teleobjetivo 10x óptico verificado.
+                  </p>
+</div>
+<!-- Forensic Diagnostic Indicators -->
+<div class="bg-[#0b1326] border border-[#1e293b] p-space-xs rounded-lg space-y-1">
+<div class="flex justify-between items-center font-label-mono-sm text-label-mono-sm">
+<span class="text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-secondary text-xs">battery_charging_full</span> Salud Batería
+                    </span>
+<span class="text-secondary font-bold">96% Real (OEM)</span>
+</div>
+<div class="flex justify-between items-center font-label-mono-sm text-label-mono-sm">
+<span class="text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-primary text-xs">tv</span> Panel &amp; Táctil
+                    </span>
+<span class="text-on-surface font-bold">0 Burn-in • 120Hz OK</span>
+</div>
+</div>
+<!-- Price & Escrow Action -->
+<div class="pt-space-xs flex items-center justify-between border-t border-[#1e293b]">
+<div>
+<div class="font-headline-sm text-headline-sm font-bold text-on-surface">$620 <span class="text-body-sm font-normal text-on-surface-variant">USD</span></div>
+<span class="font-label-mono-sm text-label-mono-sm text-secondary">Garantía 90 días</span>
+</div>
+<button class="bg-secondary hover:bg-emerald-500 text-[#002113] px-space-sm py-space-xs rounded-lg font-label-mono-sm text-label-mono-sm font-bold flex items-center gap-1 transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-sm">lock</span>
+<span>Comprar Escrow</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Card 3: NVIDIA RTX 3070 Ti FE -->
+<article class="bg-[#131b2e] border border-[#1e293b] hover:border-[#334155] rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:shadow-black/40 transition-all flex flex-col group">
+<div class="relative aspect-[4/3] bg-[#060e20] overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90 group-hover:opacity-100" data-alt="High angle forensic macro photo of an authentic NVIDIA GeForce RTX 3070 Ti Founders Edition graphics card resting inside an electrostatic inspection workstation, sleek dual-axial flow-through aluminum shroud, clean gold PCIe golden fingers, emerald and slate reflections." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmVBEOg2stINU8D2bEqPEkd--3bKZpH4_l2LfEfNbcdevkdpjkQ1Euqc44y9PzDxVLubHG6EqGI33wIsLE558rXyKkbv_Bo7eLXGET-CbeHVt8LMNS_twSxf1bPMSNvBsqzzZXwCP8u3xlhZRnBOo3h8RUZ2WOeui-YFZCF49wMgewbIu8300PRRQmoz7ERwAMGvmTjhHgR_xLMnhvrAEFmasPzPDDOPuHdGpCiKr9m6KT06m8lQM"/>
+<div class="absolute top-2 left-2 flex flex-col gap-1">
+<span class="px-space-xs py-0.5 bg-secondary text-[#002113] font-label-mono-sm text-label-mono-sm rounded-DEFAULT font-bold flex items-center gap-1 shadow-md">
+<span class="material-symbols-outlined text-xs">verified</span> TEST PASS FURMARK
+                  </span>
+<span class="px-space-xs py-0.5 bg-[#060e20]/90 border border-[#1e293b] text-on-surface font-label-mono-sm text-label-mono-sm rounded-DEFAULT">8GB GDDR6X • FE</span>
+</div>
+<div class="absolute bottom-2 right-2 bg-[#060e20]/95 border border-tertiary/30 backdrop-blur-sm px-space-xs py-0.5 rounded-DEFAULT font-label-mono-sm text-label-mono-sm text-tertiary font-bold">
+                  DELTA 11.4°C
+                </div>
+</div>
+<div class="p-space-md flex-1 flex flex-col justify-between space-y-space-sm">
+<div>
+<div class="flex items-center justify-between">
+<span class="font-label-mono-sm text-label-mono-sm text-text-muted uppercase font-semibold">Tarjeta Gráfica</span>
+<span class="font-label-mono-sm text-label-mono-sm text-secondary font-bold">SCORE: 42/42 PTS</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface mt-1 group-hover:text-primary transition-colors">
+                    NVIDIA RTX 3070 Ti FE
+                  </h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+                    Founders Edition original. Almohadillas térmicas de fábrica intactas, sin artefactos de memoria VRAM (MODS Pass).
+                  </p>
+</div>
+<!-- Forensic Diagnostic Indicators -->
+<div class="bg-[#0b1326] border border-[#1e293b] p-space-xs rounded-lg space-y-1">
+<div class="flex justify-between items-center font-label-mono-sm text-label-mono-sm">
+<span class="text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-secondary text-xs">heat_pump</span> Temperatura Núcleo
+                    </span>
+<span class="text-secondary font-bold">68.0°C Furmark Max</span>
+</div>
+<div class="flex justify-between items-center font-label-mono-sm text-label-mono-sm">
+<span class="text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-primary text-xs">memory</span> Test VRAM Mats/Mods
+                    </span>
+<span class="text-on-surface font-bold">0 Errores Registrados</span>
+</div>
+</div>
+<!-- Price & Escrow Action -->
+<div class="pt-space-xs flex items-center justify-between border-t border-[#1e293b]">
+<div>
+<div class="font-headline-sm text-headline-sm font-bold text-on-surface">$380 <span class="text-body-sm font-normal text-on-surface-variant">USD</span></div>
+<span class="font-label-mono-sm text-label-mono-sm text-secondary">Garantía térmica 90 días</span>
+</div>
+<button class="bg-secondary hover:bg-emerald-500 text-[#002113] px-space-sm py-space-xs rounded-lg font-label-mono-sm text-label-mono-sm font-bold flex items-center gap-1 transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-sm">lock</span>
+<span>Comprar Escrow</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Card 4: Intel Core i5-13600K -->
+<article class="bg-[#131b2e] border border-[#1e293b] hover:border-[#334155] rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:shadow-black/40 transition-all flex flex-col group">
+<div class="relative aspect-[4/3] bg-[#060e20] overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90 group-hover:opacity-100" data-alt="Laboratory quality photo of an Intel Core i5-13600K desktop processor LGA1700, resting beside its verified factory packaging with pristine holographic seal, sterile slate laboratory setting with high precision lighting, clean sharp details." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLfi5X396ZsaJAT-3lQzSH0Slbyd9QqRGxKxnbprCLL04lpVvmmnUFXsm2Ti02kRKc86I6B1Je1bPWoDi-R0cA2l2otqwkqvCBlQRqZfUHEEOdHQ2PbezGbAOXDS2WC-sK3pRE1UJXHNAFgQGcjujoNcq-OgIb9YFVFKeR7x9YU9c2pjnKAxNyARd81pACwQr3Hzwsg5Q3njjsd7yDVXZuetbvcFzLunKmJGVV-jBDj8alfz5QyII"/>
+<div class="absolute top-2 left-2 flex flex-col gap-1">
+<span class="px-space-xs py-0.5 bg-primary/20 border border-primary/40 text-accent-blue-bright font-label-mono-sm text-label-mono-sm rounded-DEFAULT font-bold flex items-center gap-1 shadow-md">
+<span class="material-symbols-outlined text-xs">verified</span> SELLO ORIGINAL
+                  </span>
+<span class="px-space-xs py-0.5 bg-[#060e20]/90 border border-[#1e293b] text-on-surface font-label-mono-sm text-label-mono-sm rounded-DEFAULT">LGA1700 • 14C/20T</span>
+</div>
+<div class="absolute bottom-2 right-2 bg-[#060e20]/95 border border-primary/30 backdrop-blur-sm px-space-xs py-0.5 rounded-DEFAULT font-label-mono-sm text-label-mono-sm text-accent-blue-bright font-bold">
+                  HOLOGRAMA INTEL OK
+                </div>
+</div>
+<div class="p-space-md flex-1 flex flex-col justify-between space-y-space-sm">
+<div>
+<div class="flex items-center justify-between">
+<span class="font-label-mono-sm text-label-mono-sm text-text-muted uppercase font-semibold">Procesador Raptor Lake</span>
+<span class="font-label-mono-sm text-label-mono-sm text-secondary font-bold">SCORE: 42/42 PTS</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface mt-1 group-hover:text-primary transition-colors">
+                    Intel Core i5-13600K
+                  </h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+                    6 P-Cores + 8 E-Cores hasta 5.1 GHz. Sello de caja verificado por fluorescencia UV, contactos LGA intactos.
+                  </p>
+</div>
+<!-- Forensic Diagnostic Indicators -->
+<div class="bg-[#0b1326] border border-[#1e293b] p-space-xs rounded-lg space-y-1">
+<div class="flex justify-between items-center font-label-mono-sm text-label-mono-sm">
+<span class="text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-secondary text-xs">security</span> Holograma Criptográfico
+                    </span>
+<span class="text-secondary font-bold">Validado Fabrica</span>
+</div>
+<div class="flex justify-between items-center font-label-mono-sm text-label-mono-sm">
+<span class="text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-primary text-xs">memory</span> Controlador DDR4/DDR5
+                    </span>
+<span class="text-on-surface font-bold">Dual IMC 6400MHz OK</span>
+</div>
+</div>
+<!-- Price & Escrow Action -->
+<div class="pt-space-xs flex items-center justify-between border-t border-[#1e293b]">
+<div>
+<div class="font-headline-sm text-headline-sm font-bold text-on-surface">$265 <span class="text-body-sm font-normal text-on-surface-variant">USD</span></div>
+<span class="font-label-mono-sm text-label-mono-sm text-secondary">Garantía 90 días</span>
+</div>
+<button class="bg-secondary hover:bg-emerald-500 text-[#002113] px-space-sm py-space-xs rounded-lg font-label-mono-sm text-label-mono-sm font-bold flex items-center gap-1 transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-sm">lock</span>
+<span>Comprar Escrow</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Card 5: Apple iPhone 14 Pro Max -->
+<article class="bg-[#131b2e] border border-[#1e293b] hover:border-[#334155] rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:shadow-black/40 transition-all flex flex-col group">
+<div class="relative aspect-[4/3] bg-[#060e20] overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90 group-hover:opacity-100" data-alt="Precision studio inspection view of an Apple iPhone 14 Pro Max smartphone in Deep Purple finish, showing the immaculate surgical steel edges, spotless display and dynamic island camera zone, technical calibration background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAM7TGzXkWSzR4yWjBGdghyQQZP_iTnvNyxQv44jLv44tMCEoKlgiSLCmpqfsQZoA-mXzlhprHwq71fsLm38WibhTBGYOo6OIelSO0LE1uFvTyLugBlbDGOcKiY6y09WNO0sscw4Zy7_wudo0WTot5yDLHOEipx-Mhj36L56DgpTOZB7LCRTtivTtHTSq01_q0xk6fuUTUYkea2Gr405mou1jpCOaNljILqAmsl9va4eUgSqr5x4Aw"/>
+<div class="absolute top-2 left-2 flex flex-col gap-1">
+<span class="px-space-xs py-0.5 bg-secondary text-[#002113] font-label-mono-sm text-label-mono-sm rounded-DEFAULT font-bold flex items-center gap-1 shadow-md">
+<span class="material-symbols-outlined text-xs">verified</span> GRADO A+ CERTIFICADO
+                  </span>
+<span class="px-space-xs py-0.5 bg-[#060e20]/90 border border-[#1e293b] text-on-surface font-label-mono-sm text-label-mono-sm rounded-DEFAULT">128GB • Deep Purple</span>
+</div>
+<div class="absolute bottom-2 right-2 bg-[#060e20]/95 border border-secondary/30 backdrop-blur-sm px-space-xs py-0.5 rounded-DEFAULT font-label-mono-sm text-label-mono-sm text-secondary font-bold">
+                  42 CICLOS BATERÍA
+                </div>
+</div>
+<div class="p-space-md flex-1 flex flex-col justify-between space-y-space-sm">
+<div>
+<div class="flex items-center justify-between">
+<span class="font-label-mono-sm text-label-mono-sm text-text-muted uppercase font-semibold">Smartphone iOS</span>
+<span class="font-label-mono-sm text-label-mono-sm text-secondary font-bold">SCORE: 42/42 PTS</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface mt-1 group-hover:text-primary transition-colors">
+                    iPhone 14 Pro Max
+                  </h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+                    A16 Bionic. Piezas 100% genuinas Apple confirmadas por lectura Sysdiagnose. Libre para cualquier operadora.
+                  </p>
+</div>
+<!-- Forensic Diagnostic Indicators -->
+<div class="bg-[#0b1326] border border-[#1e293b] p-space-xs rounded-lg space-y-1">
+<div class="flex justify-between items-center font-label-mono-sm text-label-mono-sm">
+<span class="text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-secondary text-xs">battery_full</span> Batería Original OEM
+                    </span>
+<span class="text-secondary font-bold">98% Salud (42 Ciclos)</span>
+</div>
+<div class="flex justify-between items-center font-label-mono-sm text-label-mono-sm">
+<span class="text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-primary text-xs">face</span> Face ID &amp; TrueTone
+                    </span>
+<span class="text-on-surface font-bold">Sensores 100% Calibrados</span>
+</div>
+</div>
+<!-- Price & Escrow Action -->
+<div class="pt-space-xs flex items-center justify-between border-t border-[#1e293b]">
+<div>
+<div class="font-headline-sm text-headline-sm font-bold text-on-surface">$690 <span class="text-body-sm font-normal text-on-surface-variant">USD</span></div>
+<span class="font-label-mono-sm text-label-mono-sm text-secondary">iCloud desbloqueado limpio</span>
+</div>
+<button class="bg-secondary hover:bg-emerald-500 text-[#002113] px-space-sm py-space-xs rounded-lg font-label-mono-sm text-label-mono-sm font-bold flex items-center gap-1 transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-sm">lock</span>
+<span>Comprar Escrow</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Card 6: ASUS ROG Strix B650E-F Gaming WiFi -->
+<article class="bg-[#131b2e] border border-[#1e293b] hover:border-[#334155] rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:shadow-black/40 transition-all flex flex-col group">
+<div class="relative aspect-[4/3] bg-[#060e20] overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90 group-hover:opacity-100" data-alt="Technical bench inspection shot of an ASUS ROG Strix B650E-F Gaming motherboard, showcasing pristine socket AM5 pins, clean robust VRM heatsinks and PCIe Gen 5 slots, professional hardware forensic testing lab setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAT7yyzTt5j5S5vvBE3IoWXCRLipVLYox5pBde1C4JP8Nmj-CQliu51et4Cb8MnDJetpYUVlwIBKSI0CQrv-EaVvp4XmK-4PeTw8OZAhO9HPPybwal0wOKZClPaX9t3ltKrNq5qhv0mg6e5thUFUggfzWZqTIWtX-K5l6UptYCfd5hIVwpBCKPNAOsMBIwVpk5absyseylOA3z4nXa9hOnrNOB2Be0XJSBuXkc9GXhXVF89c3k20iQ"/>
+<div class="absolute top-2 left-2 flex flex-col gap-1">
+<span class="px-space-xs py-0.5 bg-secondary text-[#002113] font-label-mono-sm text-label-mono-sm rounded-DEFAULT font-bold flex items-center gap-1 shadow-md">
+<span class="material-symbols-outlined text-xs">verified</span> AUDITADO VRM &amp; SOCKET
+                  </span>
+<span class="px-space-xs py-0.5 bg-[#060e20]/90 border border-[#1e293b] text-on-surface font-label-mono-sm text-label-mono-sm rounded-DEFAULT">AM5 • DDR5 • PCIe 5.0</span>
+</div>
+<div class="absolute bottom-2 right-2 bg-[#060e20]/95 border border-secondary/30 backdrop-blur-sm px-space-xs py-0.5 rounded-DEFAULT font-label-mono-sm text-label-mono-sm text-secondary font-bold">
+                  BIOS V2204 FLASH OK
+                </div>
+</div>
+<div class="p-space-md flex-1 flex flex-col justify-between space-y-space-sm">
+<div>
+<div class="flex items-center justify-between">
+<span class="font-label-mono-sm text-label-mono-sm text-text-muted uppercase font-semibold">Placa Madre ATX</span>
+<span class="font-label-mono-sm text-label-mono-sm text-secondary font-bold">SCORE: 42/42 PTS</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface mt-1 group-hover:text-primary transition-colors">
+                    ASUS ROG Strix B650E-F
+                  </h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+                    12+2 etapas de potencia de 80A. Inspección de los 1718 pines del socket AM5 sin dobleces. Todos los canales RAM ensayados.
+                  </p>
+</div>
+<!-- Forensic Diagnostic Indicators -->
+<div class="bg-[#0b1326] border border-[#1e293b] p-space-xs rounded-lg space-y-1">
+<div class="flex justify-between items-center font-label-mono-sm text-label-mono-sm">
+<span class="text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-secondary text-xs">electric_bolt</span> Fases VRM 12+2
+                    </span>
+<span class="text-secondary font-bold">Rizado &lt; 12mV Estable</span>
+</div>
+<div class="flex justify-between items-center font-label-mono-sm text-label-mono-sm">
+<span class="text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-primary text-xs">grid_goldenratio</span> Pines Socket AM5
+                    </span>
+<span class="text-on-surface font-bold">1718/1718 Alineados</span>
+</div>
+</div>
+<!-- Price & Escrow Action -->
+<div class="pt-space-xs flex items-center justify-between border-t border-[#1e293b]">
+<div>
+<div class="font-headline-sm text-headline-sm font-bold text-on-surface">$195 <span class="text-body-sm font-normal text-on-surface-variant">USD</span></div>
+<span class="font-label-mono-sm text-label-mono-sm text-secondary">Accesorios y antena incluidos</span>
+</div>
+<button class="bg-secondary hover:bg-emerald-500 text-[#002113] px-space-sm py-space-xs rounded-lg font-label-mono-sm text-label-mono-sm font-bold flex items-center gap-1 transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-sm">lock</span>
+<span>Comprar Escrow</span>
+</button>
+</div>
+</div>
+</article>
+</div>
+<!-- Bottom Pagination / Inmutable Audit Footer note -->
+<div class="bg-[#131b2e] border border-[#1e293b] p-space-md rounded-xl shadow-sm flex flex-col sm:flex-row items-center justify-between gap-space-sm">
+<div class="font-label-mono-sm text-label-mono-sm text-text-muted">
+              Mostrando 6 de 601 componentes verificados con informe público SHA-256
+            </div>
+<div class="flex items-center gap-space-xs">
+<button class="p-space-xs rounded-DEFAULT bg-[#0b1326] border border-[#1e293b] text-on-surface-variant hover:text-on-surface hover:bg-[#1a2238] transition-colors" type="button">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<button class="px-space-sm py-1 rounded-DEFAULT bg-primary text-white font-label-mono-sm text-label-mono-sm font-bold" type="button">1</button>
+<button class="px-space-sm py-1 rounded-DEFAULT bg-[#0b1326] border border-[#1e293b] hover:bg-[#1a2238] text-on-surface font-label-mono-sm text-label-mono-sm transition-colors" type="button">2</button>
+<button class="px-space-sm py-1 rounded-DEFAULT bg-[#0b1326] border border-[#1e293b] hover:bg-[#1a2238] text-on-surface font-label-mono-sm text-label-mono-sm transition-colors" type="button">3</button>
+<span class="text-text-muted font-label-mono-sm text-label-mono-sm px-1">...</span>
+<button class="px-space-sm py-1 rounded-DEFAULT bg-[#0b1326] border border-[#1e293b] hover:bg-[#1a2238] text-on-surface font-label-mono-sm text-label-mono-sm transition-colors" type="button">24</button>
+<button class="p-space-xs rounded-DEFAULT bg-[#0b1326] border border-[#1e293b] text-on-surface-variant hover:text-on-surface hover:bg-[#1a2238] transition-colors" type="button">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Bottom CTA: Vender Hardware con Kit de Envío Seguro -->
+<section class="w-full py-space-xl">
+<div class="max-w-7xl mx-auto px-margin">
+<div class="bg-[#131b2e] border border-[#1e293b] rounded-xl shadow-lg p-space-lg md:p-space-xl flex flex-col md:flex-row items-center justify-between gap-space-lg">
+<div class="space-y-space-xs max-w-2xl">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-xl">inventory_2</span>
+<span class="font-label-mono-sm text-label-mono-sm uppercase text-secondary font-bold tracking-wider">Ventas de Particulares &amp; Empresas</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">
+            ¿Quieres vender hardware o teléfonos móviles?
+          </h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">
+            Certificamos tus componentes de forma gratuita en nuestro banco de pruebas. Vende hasta 3 veces más rápido con el sello de garantía TechShield y cobro directo vía custodia.
+          </p>
+<div class="flex items-center gap-space-md pt-space-xs text-on-surface font-label-mono-sm text-label-mono-sm flex-wrap">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-secondary text-base">check</span> Caja antiestática gratis</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-secondary text-base">check</span> Guía prepagada asegurada</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-secondary text-base">check</span> Liquidación en 24h</span>
+</div>
+</div>
+<div class="shrink-0 flex flex-col sm:flex-row gap-space-sm w-full md:w-auto">
+<a class="px-space-lg py-space-md bg-primary hover:bg-blue-600 text-white font-label-mono-lg text-label-mono-lg font-bold rounded-lg text-center transition-colors shadow-sm flex items-center justify-center gap-2" data-path="vender-hardware" href="#">
+<span>Solicitar Kit de Envío Seguro</span>
+<span class="material-symbols-outlined text-lg">local_shipping</span>
+</a>
+<a class="px-space-md py-space-md bg-[#0b1326] hover:bg-[#1a2238] border border-[#1e293b] text-on-surface font-label-mono-lg text-label-mono-lg font-semibold rounded-lg text-center transition-colors" data-path="servicios-de-auditoria" href="#">
+            Cómo evaluamos
+          </a>
+</div>
+</div>
+</div>
+</section>
+</div></main><footer class="w-full bg-[#060e20] border-t border-[#1e293b] py-space-xl"><div class="max-w-7xl mx-auto px-margin"><div class="bg-[#131b2e] border border-[#1e293b] rounded-xl p-space-lg mb-space-xl shadow-md"><div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-space-md items-center"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-secondary text-2xl">verified</span><div><div class="font-label-mono-sm text-label-mono-sm font-bold uppercase text-on-surface">Auditoría ISO/IPC</div><div class="font-body-sm text-body-sm text-on-surface-variant">Hardware certificado</div></div></div><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-primary text-2xl">lock</span><div><div class="font-label-mono-sm text-label-mono-sm font-bold uppercase text-on-surface">Fondos en Custodia</div><div class="font-body-sm text-body-sm text-on-surface-variant">Escrow institucional</div></div></div><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-tertiary text-2xl">fingerprint</span><div><div class="font-label-mono-sm text-label-mono-sm font-bold uppercase text-on-surface">Firma SHA-256</div><div class="font-body-sm text-body-sm text-on-surface-variant">Inmutabilidad de pruebas</div></div></div><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-primary text-2xl">health_and_safety</span><div><div class="font-label-mono-sm text-label-mono-sm font-bold uppercase text-on-surface">Garantía 90 Días</div><div class="font-body-sm text-body-sm text-on-surface-variant">Cobertura total de fallas</div></div></div><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-secondary text-2xl">support_agent</span><div><div class="font-label-mono-sm text-label-mono-sm font-bold uppercase text-on-surface">Peritaje 24/7</div><div class="font-body-sm text-body-sm text-on-surface-variant">Soporte técnico forense</div></div></div></div></div><div class="grid grid-cols-1 md:grid-cols-4 gap-space-lg mb-space-lg"><div class="space-y-space-sm"><div class="flex items-center gap-space-sm"><span class="font-headline-sm text-headline-sm tracking-tight text-on-surface">TechShield</span></div><p class="font-body-sm text-body-sm text-on-surface-variant">Plataforma de intermediación y auditoría forense para hardware informático y dispositivos móviles de alta gama con garantía escrow.</p></div><div><h4 class="font-label-mono-lg text-label-mono-lg text-on-surface mb-space-sm uppercase">Plataforma</h4><ul class="space-y-space-xs"><li class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface cursor-pointer transition-colors">Protocolo de Custodia</li><li class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface cursor-pointer transition-colors">Verificación de Socket &amp; VRAM</li><li class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface cursor-pointer transition-colors">Auditoría de Batería OEM</li><li class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface cursor-pointer transition-colors">Resolución de Disputas</li></ul></div><div><h4 class="font-label-mono-lg text-label-mono-lg text-on-surface mb-space-sm uppercase">Ecosistema</h4><ul class="space-y-space-xs"><li class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface cursor-pointer transition-colors">Tarjetas Gráficas Certificadas</li><li class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface cursor-pointer transition-colors">Procesadores &amp; Kits de Memoria</li><li class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface cursor-pointer transition-colors">Smartphones Grado A/B</li><li class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface cursor-pointer transition-colors">Laboratorios de Ensayo</li></ul></div><div><h4 class="font-label-mono-lg text-label-mono-lg text-on-surface mb-space-sm uppercase">Cumplimiento &amp; Seguridad</h4><ul class="space-y-space-xs"><li class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface cursor-pointer transition-colors">Términos de Escrow Mercantil</li><li class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface cursor-pointer transition-colors">Políticas de Devolución Técnica</li><li class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface cursor-pointer transition-colors">Claves Criptográficas Públicas</li><li class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface cursor-pointer transition-colors">Centro de Transparencia</li></ul></div></div><div class="flex flex-col md:flex-row items-center justify-between pt-space-lg border-t border-[#1e293b] text-on-surface-variant font-body-sm text-body-sm gap-space-sm"><div>© 2025 TechShield Hardware &amp; Mobile Exchange Inc. Todos los derechos reservados.</div><div class="flex items-center gap-space-md font-label-mono-sm text-label-mono-sm text-text-muted"><span>HASH: 8F2A9B1C</span><span>VERIFIED BUILD V2.4.1</span></div></div></div></footer></body></html>

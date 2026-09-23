@@ -46,6 +46,24 @@ export class User {
   @Column({ type: 'boolean', default: true, name: 'is_active' })
   isActive: boolean;
 
+  @Column({ type: 'boolean', default: false, name: 'accepts_testing' })
+  acceptsTesting: boolean;
+
+  @Column({ type: 'boolean', default: false, name: 'phone_verified' })
+  phoneVerified: boolean;
+
+  @Column({ type: 'boolean', default: false, name: 'document_verified' })
+  documentVerified: boolean;
+
+  @Column({ type: 'boolean', default: false, name: 'otp_enabled' })
+  otpEnabled: boolean;
+
+  @Column({ type: 'varchar', length: 6, nullable: true, name: 'otp_code' })
+  otpCode: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true, name: 'otp_expires_at' })
+  otpExpiresAt: Date | null;
+
   // Relations
   @OneToMany(() => Product, (product) => product.seller)
   products: Product[];

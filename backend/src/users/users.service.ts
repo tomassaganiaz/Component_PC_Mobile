@@ -48,13 +48,51 @@ export class UsersService {
   async findByEmail(email: string): Promise<User | null> {
     return this.userRepository.findOne({
       where: { email },
-      select: ['id', 'email', 'password', 'name', 'role'],
+      select: [
+        'id',
+        'email',
+        'password',
+        'name',
+        'role',
+        'acceptsTesting',
+        'phoneVerified',
+        'documentVerified',
+        'otpEnabled',
+        'otpCode',
+        'otpExpiresAt',
+      ],
     });
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.findOne(id);
     Object.assign(user, updateUserDto);
+    return this.userRepository.save(user);
+  }
+
+  async setOtpCode(id: string, code: string, expiresAt: Date): Promise<User> {
+    const user = await this.findOne(id);
+    user.otpCode = code;
+    user.otpExpiresAt = expiresAt;
+    return this.userRepository.save(user);
+  }
+
+  async clearOtpCode(id: string): Promise<User> {
+    const user = await this.findOne(id);
+    user.otpCode = null;
+    user.otpExpiresAt = null;
+    return this.userRepository.save(user);
+  }
+
+  async verifyPhone(id: string): Promise<User> {
+    const user = await this.findOne(id);
+    user.phoneVerified = true;
+    return this.userRepository.save(user);
+  }
+
+  async verifyIdentity(id: string): Promise<User> {
+    const user = await this.findOne(id);
+    user.documentVerified = true;
     return this.userRepository.save(user);
   }
 

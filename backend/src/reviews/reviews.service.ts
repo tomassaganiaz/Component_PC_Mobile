@@ -10,6 +10,21 @@ import { Review, ReviewType, ReviewStatus, TrustBadge } from './review.entity';
 import { CreateReviewDto, UpdateReviewStatusDto, FilterReviewDto } from './dto';
 import { OrdersService } from '../orders/orders.service';
 import { OrderStatus } from '../orders/order.entity';
+import { UsersService } from '../users/users.service';
+import { SellerSecurityTier } from '../products/product.entity';
+
+export interface SecurityProfile {
+  tier: SellerSecurityTier;
+  badge: TrustBadge;
+  averageRating: number;
+  totalReviews: number;
+  positivity: number;
+  complaintRate: number;
+  complaints: number;
+  acceptsTesting: boolean;
+  identityVerified: boolean;
+  breakdown: { positive: number; neutral: number; complaint: number };
+}
 
 @Injectable()
 export class ReviewsService {
@@ -17,6 +32,7 @@ export class ReviewsService {
     @InjectRepository(Review)
     private readonly reviewRepository: Repository<Review>,
     private readonly ordersService: OrdersService,
+    private readonly usersService: UsersService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -34,8 +50,13 @@ export class ReviewsService {
       throw new BadRequestException('El producto no corresponde a esta orden');
     }
 
-    if (order.status !== OrderStatus.DELIVERED) {
-      throw new BadRequestException('Solo puedes reseñar productos entregados');
+    // Solo compradores que recibieron el producto o lo devolvieron pueden reseñar
+    const canReview =
+      order.status === OrderStatus.DELIVERED || order.status === OrderStatus.REFUNDED;
+    if (!canReview) {
+      throw new BadRequestException(
+        'Solo puedes reseñar productos entregados o devueltos (compra verificada)',
+      );
     }
 
     // Check if review already exists for this order
@@ -137,55 +158,53 @@ export class ReviewsService {
     return this.reviewRepository.save(review);
   }
 
-  async getTrustBadge(sellerId: string): Promise<{
-    badge: TrustBadge;
-    averageRating: number;
-    totalReviews: number;
-    complaintRate: number;
-    breakdown: { positive: number; neutral: number; complaint: number };
-  }> {
-    const reviews = await this.reviewRepository.find({
-      where: { sellerId, status: ReviewStatus.APPROVED },
-    });
-
-    if (reviews.length < 3) {
-      return {
-        badge: TrustBadge.INTERMEDIATE,
-        averageRating: 0,
-        totalReviews: reviews.length,
-        complaintRate: 0,
-        breakdown: { positive: 0, neutral: 0, complaint: 0 },
-      };
-    }
+  async getTrustBadge(sellerId: string): Promise<SecurityProfile> {
+    const [reviews, seller] = await Promise.all([
+      this.reviewRepository.find({ where: { sellerId, status: ReviewStatus.APPROVED } }),
+      this.usersService.findOne(sellerId),
+    ]);
 
     const totalReviews = reviews.length;
-    const averageRating = reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews;
+    const averageRating =
+      totalReviews === 0 ? 0 : reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews;
 
+    const positive = reviews.filter((r) => r.type === ReviewType.POSITIVE).length;
     const complaints = reviews.filter((r) => r.type === ReviewType.COMPLAINT).length;
-    const complaintRate = (complaints / totalReviews) * 100;
+    const neutral = reviews.filter((r) => r.type === ReviewType.NEUTRAL).length;
+    const positivity = totalReviews === 0 ? 0 : Math.round((positive / totalReviews) * 100);
+    const complaintRate = totalReviews === 0 ? 0 : (complaints / totalReviews) * 100;
 
-    const breakdown = {
-      positive: reviews.filter((r) => r.type === ReviewType.POSITIVE).length,
-      neutral: reviews.filter((r) => r.type === ReviewType.NEUTRAL).length,
-      complaint: complaints,
-    };
+    const acceptsTesting = seller?.acceptsTesting ?? false;
 
-    let badge: TrustBadge;
-
-    if (averageRating >= 4.0 && complaintRate < 10) {
-      badge = TrustBadge.SAFE;
-    } else if (averageRating >= 3.0 && complaintRate < 25) {
-      badge = TrustBadge.INTERMEDIATE;
+    let tier: SellerSecurityTier;
+    if (totalReviews === 0) {
+      tier = acceptsTesting ? SellerSecurityTier.NORMAL : SellerSecurityTier.NOT_SECURE;
+    } else if (positivity < 50 || complaints >= 3 || !acceptsTesting) {
+      tier = SellerSecurityTier.NOT_SECURE;
+    } else if (positivity >= 75 && complaints === 0 && acceptsTesting) {
+      tier = SellerSecurityTier.SECURE;
     } else {
-      badge = TrustBadge.UNSAFE;
+      tier = SellerSecurityTier.NORMAL;
     }
 
+    const badge: TrustBadge =
+      tier === SellerSecurityTier.SECURE
+        ? TrustBadge.SAFE
+        : tier === SellerSecurityTier.NORMAL
+          ? TrustBadge.INTERMEDIATE
+          : TrustBadge.UNSAFE;
+
     return {
+      tier,
       badge,
       averageRating: Math.round(averageRating * 10) / 10,
       totalReviews,
+      positivity,
       complaintRate: Math.round(complaintRate * 10) / 10,
-      breakdown,
+      complaints,
+      acceptsTesting,
+      identityVerified: seller?.phoneVerified === true || seller?.documentVerified === true,
+      breakdown: { positive, neutral, complaint: complaints },
     };
   }
 
@@ -194,6 +213,7 @@ export class ReviewsService {
     averageRating: number;
     responseRate: number;
     badge: TrustBadge;
+    tier: SellerSecurityTier;
   }> {
     const badgeData = await this.getTrustBadge(sellerId);
 
@@ -210,6 +230,7 @@ export class ReviewsService {
       averageRating: badgeData.averageRating,
       responseRate: 95, // Placeholder - implement actual calculation
       badge: badgeData.badge,
+      tier: badgeData.tier,
     };
   }
 }

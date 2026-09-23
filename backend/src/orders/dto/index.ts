@@ -29,3 +29,9 @@ export class UpdateOrderDto {
   @IsString()
   shippingAddress?: string;
 }
+
+export class ReturnOrderDto {
+  @ApiProperty({ example: 'El producto llegó con fallas' })
+  @IsString()
+  reason: string;
+}

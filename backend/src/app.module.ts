@@ -1,12 +1,15 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AppController } from './app.controller';
 import { UsersModule } from './users/users.module';
 import { ProductsModule } from './products/products.module';
 import { OrdersModule } from './orders/orders.module';
 import { VerificationsModule } from './verifications/verifications.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { AuthModule } from './auth/auth.module';
+import { ReportsModule } from './reports/reports.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -37,6 +40,9 @@ import { AuthModule } from './auth/auth.module';
     VerificationsModule,
     ReviewsModule,
     AuthModule,
+    ReportsModule,
+    ChatModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}
