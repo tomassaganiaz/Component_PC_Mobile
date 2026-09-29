@@ -5,7 +5,8 @@ import AppHeader from '../components/AppHeader';
 import AppIcon from '../components/AppIcon';
 import BottomNav from '../components/BottomNav';
 import { Avatar } from '../components/ui';
-import { getProfile } from '../services/api';
+import { getMyOrders, getProfile } from '../services/api';
+import type { OrderItem } from '../services/api';
 import { colors, glow, shadow } from '../theme';
 import type { LoginSuccess, Nav, UserProfile } from '../types';
 
@@ -45,6 +46,7 @@ export default function ProfileScreen({
   onLogout: () => void;
 }) {
   const [profile, setProfile] = useState<UserProfile>(session.user);
+  const [orders, setOrders] = useState<OrderItem[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,6 +62,21 @@ export default function ProfileScreen({
       cancelled = true;
     };
   }, [session.access_token]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await getMyOrders();
+        if (!cancelled) setOrders(data);
+      } catch {
+        // sin órdenes
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const roleLabel =
     profile.role === 'seller' ? 'VENDEDOR' : profile.role === 'admin' ? 'ADMIN' : 'COMPRADOR';
@@ -178,6 +195,49 @@ export default function ProfileScreen({
               tone={acceptsTesting ? colors.accentEmerald : colors.textMuted}
             />
           </View>
+        </View>
+
+        {/* Orders */}
+        <View className="px-4 pt-4">
+          <Text className="mb-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+            Mis compras ({orders.length})
+          </Text>
+          {orders.length === 0 ? (
+            <View className="flex-row items-center gap-2.5 rounded-xl border border-[#233554] bg-[#111a2e] p-3">
+              <AppIcon name="receipt_long" size={18} color={colors.textMuted} />
+              <Text className="flex-1 text-xs leading-relaxed text-text-secondary">
+                Aún no tenés compras. Tus órdenes con custodia van a aparecer acá.
+              </Text>
+            </View>
+          ) : (
+            <View className="flex flex-col gap-2">
+              {orders.map((order) => (
+                <Pressable
+                  key={order.id}
+                  onPress={() => nav.go({ name: 'inspection', orderId: order.id })}
+                  className="flex-row items-center gap-3 rounded-xl border border-[#233554] bg-[#111a2e] p-3"
+                >
+                  <View className="h-9 w-9 items-center justify-center rounded-lg bg-[#162238]">
+                    <AppIcon name="receipt_long" size={18} color={colors.accentCyan} />
+                  </View>
+                  <View className="min-w-0 flex-1">
+                    <Text className="truncate text-sm font-semibold text-text-primary">
+                      {order.product?.title ?? `Orden #${order.id.slice(0, 8).toUpperCase()}`}
+                    </Text>
+                    <Text className="font-mono text-[11px] text-text-secondary">
+                      ${Number(order.total).toFixed(2)} · #{order.id.slice(0, 8).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View className="flex-row items-center gap-1 rounded border border-[#233554] bg-[#0d1728] px-2 py-0.5">
+                    <Text className="font-mono text-[10px] font-semibold uppercase tracking-wider text-accent-cyan">
+                      {order.status.replace(/_/g, ' ')}
+                    </Text>
+                  </View>
+                  <AppIcon name="arrow_forward" size={18} color={colors.textMuted} />
+                </Pressable>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* Quick actions */}

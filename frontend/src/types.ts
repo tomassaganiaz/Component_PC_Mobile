@@ -11,6 +11,7 @@ export interface Route {
   name: ScreenName;
   productId?: string;
   product?: ExploreCard;
+  orderId?: string;
 }
 
 export interface Nav {

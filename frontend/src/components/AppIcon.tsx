@@ -63,6 +63,7 @@ const MAP: Record<string, MIconName> = {
   hourglass_empty: 'hourglass-empty',
   phone_android: 'phone-android',
   logout: 'logout',
+  receipt_long: 'receipt-long',
 };
 
 interface Props {

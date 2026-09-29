@@ -1,19 +1,287 @@
-import { useState } from 'react';
-import { Image, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Image, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import AppHeader from '../components/AppHeader';
 import AppIcon from '../components/AppIcon';
 import BottomNav from '../components/BottomNav';
 import { Pill, PulseDot } from '../components/ui';
-import { chatSafetyCheck } from '../services/api';
+import { chatSafetyCheck, getOrder, getOrderProtection } from '../services/api';
 import { IMAGES, INSPECTION_STEPS } from '../data/mock';
 import { colors, glow, shadow } from '../theme';
-import type { ChatSafetyResult } from '../services/api';
+import type { ChatSafetyResult, OrderItem, OrderProtection } from '../services/api';
 import type { Nav } from '../types';
 
 const BUNDLE_IMAGE =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuDzj_nGfzBo7QtQwKBhnSx1ENuov_qVPfyvx_YZqg1Lcloc8ake35CYfySDw9vH0_qo4vHWptdzGFVp9TEgslYgekvtQItt0DdcU9H0LgE5Sc0NXsZ6zmFA20HekCsN1mHuXDIVRAh4CMKMT9UdC64Pi_9W4HpPldUuf3n-uK0kFXB3zBVG2lh47m2kv7v1zn3DMc5tI9T1r6D-SYhBHroFfRgHCxQDkZOq7rXQJvS1IG4fep0zHcA';
+
+const STATUS_LABEL: Record<string, string> = {
+  pending: 'Pago pendiente',
+  paid: 'Pago confirmado',
+  in_custody: 'Fondos en custodia',
+  shipped: 'En camino al laboratorio',
+  delivered: 'Entregado',
+  cancelled: 'Cancelada',
+  refunded: 'Reembolsada',
+};
+
+const STATUS_TONE: Record<string, string> = {
+  pending: colors.diagnosticAmber,
+  paid: colors.accentCyan,
+  in_custody: colors.accentCyan,
+  shipped: colors.accentCyan,
+  delivered: colors.accentEmerald,
+  cancelled: colors.diagnosticRed,
+  refunded: colors.diagnosticRed,
+};
+
+function statusSteps(status: string) {
+  const base = INSPECTION_STEPS.map((s) => ({ ...s }));
+  const set = (idx: number, state: 'done' | 'active' | 'pending') => {
+    base[idx].state = state;
+  };
+  switch (status) {
+    case 'pending':
+      set(0, 'active');
+      set(1, 'pending');
+      set(2, 'pending');
+      set(3, 'pending');
+      set(4, 'pending');
+      break;
+    case 'paid':
+    case 'in_custody':
+      set(0, 'done');
+      set(1, 'active');
+      set(2, 'pending');
+      set(3, 'pending');
+      set(4, 'pending');
+      break;
+    case 'shipped':
+      set(0, 'done');
+      set(1, 'done');
+      set(2, 'active');
+      set(3, 'pending');
+      set(4, 'pending');
+      break;
+    case 'delivered':
+      set(0, 'done');
+      set(1, 'done');
+      set(2, 'done');
+      set(3, 'done');
+      set(4, 'done');
+      break;
+    case 'refunded':
+    case 'cancelled':
+      set(0, 'done');
+      set(1, 'pending');
+      set(2, 'pending');
+      set(3, 'pending');
+      set(4, 'pending');
+      break;
+    default:
+      break;
+  }
+  return base;
+}
+
+function OrderTracking({
+  order,
+  protection,
+  loading,
+  error,
+  nav,
+}: {
+  order: OrderItem | null;
+  protection: OrderProtection | null;
+  loading: boolean;
+  error: string | null;
+  nav: Nav;
+}) {
+  if (loading) {
+    return (
+      <View className="flex-1 items-center justify-center gap-3">
+        <ActivityIndicator color={colors.accentCyan} size="large" />
+        <Text className="font-mono text-[11px] uppercase tracking-wider text-text-secondary">
+          Cargando seguimiento...
+        </Text>
+      </View>
+    );
+  }
+
+  if (error || !order) {
+    return (
+      <View className="flex-1 items-center justify-center gap-3 px-8">
+        <AppIcon name="report" size={32} color={colors.diagnosticRed} />
+        <Text className="text-base font-semibold text-text-primary">No se pudo cargar la orden</Text>
+        <Text className="text-center text-xs text-text-secondary">{error}</Text>
+        <Pressable
+          onPress={() => nav.go({ name: 'explore' })}
+          className="mt-2 flex-row items-center gap-2 rounded-xl bg-primary px-5 py-3"
+        >
+          <Text className="text-sm font-semibold text-on-primary">Volver al Marketplace</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  const tone = STATUS_TONE[order.status] ?? colors.accentCyan;
+  const statusLabel = STATUS_LABEL[order.status] ?? order.status;
+  const steps = statusSteps(order.status);
+  const product = order.product;
+  const title = product?.title ?? `Orden #${order.id.slice(0, 8).toUpperCase()}`;
+
+  return (
+    <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+      <View className="px-4 pb-4 pt-3">
+        <View className="overflow-hidden rounded-xl border border-[#22324f] bg-[#111a2e] p-4" style={shadow.card}>
+          <View className="mb-2 flex-row items-center justify-between">
+            <Pill icon="verified" tone="emerald">
+              {order.status === 'in_custody' ? 'Custodia Activa' : statusLabel}
+            </Pill>
+            <Text className="font-mono text-[11px] font-medium text-text-secondary">
+              ID: #{order.id.slice(0, 8).toUpperCase()}
+            </Text>
+          </View>
+          <View className="mt-3 flex-row items-start gap-3">
+            <View className="h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-700/60 bg-[#0a0f1d] p-1">
+              {product?.images?.[0] ? (
+                <Image source={{ uri: product.images[0] }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+              ) : (
+                <AppIcon name="hardware" size={26} color={colors.accentCyan} />
+              )}
+            </View>
+            <View className="min-w-0 flex-1">
+              <View className="flex-row items-center gap-1">
+                <AppIcon name="verified" size={16} color={colors.accentCyan} />
+                <Text className="font-mono text-[11px] font-semibold tracking-wide text-accent-cyan">
+                  Escrow TechShield 100%
+                </Text>
+              </View>
+              <Text className="mt-0.5 truncate text-xl leading-snug text-slate-100">{title}</Text>
+              <Text className="truncate text-xs text-slate-400">
+                {product?.brand ?? 'Hardware'} · {order.paymentMethod === 'crypto' ? 'Cripto' : order.paymentMethod === 'bank_transfer' ? 'Transferencia' : 'Tarjeta'}
+              </Text>
+            </View>
+          </View>
+          <View className="mt-4 flex-row items-center justify-between rounded-lg border border-[#22324f]/70 bg-[#0a0f1d]/80 p-3">
+            <View>
+              <Text className="block text-[11px] text-slate-400">Total retenido en bóveda</Text>
+              <View className="flex-row items-baseline gap-1">
+                <Text className="text-2xl font-bold tracking-tight text-white">${Number(order.total).toFixed(2)}</Text>
+                <Text className="font-mono text-[11px] text-slate-400">USD</Text>
+              </View>
+            </View>
+            <View
+              className="flex-row items-center gap-1 rounded border px-2.5 py-1"
+              style={{ borderColor: tone + '66', backgroundColor: tone + '1a' }}
+            >
+              <AppIcon name={order.status === 'in_custody' ? 'lock' : 'verified'} size={14} color={tone} />
+              <Text className="font-mono text-[11px] font-semibold" style={{ color: tone }}>
+                {statusLabel.toUpperCase()}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      {/* Workflow tracker */}
+      <View className="mb-4 px-4">
+        <View className="mb-2 flex-row items-center justify-between">
+          <View className="flex-row items-center gap-1.5">
+            <AppIcon name="science" size={20} color={colors.accentCyan} />
+            <Text className="text-xl font-semibold text-slate-100">Trazabilidad de Seguridad</Text>
+          </View>
+          <View className="rounded border border-[#22324f] bg-[#162238] px-2 py-0.5">
+            <Text className="font-mono text-[11px] text-cyan-300">
+              Fase {steps.findIndex((s) => s.state === 'active') + 1 || 5} de {steps.length}
+            </Text>
+          </View>
+        </View>
+
+        <View className="flex flex-col gap-4 rounded-xl border border-[#22324f] bg-[#111a2e] p-4" style={shadow.panel}>
+          {steps.map((step, i) => (
+            <View key={step.title} className="flex-row gap-3">
+              <View className="flex flex-col items-center">
+                <StepNode state={step.state} />
+                {i < steps.length - 1 ? (
+                  <View
+                    className="w-0.5 flex-1"
+                    style={{ backgroundColor: step.state === 'done' ? '#34d399' : '#22324f' }}
+                  />
+                ) : null}
+              </View>
+              <View className="flex-1" style={i < steps.length - 1 ? { paddingBottom: 8 } : undefined}>
+                <View className="flex-row items-center justify-between">
+                  <Text
+                    className={`text-sm ${
+                      step.state === 'done'
+                        ? 'font-semibold text-slate-200'
+                        : step.state === 'active'
+                          ? 'font-bold text-cyan-300'
+                          : 'font-medium text-slate-400'
+                    }`}
+                  >
+                    {step.title}
+                  </Text>
+                  <Text className="font-mono text-[11px] text-slate-500">
+                    {step.state === 'active' ? 'En Curso' : step.state === 'done' ? 'Completado' : 'Pendiente'}
+                  </Text>
+                </View>
+                <Text className="mt-0.5 text-xs text-slate-400">{step.desc}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {/* Protection */}
+      {protection ? (
+        <View className="mb-4 px-4">
+          <View className="rounded-xl border border-[#22324f] bg-[#111a2e] p-4" style={shadow.panel}>
+            <View className="mb-3 flex-row items-center justify-between">
+              <View className="flex-row items-center gap-1.5">
+                <AppIcon name="shield_with_heart" size={20} color={colors.accentEmerald} />
+                <Text className="text-xl font-semibold text-slate-100">Ventana de Protección</Text>
+              </View>
+            </View>
+            <View className="flex-row gap-2">
+              <View className="flex-1 rounded-lg border border-[#22324f] bg-[#0a0f1d] p-2.5">
+                <Text className="block font-mono text-[10px] uppercase text-slate-400">Devolución</Text>
+                <Text className="text-xl font-bold text-emerald-400">
+                  {protection.returnWindowOpen ? `${protection.returnDaysLeft} días` : 'Vencida'}
+                </Text>
+                <Text className="mt-0.5 block text-[11px] text-slate-400">
+                  Hasta {new Date(protection.escrowUntil).toLocaleDateString()}
+                </Text>
+              </View>
+              <View className="flex-1 rounded-lg border border-[#22324f] bg-[#0a0f1d] p-2.5">
+                <Text className="block font-mono text-[10px] uppercase text-slate-400">Cobertura empresa</Text>
+                <Text className="text-xl font-bold text-slate-100">
+                  {protection.coverageActive ? `${protection.coverageDaysLeft} días` : 'Vencida'}
+                </Text>
+                <Text className="mt-0.5 block text-[11px] text-slate-400">
+                  Hasta {new Date(protection.coverageUntil).toLocaleDateString()}
+                </Text>
+              </View>
+            </View>
+            <Text className="mt-3 text-xs leading-relaxed text-slate-400">{protection.rules.returnPolicy}</Text>
+          </View>
+        </View>
+      ) : null}
+
+      <View className="flex flex-col gap-2.5 px-4 pb-6">
+        <Pressable
+          onPress={() => nav.go({ name: 'explore' })}
+          className="flex-row items-center justify-center gap-2 rounded-xl bg-blue-600 py-3"
+          style={glow('#2563eb', 20, 0.35)}
+        >
+          <AppIcon name="arrow_back" size={20} color="#ffffff" />
+          <Text className="text-sm font-semibold text-white">Volver al Marketplace</Text>
+        </Pressable>
+      </View>
+    </ScrollView>
+  );
+}
 
 function StepNode({ state }: { state: 'done' | 'active' | 'pending' }) {
   if (state === 'done') {
@@ -38,12 +306,37 @@ function StepNode({ state }: { state: 'done' | 'active' | 'pending' }) {
   );
 }
 
-export default function InspectionScreen({ nav }: { nav: Nav }) {
+export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?: string }) {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatText, setChatText] = useState('');
   const [chatChecking, setChatChecking] = useState(false);
   const [chatResult, setChatResult] = useState<ChatSafetyResult | null>(null);
   const [chatError, setChatError] = useState<string | null>(null);
+
+  const [order, setOrder] = useState<OrderItem | null>(null);
+  const [protection, setProtection] = useState<OrderProtection | null>(null);
+  const [orderLoading, setOrderLoading] = useState(!!orderId);
+  const [orderError, setOrderError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!orderId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [o, p] = await Promise.all([getOrder(orderId), getOrderProtection(orderId)]);
+        if (cancelled) return;
+        setOrder(o);
+        setProtection(p);
+      } catch (err) {
+        if (!cancelled) setOrderError(err instanceof Error ? err.message : 'No se pudo cargar la orden.');
+      } finally {
+        if (!cancelled) setOrderLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [orderId]);
 
   const handleChatCheck = async () => {
     if (!chatText.trim()) return;
@@ -62,6 +355,9 @@ export default function InspectionScreen({ nav }: { nav: Nav }) {
     <View className="flex-1 bg-surface">
       <AppHeader subtitle="Verified Orders" activeTab />
 
+      {orderId ? (
+        <OrderTracking order={order} protection={protection} loading={orderLoading} error={orderError} nav={nav} />
+      ) : (
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 100 }}
@@ -351,6 +647,7 @@ export default function InspectionScreen({ nav }: { nav: Nav }) {
           </Pressable>
         </View>
       </ScrollView>
+      )}
 
       {/* Chat safety modal */}
       <Modal visible={chatOpen} transparent animationType="slide" onRequestClose={() => setChatOpen(false)}>

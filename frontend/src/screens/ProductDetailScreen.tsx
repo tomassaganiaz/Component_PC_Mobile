@@ -3,7 +3,8 @@ import { Image, Modal, Pressable, ScrollView, Text, TextInput, View } from 'reac
 
 import AppIcon from '../components/AppIcon';
 import { Avatar, ProgressBar } from '../components/ui';
-import { createReport } from '../services/api';
+import { createOrder, createReport } from '../services/api';
+import type { OrderItem } from '../services/api';
 import { IMAGES } from '../data/mock';
 import { colors, glow, shadow } from '../theme';
 import type { ExploreCard, Nav, SellerTier } from '../types';
@@ -190,19 +191,47 @@ function SellerSecurity({ product, onReport }: { product: ExploreCard; onReport?
 
 export default function ProductDetailScreen({ nav, product }: { nav: Nav; product: ExploreCard }) {
   const [galleryIndex, setGalleryIndex] = useState(0);
-  const [buying, setBuying] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [reportSending, setReportSending] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
+
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [shippingAddress, setShippingAddress] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('credit_card');
+  const [placing, setPlacing] = useState(false);
+  const [orderError, setOrderError] = useState<string | null>(null);
+  const [createdOrder, setCreatedOrder] = useState<OrderItem | null>(null);
 
   const gallery = product.gallery ?? [];
   const activeImage = gallery[galleryIndex]?.uri ?? product.image;
   const marker = gallery[galleryIndex]?.desc ?? 'Inspección macro: Chasis frontal';
 
   const handleBuy = () => {
-    setBuying(true);
-    setTimeout(() => setBuying(false), 1200);
+    setCheckoutOpen(true);
+    setOrderError(null);
+    setCreatedOrder(null);
+  };
+
+  const handlePlaceOrder = async () => {
+    if (!shippingAddress.trim()) {
+      setOrderError('Ingresá la dirección de envío.');
+      return;
+    }
+    setPlacing(true);
+    setOrderError(null);
+    try {
+      const order = await createOrder({
+        productId: product.id,
+        shippingAddress: shippingAddress.trim(),
+        paymentMethod,
+      });
+      setCreatedOrder(order);
+    } catch (err) {
+      setOrderError(err instanceof Error ? err.message : 'No se pudo crear la orden.');
+    } finally {
+      setPlacing(false);
+    }
   };
 
   const handleReport = async () => {
@@ -667,19 +696,156 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
           className="flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-secondary py-3.5"
           style={shadow.panel}
         >
-          {buying ? (
-            <>
-              <AppIcon name="sync" size={20} color={colors.onSecondary} />
-              <Text className="text-[15px] font-semibold text-on-secondary">Iniciando Escrow Seguro...</Text>
-            </>
-          ) : (
-            <>
-              <AppIcon name="lock" size={20} color={colors.onSecondary} />
-              <Text className="text-[15px] font-semibold text-on-secondary">Comprar con TechShield</Text>
-            </>
-          )}
+          <AppIcon name="lock" size={20} color={colors.onSecondary} />
+          <Text className="text-[15px] font-semibold text-on-secondary">Comprar con TechShield</Text>
         </Pressable>
       </View>
+
+      {/* Checkout modal */}
+      <Modal
+        visible={checkoutOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCheckoutOpen(false)}
+      >
+        <View className="flex-1 items-center justify-end bg-black/70">
+          <View className="w-full rounded-t-3xl border-t border-[#233554] bg-[#0e1626] p-5" style={shadow.bottom}>
+            {createdOrder ? (
+              <View className="flex flex-col items-center gap-3 py-4">
+                <View
+                  className="h-16 w-16 items-center justify-center rounded-2xl border border-secondary/40 bg-secondary/10"
+                  style={glow(colors.secondary, 18, 0.35)}
+                >
+                  <AppIcon name="check_circle" size={34} color={colors.accentEmerald} />
+                </View>
+                <Text className="text-xl font-bold text-text-primary">Orden creada con Custodia</Text>
+                <Text className="text-center text-xs leading-relaxed text-text-secondary">
+                  Tus {product.currency} ${Number(createdOrder.total).toFixed(2)} quedaron retenidos en la bóveda
+                  TechShield. El vendedor no cobra hasta que recibas y verifiques el producto.
+                </Text>
+                <View className="mt-1 flex-row items-center gap-1.5 rounded-lg border border-[#233554] bg-[#111a2e] px-3 py-2">
+                  <AppIcon name="verified" size={15} color={colors.accentCyan} />
+                  <Text className="font-mono text-[11px] text-text-secondary">
+                    ORDER ID: #{createdOrder.id.slice(0, 8).toUpperCase()}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => {
+                    setCheckoutOpen(false);
+                    nav.go({ name: 'inspection', orderId: createdOrder.id });
+                  }}
+                  className="mt-2 w-full flex-row items-center justify-center gap-2 rounded-xl bg-secondary py-3.5"
+                  style={shadow.panel}
+                >
+                  <AppIcon name="verified_user" size={20} color={colors.onSecondary} />
+                  <Text className="text-base font-semibold text-on-secondary">
+                    Ver seguimiento en custodia
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setCheckoutOpen(false)}
+                  className="w-full items-center justify-center rounded-xl border border-[#233554] bg-[#111a2e] py-3"
+                >
+                  <Text className="text-sm font-semibold text-text-secondary">Seguir explorando</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <>
+                <View className="flex-row items-center gap-2">
+                  <AppIcon name="account_balance_wallet" size={20} color={colors.accentCyan} />
+                  <Text className="text-lg font-semibold text-text-primary">Checkout TechShield</Text>
+                </View>
+
+                <View className="mt-3 flex-row items-center gap-3 rounded-xl border border-[#233554] bg-[#111a2e] p-3">
+                  <View className="h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#131c2e]">
+                    <AppIcon name="hardware" size={24} color={colors.accentCyan} />
+                  </View>
+                  <View className="min-w-0 flex-1">
+                    <Text className="truncate text-sm font-semibold text-text-primary">{product.title}</Text>
+                    <Text className="font-mono text-xs text-text-secondary">Custodia escrow incluida</Text>
+                  </View>
+                  <Text className="text-lg font-bold text-text-primary">${product.price}</Text>
+                </View>
+
+                <Text className="mb-1.5 mt-4 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+                  Dirección de envío *
+                </Text>
+                <TextInput
+                  value={shippingAddress}
+                  onChangeText={setShippingAddress}
+                  placeholder="Ej: Av. Corrientes 1234, CABA"
+                  placeholderTextColor={colors.textMuted}
+                  className="w-full rounded-xl border border-[#233554] bg-[#111a2e] px-3 py-2.5 text-sm text-text-primary"
+                />
+
+                <Text className="mb-1.5 mt-4 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+                  Método de pago
+                </Text>
+                <View className="flex-row gap-2">
+                  {(['credit_card', 'bank_transfer', 'crypto'] as const).map((method) => {
+                    const active = paymentMethod === method;
+                    const labels: Record<string, string> = {
+                      credit_card: 'Tarjeta',
+                      bank_transfer: 'Transferencia',
+                      crypto: 'Cripto',
+                    };
+                    return (
+                      <Pressable
+                        key={method}
+                        onPress={() => setPaymentMethod(method)}
+                        className="flex-1 items-center rounded-xl border px-2 py-2.5"
+                        style={{
+                          borderColor: active ? colors.secondary : '#233554',
+                          backgroundColor: active ? '#06271a' : '#111a2e',
+                          ...(active ? glow(colors.secondary, 8, 0.15) : undefined),
+                        }}
+                      >
+                        <Text
+                          className="font-mono text-[11px] font-semibold"
+                          style={{ color: active ? colors.accentEmerald : colors.textSecondary }}
+                        >
+                          {labels[method]}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                {orderError ? (
+                  <View className="mt-3 flex-row items-start gap-2 rounded-lg border border-red-500/40 bg-red-500/10 p-3">
+                    <AppIcon name="report" size={18} color={colors.diagnosticRed} />
+                    <Text className="flex-1 text-xs leading-relaxed text-red-400">{orderError}</Text>
+                  </View>
+                ) : null}
+
+                <View className="mt-4 flex-row gap-2">
+                  <Pressable
+                    onPress={() => setCheckoutOpen(false)}
+                    className="flex-1 items-center justify-center rounded-xl border border-[#233554] bg-[#111a2e] py-3"
+                  >
+                    <Text className="text-sm font-semibold text-text-secondary">Cancelar</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={handlePlaceOrder}
+                    disabled={placing}
+                    className="flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-secondary py-3"
+                    style={placing ? { opacity: 0.7 } : undefined}
+                  >
+                    {placing ? (
+                      <AppIcon name="sync" size={18} color={colors.onSecondary} />
+                    ) : (
+                      <AppIcon name="lock" size={18} color={colors.onSecondary} />
+                    )}
+                    <Text className="text-sm font-semibold text-on-secondary">
+                      {placing ? 'Creando escrow...' : 'Confirmar compra'}
+                    </Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

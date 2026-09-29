@@ -178,3 +178,76 @@ export function createReport(
     body: JSON.stringify({ reportedId, targetType, reason, details }),
   });
 }
+
+/* ------------------------------- Orders -------------------------------- */
+
+export interface OrderItem {
+  id: string;
+  total: number;
+  status: string;
+  shippingAddress?: string;
+  paymentMethod?: string;
+  custodyStartDate?: string;
+  custodyEndDate?: string;
+  cancellationReason?: string;
+  productId: string;
+  createdAt: string;
+  product?: ApiProduct;
+}
+
+export interface CreateOrderInput {
+  productId: string;
+  shippingAddress?: string;
+  paymentMethod?: string;
+}
+
+export interface OrderProtection {
+  orderId: string;
+  status: string;
+  total: number;
+  escrowUntil: string;
+  coverageUntil: string;
+  returnWindowOpen: boolean;
+  returnDaysLeft: number;
+  coverageActive: boolean;
+  coverageDaysLeft: number;
+  rules: {
+    returnWindowDays: number;
+    coverageDays: number;
+    returnPolicy: string;
+    coveragePolicy: string;
+    damagePolicy: string;
+  };
+}
+
+export function createOrder(input: CreateOrderInput): Promise<OrderItem> {
+  return request<OrderItem>('/orders', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function getMyOrders(): Promise<OrderItem[]> {
+  return request<OrderItem[]>('/orders');
+}
+
+export function getOrder(id: string): Promise<OrderItem> {
+  return request<OrderItem>(`/orders/${id}`);
+}
+
+export function getOrderProtection(id: string): Promise<OrderProtection> {
+  return request<OrderProtection>(`/orders/${id}/protection`);
+}
+
+export function requestOrderReturn(id: string, reason: string): Promise<OrderItem> {
+  return request<OrderItem>(`/orders/${id}/return`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export function requestOrderCoverage(id: string): Promise<{ ticketId: string; message: string }> {
+  return request<{ ticketId: string; message: string }>(`/orders/${id}/coverage`, {
+    method: 'POST',
+  });
+}

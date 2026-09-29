@@ -108,7 +108,7 @@ export default function App() {
         return <ProductDetailScreen nav={nav} product={product} />;
       }
       case 'inspection':
-        return <InspectionScreen nav={nav} />;
+        return <InspectionScreen nav={nav} orderId={route.orderId} />;
       case 'filters':
         return <FiltersScreen nav={nav} filters={filters} onApply={setFilters} />;
       case 'publish':
