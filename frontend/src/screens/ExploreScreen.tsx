@@ -81,6 +81,7 @@ export default function ExploreScreen({ nav, filters }: { nav: Nav; filters: Pro
     () => ({ ...effectiveFilters, search: debouncedSearch || undefined }),
     [effectiveFilters, debouncedSearch],
   );
+  const searching = search.trim() !== debouncedSearch.trim();
   const activeSecurity = Boolean(
     effectiveFilters.sellerTier ||
       effectiveFilters.verified ||
@@ -364,10 +365,19 @@ export default function ExploreScreen({ nav, filters }: { nav: Nav; filters: Pro
         <View className="flex-row items-center justify-between px-4 pb-1 pt-3">
           <View className="flex-row items-center gap-2">
             <Text className="text-xl text-text-primary">Auditoría Reciente</Text>
-            <View className="flex-row items-center gap-1 rounded-full border border-secondary/40 bg-secondary/15 px-2 py-0.5">
-              <PulseDot size={6} />
-              <Text className="font-mono text-[10px] font-bold uppercase tracking-wider text-secondary">En Vivo</Text>
-            </View>
+            {searching ? (
+              <View className="flex-row items-center gap-1 rounded-full border border-primary/40 bg-[#182845] px-2 py-0.5">
+                <ActivityIndicator size={10} color={colors.primary} />
+                <Text className="font-mono text-[10px] font-semibold uppercase tracking-wider text-primary">
+                  Buscando
+                </Text>
+              </View>
+            ) : (
+              <View className="flex-row items-center gap-1 rounded-full border border-secondary/40 bg-secondary/15 px-2 py-0.5">
+                <PulseDot size={6} />
+                <Text className="font-mono text-[10px] font-bold uppercase tracking-wider text-secondary">En Vivo</Text>
+              </View>
+            )}
           </View>
           <Text className="font-mono text-[11px] text-text-muted">{cards.length} ítems listos</Text>
         </View>
