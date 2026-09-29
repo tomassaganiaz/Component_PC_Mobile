@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import AppHeader from '../components/AppHeader';
@@ -106,16 +106,28 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
     };
   }, [queryKey, queryFilters, loadedQueryKey, setResults]);
 
+  const renderProduct = ({ item }: { item: ExploreCard }) => (
+    <View className="px-4">
+      <ProductCard
+        card={item}
+        checked={passedSecurityFilters(item, effectiveFilters)}
+        onPress={() => nav.go({ name: 'detail', productId: item.id, product: item })}
+        onBuy={() => nav.go({ name: 'detail', productId: item.id, product: item })}
+      />
+    </View>
+  );
+
   return (
     <View className="flex-1 bg-surface">
       <AppHeader subtitle="Explore Marketplace" activeTab />
 
-      <ScrollView
+      <FlatList
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 96 }}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
+        data={cards}
+        keyExtractor={(item) => item.id}
+        renderItem={renderProduct}
+        ListHeaderComponent={
+          <>
         {/* Search */}
         <View className="px-4 pb-1 pt-2">
           <View className="relative w-full flex-row items-center">
@@ -372,82 +384,76 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
           <Text className="font-mono text-[11px] text-text-muted">{cards.length} ítems listos</Text>
         </View>
 
-        {/* Product cards */}
-        <View className="flex flex-col gap-4 px-4 pb-4 pt-2">
-          {loading ? (
-            <View className="items-center justify-center py-16">
-              <ActivityIndicator color={colors.secondary} size="large" />
-              <Text className="mt-3 font-mono text-[11px] uppercase tracking-wider text-text-secondary">
-                Consultando auditoría...
-              </Text>
-            </View>
-          ) : cards.length === 0 ? (
-            <View className="items-center justify-center gap-3 rounded-xl border border-[#233554] bg-[#111a2e] px-6 py-14">
-              <AppIcon name="search" size={32} color={colors.textMuted} />
-              <Text className="text-base font-semibold text-text-primary">Sin resultados</Text>
-              <Text className="text-center text-xs text-text-secondary">
-                No hay productos que cumplan estos filtros de seguridad y chequeo.
-              </Text>
-            </View>
-          ) : (
-            <>
-              {activeSecurity ? (
-                <View
-                  className="flex-row items-center gap-2 rounded-lg border border-secondary/30 bg-secondary/10 px-3 py-2"
-                  style={glow(colors.secondary, 8, 0.12)}
-                >
-                  <AppIcon name="verified" size={16} color={colors.secondary} />
-                  <Text className="flex-1 font-mono text-[10.5px] leading-snug text-emerald-300">
-                    {cards.length} producto(s) con CHECK APROBADO: pasaron los filtros de seguridad y verificación
-                    activos.
-                  </Text>
-                </View>
-              ) : null}
-              {cards.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  card={product}
-                  checked={passedSecurityFilters(product, effectiveFilters)}
-                  onPress={() => nav.go({ name: 'detail', productId: product.id, product })}
-                  onBuy={() => nav.go({ name: 'detail', productId: product.id, product })}
-                />
-              ))}
-            </>
-          )}
-        </View>
-
-        {/* Seller callout */}
-        <View className="px-4 pb-6">
-          <LinearGradient
-            colors={['#121e35', '#0c1527']}
-            className="flex flex-col gap-3 overflow-hidden rounded-xl border border-[#233554] p-4"
-            style={shadow.card}
+        {/* CHECK summary banner */}
+        {activeSecurity && !loading && cards.length > 0 ? (
+          <View
+            className="mx-4 mt-1 flex-row items-center gap-2 rounded-lg border border-secondary/30 bg-secondary/10 px-3 py-2"
+            style={glow(colors.secondary, 8, 0.12)}
           >
-            <View className="flex-row items-center gap-3">
-              <View
-                className="h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-[#1b2b4d]"
-                style={glow(colors.primary, 15, 0.2)}
-              >
-                <AppIcon name="verified" size={24} color={colors.primary} />
-              </View>
-              <View className="flex-1">
-                <Text className="text-base font-semibold text-text-primary">¿Vendes hardware o móviles?</Text>
-                <Text className="text-xs text-text-secondary">
-                  Certificamos tus componentes gratis y vendes hasta 3x más rápido.
+            <AppIcon name="verified" size={16} color={colors.secondary} />
+            <Text className="flex-1 font-mono text-[10.5px] leading-snug text-emerald-300">
+              {cards.length} producto(s) con CHECK APROBADO: pasaron los filtros de seguridad y verificación activos.
+            </Text>
+          </View>
+        ) : null}
+          </>
+        }
+        ItemSeparatorComponent={() => <View className="h-4" />}
+        contentContainerStyle={{ paddingBottom: 96, paddingTop: 8 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        ListEmptyComponent={
+          <View className="px-4 pt-2">
+            {loading ? (
+              <View className="items-center justify-center py-16">
+                <ActivityIndicator color={colors.secondary} size="large" />
+                <Text className="mt-3 font-mono text-[11px] uppercase tracking-wider text-text-secondary">
+                  Consultando auditoría...
                 </Text>
               </View>
-            </View>
-            <Pressable
-              className="flex-row items-center justify-center gap-2 rounded-xl border border-primary/40 bg-[#1e3a73] py-2.5"
-              style={glow('#1e3a73', 15, 0.5)}
+            ) : (
+              <View className="items-center justify-center gap-3 rounded-xl border border-[#233554] bg-[#111a2e] px-6 py-14">
+                <AppIcon name="search" size={32} color={colors.textMuted} />
+                <Text className="text-base font-semibold text-text-primary">Sin resultados</Text>
+                <Text className="text-center text-xs text-text-secondary">
+                  No hay productos que cumplan estos filtros de seguridad y chequeo.
+                </Text>
+              </View>
+            )}
+          </View>
+        }
+        ListFooterComponent={
+          <View className="px-4 pb-6 pt-4">
+            <LinearGradient
+              colors={['#121e35', '#0c1527']}
+              className="flex flex-col gap-3 overflow-hidden rounded-xl border border-[#233554] p-4"
+              style={shadow.card}
             >
-              <Text className="text-xs font-semibold text-text-primary">Solicitar Kit de Auditoría Gratuito</Text>
-              <AppIcon name="arrow_forward" size={18} color={colors.primary} />
-            </Pressable>
-          </LinearGradient>
-        </View>
-      </ScrollView>
-
+              <View className="flex-row items-center gap-3">
+                <View
+                  className="h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-[#1b2b4d]"
+                  style={glow(colors.primary, 15, 0.2)}
+                >
+                  <AppIcon name="verified" size={24} color={colors.primary} />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-base font-semibold text-text-primary">¿Vendes hardware o móviles?</Text>
+                  <Text className="text-xs text-text-secondary">
+                    Certificamos tus componentes gratis y vendes hasta 3x más rápido.
+                  </Text>
+                </View>
+              </View>
+              <Pressable
+                className="flex-row items-center justify-center gap-2 rounded-xl border border-primary/40 bg-[#1e3a73] py-2.5"
+                style={glow('#1e3a73', 15, 0.5)}
+              >
+                <Text className="text-xs font-semibold text-text-primary">Solicitar Kit de Auditoría Gratuito</Text>
+                <AppIcon name="arrow_forward" size={18} color={colors.primary} />
+              </Pressable>
+            </LinearGradient>
+          </View>
+        }
+      />
       <BottomNav active="explore" onNavigate={(tab) => nav.go({ name: tab })} />
     </View>
   );
