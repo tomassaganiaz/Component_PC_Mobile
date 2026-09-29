@@ -1,3 +1,4 @@
+import Head from 'expo-router/head';
 import ProfileScreen from '../screens/ProfileScreen';
 import { useAuth } from '../context/AuthContext';
 import { useMarketplace } from '../context/MarketplaceContext';
@@ -11,13 +12,20 @@ export default function ProfileRoute() {
   if (!session) return null;
 
   return (
-    <ProfileScreen
-      nav={nav}
-      session={session}
-      onLogout={async () => {
-        await logout();
-        reset();
-      }}
-    />
+    <>
+      <Head>
+        <title>Mi perfil · TechShield</title>
+        <meta name="description" content="Tu identidad verificada, nivel de seguridad y compras en TechShield." />
+        <meta property="og:title" content="TechShield — Mi perfil" />
+      </Head>
+      <ProfileScreen
+        nav={nav}
+        session={session}
+        onLogout={async () => {
+          await logout();
+          reset();
+        }}
+      />
+    </>
   );
 }

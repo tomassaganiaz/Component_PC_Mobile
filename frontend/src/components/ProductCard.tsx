@@ -1,6 +1,7 @@
-import { Image, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import AppIcon from './AppIcon';
+import ProductImage from './ProductImage';
 import { ProgressBar } from './ui';
 import { colors, shadow } from '../theme';
 import type { ExploreCard, SellerTier, Tone } from '../types';
@@ -202,13 +203,7 @@ export default function ProductCard({
       {checked ? <PassedCheckBanner /> : null}
       <View className="flex-row gap-3">
         <View className="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl border border-[#1b273d] bg-[#0a101d]">
-          {card.image ? (
-            <Image source={{ uri: card.image }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-          ) : (
-            <View className="h-full w-full items-center justify-center bg-[#131c2e]">
-              <AppIcon name="hardware" size={32} color={colors.outlineVariant} />
-            </View>
-          )}
+          <ProductImage uri={card.image} style={{ width: '100%', height: '100%' }} iconSize={32} />
           {card.verified ? <VerifiedBadge /> : null}
           <View
             className={`absolute left-1.5 top-1.5 rounded border px-2 py-0.5 bg-[#090f1d]/90 ${tagTones[card.tagTone]}`}

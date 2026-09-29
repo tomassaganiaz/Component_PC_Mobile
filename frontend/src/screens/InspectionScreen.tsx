@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import AppHeader from '../components/AppHeader';
 import AppIcon from '../components/AppIcon';
 import BottomNav from '../components/BottomNav';
+import ProductImage from '../components/ProductImage';
 import { Pill, PulseDot } from '../components/ui';
 import { chatSafetyCheck, getOrder, getOrderProtection } from '../services/api';
 import { IMAGES, INSPECTION_STEPS } from '../data/mock';
@@ -144,11 +145,7 @@ function OrderTracking({
           </View>
           <View className="mt-3 flex-row items-start gap-3">
             <View className="h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-700/60 bg-[#0a0f1d] p-1">
-              {product?.images?.[0] ? (
-                <Image source={{ uri: product.images[0] }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-              ) : (
-                <AppIcon name="hardware" size={26} color={colors.accentCyan} />
-              )}
+              <ProductImage uri={product?.images?.[0]} style={{ width: '100%', height: '100%' }} iconSize={26} />
             </View>
             <View className="min-w-0 flex-1">
               <View className="flex-row items-center gap-1">

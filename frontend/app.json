@@ -23,6 +23,7 @@
     },
     "web": {
       "bundler": "metro",
+      "output": "static",
       "favicon": "./assets/favicon.png",
       "name": "TechShield — Marketplace Verificado",
       "shortName": "TechShield",
@@ -42,7 +43,8 @@
     },
     "plugins": [
       "expo-secure-store",
-      "expo-router"
+      "expo-router",
+      "expo-image"
     ]
   }
 }

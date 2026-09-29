@@ -64,6 +64,8 @@ const MAP: Record<string, MIconName> = {
   phone_android: 'phone-android',
   logout: 'logout',
   receipt_long: 'receipt-long',
+  close: 'close',
+  refresh: 'refresh',
 };
 
 interface Props {

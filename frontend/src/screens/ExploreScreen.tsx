@@ -55,9 +55,10 @@ function filterMock(filters: ProductFilters): ExploreCard[] {
 }
 
 export default function ExploreScreen({ nav }: { nav: Nav }) {
-  const { state, setSearch, setCondition, setTier, setResults } = useMarketplace();
+  const { state, setFilters, setSearch, setCondition, setTier, setResults } = useMarketplace();
   const { filters, search, condition, tierFilter, cards, offline, loadedQueryKey } = state;
   const [debouncedSearch, setDebouncedSearch] = useState(search);
+  const [retryNonce, setRetryNonce] = useState(0);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -89,7 +90,6 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
   );
 
   useEffect(() => {
-    if (loadedQueryKey === queryKey) return;
     let cancelled = false;
     (async () => {
       try {
@@ -104,7 +104,50 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
     return () => {
       cancelled = true;
     };
-  }, [queryKey, queryFilters, loadedQueryKey, setResults]);
+  }, [queryKey, queryFilters, retryNonce, setResults]);
+
+  const activeFilterActions: { key: string; label: string; onRemove: () => void }[] = [];
+  if (search.trim()) {
+    activeFilterActions.push({ key: 'search', label: `Búsqueda "${search.trim()}"`, onRemove: () => setSearch('') });
+  }
+  if (tierFilter) {
+    const label = tierFilter === 'secure' ? 'Vendedor Seguro' : tierFilter === 'normal' ? 'Vendedor Normal' : 'Vendedor No Seguro';
+    activeFilterActions.push({ key: 'tier', label, onRemove: () => setTier(undefined) });
+  }
+  if (filters.verified === true) {
+    activeFilterActions.push({ key: 'verified', label: 'Chequeado para Compra', onRemove: () => setFilters({ ...filters, verified: undefined }) });
+  }
+  if (filters.condition === 'new') {
+    activeFilterActions.push({ key: 'new', label: 'Solo productos nuevos', onRemove: () => setFilters({ ...filters, condition: undefined, sealed: undefined }) });
+  }
+  if (filters.warranty) {
+    activeFilterActions.push({ key: 'warranty', label: filters.warranty === 'extended' ? 'Cobertura extendida' : 'Garantía 90 días', onRemove: () => setFilters({ ...filters, warranty: undefined }) });
+  }
+  if (filters.minPositivity) {
+    activeFilterActions.push({ key: 'positivity', label: `${filters.minPositivity}%+ positividad`, onRemove: () => setFilters({ ...filters, minPositivity: undefined }) });
+  }
+  if (filters.maxHoursOfUse) {
+    activeFilterActions.push({ key: 'hours', label: `< ${filters.maxHoursOfUse} h de uso`, onRemove: () => setFilters({ ...filters, maxHoursOfUse: undefined }) });
+  }
+  if (filters.noMining === true) {
+    activeFilterActions.push({ key: 'mining', label: 'Sin minería', onRemove: () => setFilters({ ...filters, noMining: undefined }) });
+  }
+  if (filters.hideWithComplaints === true) {
+    activeFilterActions.push({ key: 'complaints', label: 'Sin quejas abiertas', onRemove: () => setFilters({ ...filters, hideWithComplaints: undefined }) });
+  }
+  if (filters.hideSuspicious === true) {
+    activeFilterActions.push({ key: 'suspicious', label: 'Sin precios sospechosos', onRemove: () => setFilters({ ...filters, hideSuspicious: undefined }) });
+  }
+  if (filters.escrow === true) {
+    activeFilterActions.push({ key: 'escrow', label: 'Solo custodia / escrow', onRemove: () => setFilters({ ...filters, escrow: undefined }) });
+  }
+
+  const clearAllFilters = () => {
+    setFilters({});
+    setSearch('');
+    setTier(undefined);
+    setCondition(0);
+  };
 
   const renderProduct = ({ item }: { item: ExploreCard }) => (
     <View className="px-4">
@@ -412,12 +455,45 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
                 </Text>
               </View>
             ) : (
-              <View className="items-center justify-center gap-3 rounded-xl border border-[#233554] bg-[#111a2e] px-6 py-14">
+              <View className="items-center justify-center gap-3 rounded-xl border border-[#233554] bg-[#111a2e] px-6 py-10">
                 <AppIcon name="search" size={32} color={colors.textMuted} />
                 <Text className="text-base font-semibold text-text-primary">Sin resultados</Text>
-                <Text className="text-center text-xs text-text-secondary">
-                  No hay productos que cumplan estos filtros de seguridad y chequeo.
+                <Text className="max-w-[280px] text-center text-xs leading-relaxed text-text-secondary">
+                  No hay productos que cumplan los filtros de seguridad y chequeo actuales.
                 </Text>
+
+                {activeFilterActions.length > 0 ? (
+                  <View className="mt-1 w-full flex flex-col gap-2">
+                    <Text className="font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+                      Sugerencias — quitar filtros
+                    </Text>
+                    <View className="flex-row flex-wrap justify-center gap-1.5">
+                      {activeFilterActions.map((a) => (
+                        <Pressable
+                          key={a.key}
+                          onPress={a.onRemove}
+                          className="flex-row items-center gap-1 rounded-full border border-[#233554] bg-[#162238] px-2.5 py-1"
+                        >
+                          <AppIcon name="close" size={13} color={colors.textSecondary} />
+                          <Text className="font-mono text-[10.5px] font-semibold text-text-secondary">{a.label}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                    <Pressable onPress={clearAllFilters} className="items-center py-1">
+                      <Text className="text-xs font-semibold text-primary">Quitar todos los filtros</Text>
+                    </Pressable>
+                  </View>
+                ) : null}
+
+                {offline ? (
+                  <Pressable
+                    onPress={() => setRetryNonce((n) => n + 1)}
+                    className="mt-2 flex-row items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3"
+                  >
+                    <AppIcon name="refresh" size={18} color={colors.onPrimary} />
+                    <Text className="text-sm font-semibold text-on-primary">Reintentar</Text>
+                  </Pressable>
+                ) : null}
               </View>
             )}
           </View>

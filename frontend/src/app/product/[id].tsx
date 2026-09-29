@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
+import Head from 'expo-router/head';
 import { useLocalSearchParams } from 'expo-router';
 
 import ProductDetailScreen from '../../screens/ProductDetailScreen';
@@ -46,5 +47,18 @@ export default function ProductRoute() {
     );
   }
 
-  return <ProductDetailScreen nav={createNav()} product={product} />;
+  return (
+    <>
+      <Head>
+        <title>{product.title} · TechShield</title>
+        <meta
+          name="description"
+          content={`${product.title} — ${product.verified ? 'chequeado para compra' : 'en auditoría'} con custodia escrow y garantía TechShield.`}
+        />
+        <meta property="og:title" content={`${product.title} · TechShield`} />
+        <meta property="og:type" content="product" />
+      </Head>
+      <ProductDetailScreen nav={createNav()} product={product} />
+    </>
+  );
 }

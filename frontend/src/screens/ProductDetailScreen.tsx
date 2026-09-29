@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { Image, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import AppIcon from '../components/AppIcon';
+import ProductImage from '../components/ProductImage';
 import { Avatar, ProgressBar } from '../components/ui';
-import { createOrder, createReport } from '../services/api';
-import type { OrderItem } from '../services/api';
+import { createOrder, createReport, getTrustBadge } from '../services/api';
+import type { OrderItem, SecurityProfile } from '../services/api';
 import { IMAGES } from '../data/mock';
 import { colors, glow, shadow } from '../theme';
 import type { ExploreCard, Nav, SellerTier } from '../types';
@@ -140,10 +141,66 @@ function VerificationData({ product }: { product: ExploreCard }) {
   );
 }
 
+const badgeMeta: Record<SecurityProfile['badge'], { label: string; cls: string; dot: string }> = {
+  safe: {
+    label: 'VENDEDOR SEGURO',
+    cls: 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300',
+    dot: colors.accentEmerald,
+  },
+  intermediate: {
+    label: 'VENDEDOR NORMAL',
+    cls: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300',
+    dot: colors.accentCyan,
+  },
+  unsafe: {
+    label: 'VENDEDOR NO SEGURO',
+    cls: 'border-red-500/40 bg-red-500/10 text-red-400',
+    dot: colors.diagnosticRed,
+  },
+};
+
 function SellerSecurity({ product, onReport }: { product: ExploreCard; onReport?: () => void }) {
-  if (!product.sellerTier) return null;
-  const meta = tierMeta[product.sellerTier];
-  const stats = product.sellerStats;
+  const [badge, setBadge] = useState<SecurityProfile | null>(null);
+
+  useEffect(() => {
+    if (!product.sellerId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await getTrustBadge(product.sellerId!);
+        if (!cancelled) setBadge(data);
+      } catch {
+        // conservar fallback con sellerStats del producto
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [product.sellerId]);
+
+  const fallbackTier = product.sellerTier;
+  const meta = badge ? badgeMeta[badge.badge] : fallbackTier ? tierMeta[fallbackTier] : null;
+  if (!meta) return null;
+
+  const stats = badge
+    ? {
+        positivity: badge.positivity,
+        complaints: badge.complaints,
+        total: badge.totalReviews,
+        identityVerified: badge.identityVerified,
+        acceptsTesting: badge.acceptsTesting,
+      }
+    : {
+        positivity: product.sellerStats?.positivity ?? 0,
+        complaints: product.sellerStats?.complaints ?? 0,
+        total: product.sellerStats?.total ?? 0,
+        identityVerified: product.identityVerified ?? false,
+        acceptsTesting: fallbackTier === 'secure',
+      };
+
+  const breakdown = badge?.breakdown;
+  const maxBreakdown = breakdown ? Math.max(1, breakdown.positive, breakdown.neutral, breakdown.complaint) : 1;
+
   return (
     <View className="px-4 pt-4">
       <View className="flex flex-col gap-2 rounded-xl border border-[#233554] bg-[#131d30] p-4" style={shadow.panel}>
@@ -156,24 +213,53 @@ function SellerSecurity({ product, onReport }: { product: ExploreCard; onReport?
             <View className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: meta.dot }} />
             <Text className="font-mono text-[11px] font-bold tracking-wider">{meta.label}</Text>
           </View>
-          {product.identityVerified ? (
+          {stats.identityVerified ? (
             <View className="flex-row items-center gap-1 rounded border border-sky-500/40 bg-sky-950/50 px-2 py-1">
               <AppIcon name="badge" size={13} color="#7dd3fc" />
               <Text className="font-mono text-[11px] font-bold tracking-wider text-sky-300">ID VERIFICADO</Text>
             </View>
           ) : null}
         </View>
+
+        {badge ? (
+          <View className="mt-1 flex-row items-center gap-3">
+            <View className="flex-row items-center gap-1">
+              <AppIcon name="star" size={18} color={colors.diagnosticAmber} />
+              <Text className="text-lg font-bold text-text-primary">{badge.averageRating.toFixed(1)}</Text>
+            </View>
+            <Text className="font-mono text-[11px] text-text-secondary">
+              {badge.totalReviews} reseñas · {badge.positivity}% positivas · {badge.complaintRate}% quejas
+            </Text>
+          </View>
+        ) : null}
+
         <Text className="text-xs leading-relaxed text-text-secondary">
           {product.sellerName ?? 'Vendedor'} · positividad{' '}
-          <Text className="font-bold text-text-primary">{stats?.positivity ?? 0}%</Text> ·{' '}
-          {stats?.total ?? 0} reseñas · {stats?.complaints ?? 0} quejas.
+          <Text className="font-bold text-text-primary">{stats.positivity}%</Text> · {stats.total} reseñas ·{' '}
+          {stats.complaints} quejas.
         </Text>
+
+        {breakdown ? (
+          <View className="mt-1 flex flex-col gap-1.5">
+            <View className="h-1.5 w-full flex-row overflow-hidden rounded-full bg-[#162238]">
+              <View className="h-full bg-emerald-500" style={{ flex: breakdown.positive / maxBreakdown }} />
+              <View className="h-full bg-amber-500" style={{ flex: breakdown.neutral / maxBreakdown }} />
+              <View className="h-full bg-red-500" style={{ flex: breakdown.complaint / maxBreakdown }} />
+            </View>
+            <View className="flex-row justify-between">
+              <Text className="font-mono text-[10px] text-emerald-400">
+                {breakdown.positive} positivas
+              </Text>
+              <Text className="font-mono text-[10px] text-amber-400">{breakdown.neutral} neutrales</Text>
+              <Text className="font-mono text-[10px] text-red-400">{breakdown.complaint} quejas</Text>
+            </View>
+          </View>
+        ) : null}
+
         <Text className="text-xs leading-relaxed text-text-secondary">
-          {product.sellerTier === 'secure'
+          {stats.acceptsTesting
             ? 'Acepta todas las revisiones y testeos del producto antes de venderlo.'
-            : product.sellerTier === 'normal'
-              ? 'Acepta algunas revisiones y testeos antes de vender.'
-              : 'Acepta pocas o ninguna revisión y testeo antes de vender.'}
+            : 'Acepta pocas o ninguna revisión y testeo antes de vender.'}
         </Text>
         {onReport ? (
           <Pressable
@@ -264,7 +350,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
             <AppIcon name="arrow_back" size={22} color={colors.onSurface} />
           </Pressable>
           <View className="h-7 w-7 items-center justify-center overflow-hidden rounded-lg">
-            <Image source={{ uri: IMAGES.logo }} style={{ width: 28, height: 28 }} resizeMode="contain" />
+            <ProductImage uri={IMAGES.logo} style={{ width: 28, height: 28 }} iconSize={16} contentFit="contain" />
           </View>
           <Text className="ml-1 truncate text-base font-semibold text-text-primary">Hardware Diagnostic Detail</Text>
         </View>
@@ -302,7 +388,12 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
             style={shadow.card}
           >
             <View className="overflow-hidden bg-[#060e20]" style={{ aspectRatio: 4 / 3 }}>
-              <Image source={{ uri: activeImage }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+              <ProductImage
+                uri={activeImage}
+                style={{ width: '100%', height: '100%' }}
+                iconSize={56}
+                contentFit="cover"
+              />
               <View className="absolute left-3 top-3 flex-row items-center gap-1.5 rounded-full border border-secondary/40 bg-[#0b1326]/90 px-2.5 py-1">
                 <AppIcon name="verified_user" size={15} color={colors.secondary} />
                 <Text className="font-mono text-[11px] font-semibold tracking-wider text-secondary">
@@ -323,7 +414,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
                     className="relative h-16 w-16 overflow-hidden rounded-lg bg-[#111c33]"
                     style={i === galleryIndex ? { borderWidth: 2, borderColor: colors.secondary } : undefined}
                   >
-                    <Image source={{ uri: g.uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                    <ProductImage uri={g.uri} style={{ width: '100%', height: '100%' }} iconSize={22} />
                     <View
                       className="absolute inset-x-0 bottom-0 items-center py-0.5"
                       style={{ backgroundColor: '#0b1326' + 'e6' }}
