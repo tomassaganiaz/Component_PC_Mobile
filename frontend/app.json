@@ -22,7 +22,22 @@
     },
     "web": {
       "bundler": "metro",
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "TechShield — Marketplace Verificado",
+      "shortName": "TechShield",
+      "description": "Compra y venta de hardware y móviles verificados con custodia (escrow), auditoría técnica y garantía TechShield.",
+      "lang": "es",
+      "themeColor": "#0b1326",
+      "backgroundColor": "#0b1326",
+      "display": "standalone",
+      "startUrl": "/",
+      "scope": "/",
+      "orientation": "portrait",
+      "splash": {
+        "image": "./assets/splash-icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#0b1326"
+      }
     },
     "plugins": [
       "expo-secure-store"
