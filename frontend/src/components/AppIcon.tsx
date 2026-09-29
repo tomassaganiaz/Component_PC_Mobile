@@ -61,6 +61,8 @@ const MAP: Record<string, MIconName> = {
   notifications_active: 'notifications-active',
   report: 'report',
   hourglass_empty: 'hourglass-empty',
+  phone_android: 'phone-android',
+  logout: 'logout',
 };
 
 interface Props {

@@ -1,12 +1,12 @@
 import { API_URL } from '../config';
 import type {
   ApiProduct,
-  AuthUser,
   LoginResponse,
   LoginSuccess,
   OtpChallenge,
   ProductFilters,
   SellerTier,
+  UserProfile,
 } from '../types';
 
 export class ApiError extends Error {
@@ -84,8 +84,8 @@ export function isOtpChallenge(result: LoginResponse): result is OtpChallenge {
   return (result as OtpChallenge).requiresOtp === true;
 }
 
-export function getProfile(token: string): Promise<AuthUser> {
-  return request<AuthUser>('/auth/profile', {
+export function getProfile(token: string): Promise<UserProfile> {
+  return request<UserProfile>('/auth/profile', {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
@@ -113,6 +113,28 @@ export function getProducts(filters: ProductFilters = {}): Promise<ApiProduct[]>
 
 export function getProduct(id: string): Promise<ApiProduct> {
   return request<ApiProduct>(`/products/${id}`);
+}
+
+export interface CreateProductInput {
+  title: string;
+  description: string;
+  price: number;
+  condition: 'new' | 'used';
+  category: string;
+  images?: string[];
+  hoursOfUse?: number;
+  reportedHoursOfUse?: number;
+  usageType?: string;
+  physicalState?: string;
+  brand?: string;
+  model?: string;
+}
+
+export function createProduct(input: CreateProductInput): Promise<ApiProduct> {
+  return request<ApiProduct>('/products', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
 }
 
 export interface SecurityProfile {

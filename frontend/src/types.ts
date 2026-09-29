@@ -90,6 +90,17 @@ export interface AuthUser {
   role: UserRole;
 }
 
+export interface UserProfile extends AuthUser {
+  phone?: string | null;
+  avatar?: string | null;
+  isActive?: boolean;
+  acceptsTesting?: boolean;
+  phoneVerified?: boolean;
+  documentVerified?: boolean;
+  otpEnabled?: boolean;
+  createdAt?: string;
+}
+
 export interface LoginSuccess {
   access_token: string;
   user: AuthUser;

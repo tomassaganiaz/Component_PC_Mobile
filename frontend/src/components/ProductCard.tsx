@@ -158,12 +158,36 @@ function TelemetryPanel({ card }: { card: ExploreCard }) {
   );
 }
 
+function PassedCheckBanner() {
+  return (
+    <View
+      className="flex-row items-center gap-2 rounded-lg border border-secondary/50 bg-[#06271a] px-2.5 py-1.5"
+      style={glow(colors.secondary, 10, 0.25)}
+    >
+      <View className="h-6 w-6 items-center justify-center rounded-full border border-secondary/60 bg-secondary/20">
+        <AppIcon name="check" size={14} color={colors.accentEmerald} />
+      </View>
+      <View className="flex-1">
+        <Text className="font-mono text-[10px] font-bold uppercase tracking-wider text-secondary">
+          Check Aprobado
+        </Text>
+        <Text className="font-mono text-[9.5px] text-emerald-300/80">
+          Pasó los filtros de seguridad y verificación activos
+        </Text>
+      </View>
+      <AppIcon name="verified" size={16} color={colors.accentEmerald} />
+    </View>
+  );
+}
+
 export default function ProductCard({
   card,
+  checked,
   onPress,
   onBuy,
 }: {
   card: ExploreCard;
+  checked?: boolean;
   onPress: () => void;
   onBuy: () => void;
 }) {
@@ -175,6 +199,7 @@ export default function ProductCard({
       className="flex flex-col gap-3 rounded-xl border border-[#20304a] bg-[#111b2e] p-3.5"
       style={shadow.card}
     >
+      {checked ? <PassedCheckBanner /> : null}
       <View className="flex-row gap-3">
         <View className="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl border border-[#1b273d] bg-[#0a101d]">
           {card.image ? (

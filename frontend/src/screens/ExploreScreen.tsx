@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -10,8 +10,30 @@ import { PulseDot, Segmented } from '../components/ui';
 import { CATEGORIES, PRODUCTS } from '../data/mock';
 import { getProducts } from '../services/api';
 import { colors, glow, shadow } from '../theme';
-import type { ExploreCard, Nav, ProductFilters } from '../types';
+import type { ExploreCard, Nav, ProductFilters, SellerTier } from '../types';
 import { toExploreCard } from '../utils/product';
+
+const TIER_FILTERS: { value: SellerTier | undefined; label: string; cls: string; icon: string }[] = [
+  { value: undefined, label: 'Todos', cls: 'border-[#233554] bg-[#111a2e] text-text-secondary', icon: 'verified_user' },
+  { value: 'secure', label: 'Seguro', cls: 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300', icon: 'verified' },
+  { value: 'normal', label: 'Normal', cls: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300', icon: 'verified_user' },
+  { value: 'not_secure', label: 'No Seguro', cls: 'border-red-500/40 bg-red-500/10 text-red-400', icon: 'report' },
+];
+
+function passedSecurityFilters(card: ExploreCard, filters: ProductFilters): boolean {
+  if (filters.sellerTier && card.sellerTier !== filters.sellerTier) return false;
+  if (filters.verified === true && card.verified !== true) return false;
+  if (filters.condition === 'new' && card.condition !== 'new') return false;
+  if (filters.warranty === 'extended' && !card.warranty?.extended) return false;
+  if (filters.warranty === 'techshield' && (card.warranty?.days ?? 0) < 90) return false;
+  if (filters.minPositivity !== undefined && (card.sellerStats?.positivity ?? 0) < filters.minPositivity) return false;
+  if (filters.maxHoursOfUse !== undefined && card.hoursOfUse != null && card.hoursOfUse > filters.maxHoursOfUse) return false;
+  if (filters.noMining === true && (card.usageType ?? '').toLowerCase().includes('miner')) return false;
+  if (filters.hideWithComplaints === true && (card.openComplaints ?? 0) > 0) return false;
+  if (filters.hideSuspicious === true && card.priceFlag === 'suspicious') return false;
+  if (filters.escrow === true && card.escrowProtected === false) return false;
+  return true;
+}
 
 function filterMock(filters: ProductFilters): ExploreCard[] {
   return PRODUCTS.filter((p) => {
@@ -34,21 +56,55 @@ function filterMock(filters: ProductFilters): ExploreCard[] {
 export default function ExploreScreen({ nav, filters }: { nav: Nav; filters: ProductFilters }) {
   const [condition, setCondition] = useState(0);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [tierFilter, setTierFilter] = useState<SellerTier | undefined>(filters.sellerTier);
+  const [prevTier, setPrevTier] = useState(filters.sellerTier);
   const [cards, setCards] = useState<ExploreCard[]>(PRODUCTS);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState(false);
+
+  if (prevTier !== filters.sellerTier) {
+    setPrevTier(filters.sellerTier);
+    setTierFilter(filters.sellerTier);
+  }
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const effectiveFilters: ProductFilters = useMemo(
+    () => ({ ...filters, sellerTier: tierFilter }),
+    [filters, tierFilter],
+  );
+  const queryFilters: ProductFilters = useMemo(
+    () => ({ ...effectiveFilters, search: debouncedSearch || undefined }),
+    [effectiveFilters, debouncedSearch],
+  );
+  const activeSecurity = Boolean(
+    effectiveFilters.sellerTier ||
+      effectiveFilters.verified ||
+      effectiveFilters.condition === 'new' ||
+      effectiveFilters.warranty ||
+      effectiveFilters.minPositivity ||
+      effectiveFilters.maxHoursOfUse ||
+      effectiveFilters.noMining ||
+      effectiveFilters.hideWithComplaints ||
+      effectiveFilters.hideSuspicious ||
+      effectiveFilters.escrow,
+  );
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const data = await getProducts({ ...filters, search: search || undefined });
+        const data = await getProducts(queryFilters);
         if (cancelled) return;
         setCards(data.map(toExploreCard));
         setOffline(false);
       } catch {
         if (cancelled) return;
-        setCards(filterMock(filters));
+        setCards(filterMock(queryFilters));
         setOffline(true);
       } finally {
         if (!cancelled) setLoading(false);
@@ -57,7 +113,7 @@ export default function ExploreScreen({ nav, filters }: { nav: Nav; filters: Pro
     return () => {
       cancelled = true;
     };
-  }, [filters, search]);
+  }, [queryFilters]);
 
   return (
     <View className="flex-1 bg-surface">
@@ -91,73 +147,108 @@ export default function ExploreScreen({ nav, filters }: { nav: Nav; filters: Pro
           </View>
         </View>
 
+        {/* Seller security quick filter */}
+        <View className="px-4 pt-3">
+          <View className="mb-2 flex-row items-center justify-between">
+            <View className="flex-row items-center gap-1.5">
+              <AppIcon name="verified_user" size={15} color={colors.primary} />
+              <Text className="font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+                Seguridad del vendedor
+              </Text>
+            </View>
+            <Pressable onPress={() => nav.go({ name: 'filters' })} className="flex-row items-center gap-1">
+              <Text className="font-mono text-[11px] font-medium text-primary">Filtros avanzados</Text>
+              <AppIcon name="arrow_forward" size={14} color={colors.primary} />
+            </Pressable>
+          </View>
+          <View className="flex-row gap-2">
+            {TIER_FILTERS.map((opt) => {
+              const active = (tierFilter ?? undefined) === opt.value;
+              return (
+                <Pressable
+                  key={opt.label}
+                  onPress={() => setTierFilter(opt.value)}
+                  className={`flex-1 flex-row items-center justify-center gap-1 rounded-xl border px-2 py-2 ${
+                    active ? opt.cls : 'border-[#233554] bg-[#111a2e]'
+                  }`}
+                  style={active ? glow(colors.primary, 8, 0.15) : undefined}
+                >
+                  <AppIcon
+                    name={active && opt.value !== undefined ? opt.icon : 'verified_user'}
+                    size={14}
+                    color={active && opt.value !== undefined ? colors.accentEmerald : colors.textSecondary}
+                  />
+                  <Text
+                    className={`font-mono text-[10.5px] font-semibold ${
+                      active && opt.value !== undefined ? 'text-emerald-300' : 'text-text-secondary'
+                    }`}
+                  >
+                    {opt.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
         {/* Active filters strip */}
-        {(filters.sellerTier ||
-            filters.verified ||
-            filters.condition === 'new' ||
-            filters.warranty ||
-            filters.minPositivity ||
-            filters.maxHoursOfUse ||
-            filters.noMining ||
-            filters.hideWithComplaints ||
-            filters.hideSuspicious ||
-            filters.escrow) && !offline ? (
+        {activeSecurity && !offline ? (
           <View className="flex-row flex-wrap items-center gap-2 px-4 pt-2">
-            {filters.sellerTier ? (
+            {effectiveFilters.sellerTier ? (
               <View className="flex-row items-center gap-1 rounded-full border border-primary/40 bg-[#182845] px-2.5 py-0.5">
                 <AppIcon name="verified_user" size={13} color={colors.primary} />
                 <Text className="font-mono text-[10px] font-semibold text-primary">
-                  {filters.sellerTier === 'secure' ? 'SEGURO' : filters.sellerTier === 'normal' ? 'NORMAL' : 'NO SEGURO'}
+                  {effectiveFilters.sellerTier === 'secure' ? 'SEGURO' : effectiveFilters.sellerTier === 'normal' ? 'NORMAL' : 'NO SEGURO'}
                 </Text>
               </View>
             ) : null}
-            {filters.condition === 'new' ? (
+            {effectiveFilters.condition === 'new' ? (
               <View className="flex-row items-center gap-1 rounded-full border border-sky-400/60 bg-[#0a1b2e] px-2.5 py-0.5">
                 <AppIcon name="inventory_2" size={13} color="#7dd3fc" />
                 <Text className="font-mono text-[10px] font-semibold text-sky-300">NUEVOS · SIN ABRIR</Text>
               </View>
             ) : null}
-            {filters.warranty === 'extended' ? (
+            {effectiveFilters.warranty === 'extended' ? (
               <View className="flex-row items-center gap-1 rounded-full border border-cyan-500/40 bg-cyan-950/40 px-2.5 py-0.5">
                 <Text className="font-mono text-[10px] font-semibold text-cyan-300">COBERTURA EXTENDIDA</Text>
               </View>
             ) : null}
-            {filters.warranty === 'techshield' ? (
+            {effectiveFilters.warranty === 'techshield' ? (
               <View className="flex-row items-center gap-1 rounded-full border border-secondary/40 bg-secondary/10 px-2.5 py-0.5">
                 <Text className="font-mono text-[10px] font-semibold text-secondary">GARANTÍA 90 DÍAS</Text>
               </View>
             ) : null}
-            {filters.minPositivity ? (
+            {effectiveFilters.minPositivity ? (
               <View className="flex-row items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-0.5">
-                <Text className="font-mono text-[10px] font-semibold text-emerald-300">{filters.minPositivity}%+ POSITIVIDAD</Text>
+                <Text className="font-mono text-[10px] font-semibold text-emerald-300">{effectiveFilters.minPositivity}%+ POSITIVIDAD</Text>
               </View>
             ) : null}
-            {filters.maxHoursOfUse ? (
+            {effectiveFilters.maxHoursOfUse ? (
               <View className="flex-row items-center gap-1 rounded-full border border-[#233554] bg-[#111a2e] px-2.5 py-0.5">
-                <Text className="font-mono text-[10px] font-semibold text-text-secondary">{"<"} {filters.maxHoursOfUse} H DE USO</Text>
+                <Text className="font-mono text-[10px] font-semibold text-text-secondary">{"<"} {effectiveFilters.maxHoursOfUse} H DE USO</Text>
               </View>
             ) : null}
-            {filters.noMining ? (
+            {effectiveFilters.noMining ? (
               <View className="flex-row items-center gap-1 rounded-full border border-[#233554] bg-[#111a2e] px-2.5 py-0.5">
                 <Text className="font-mono text-[10px] font-semibold text-text-secondary">SIN MINERÍA</Text>
               </View>
             ) : null}
-            {filters.hideWithComplaints ? (
+            {effectiveFilters.hideWithComplaints ? (
               <View className="flex-row items-center gap-1 rounded-full border border-red-500/40 bg-red-500/10 px-2.5 py-0.5">
                 <Text className="font-mono text-[10px] font-semibold text-red-400">SIN QUEJAS ABIERTAS</Text>
               </View>
             ) : null}
-            {filters.hideSuspicious ? (
+            {effectiveFilters.hideSuspicious ? (
               <View className="flex-row items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-0.5">
                 <Text className="font-mono text-[10px] font-semibold text-amber-300">SIN PRECIO SOSPECHOSO</Text>
               </View>
             ) : null}
-            {filters.escrow ? (
+            {effectiveFilters.escrow ? (
               <View className="flex-row items-center gap-1 rounded-full border border-secondary/40 bg-secondary/10 px-2.5 py-0.5">
                 <Text className="font-mono text-[10px] font-semibold text-secondary">CUSTODIA</Text>
               </View>
             ) : null}
-            {filters.verified ? (
+            {effectiveFilters.verified ? (
               <View className="flex-row items-center gap-1 rounded-full border border-secondary/40 bg-secondary/10 px-2.5 py-0.5">
                 <AppIcon name="verified" size={13} color={colors.secondary} />
                 <Text className="font-mono text-[10px] font-semibold text-secondary">CHECQUEADO PARA COMPRA</Text>
@@ -299,14 +390,29 @@ export default function ExploreScreen({ nav, filters }: { nav: Nav; filters: Pro
               </Text>
             </View>
           ) : (
-            cards.map((product) => (
-              <ProductCard
-                key={product.id}
-                card={product}
-                onPress={() => nav.go({ name: 'detail', productId: product.id, product })}
-                onBuy={() => nav.go({ name: 'detail', productId: product.id, product })}
-              />
-            ))
+            <>
+              {activeSecurity ? (
+                <View
+                  className="flex-row items-center gap-2 rounded-lg border border-secondary/30 bg-secondary/10 px-3 py-2"
+                  style={glow(colors.secondary, 8, 0.12)}
+                >
+                  <AppIcon name="verified" size={16} color={colors.secondary} />
+                  <Text className="flex-1 font-mono text-[10.5px] leading-snug text-emerald-300">
+                    {cards.length} producto(s) con CHECK APROBADO: pasaron los filtros de seguridad y verificación
+                    activos.
+                  </Text>
+                </View>
+              ) : null}
+              {cards.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  card={product}
+                  checked={passedSecurityFilters(product, effectiveFilters)}
+                  onPress={() => nav.go({ name: 'detail', productId: product.id, product })}
+                  onBuy={() => nav.go({ name: 'detail', productId: product.id, product })}
+                />
+              ))}
+            </>
           )}
         </View>
 
