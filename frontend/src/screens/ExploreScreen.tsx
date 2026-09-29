@@ -7,6 +7,7 @@ import AppIcon from '../components/AppIcon';
 import BottomNav from '../components/BottomNav';
 import ProductCard from '../components/ProductCard';
 import { PulseDot, Segmented } from '../components/ui';
+import { useMarketplace } from '../context/MarketplaceContext';
 import { CATEGORIES, PRODUCTS } from '../data/mock';
 import { getProducts } from '../services/api';
 import { colors, glow, shadow } from '../theme';
@@ -53,20 +54,10 @@ function filterMock(filters: ProductFilters): ExploreCard[] {
   });
 }
 
-export default function ExploreScreen({ nav, filters }: { nav: Nav; filters: ProductFilters }) {
-  const [condition, setCondition] = useState(0);
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [tierFilter, setTierFilter] = useState<SellerTier | undefined>(filters.sellerTier);
-  const [prevTier, setPrevTier] = useState(filters.sellerTier);
-  const [cards, setCards] = useState<ExploreCard[]>(PRODUCTS);
-  const [loading, setLoading] = useState(true);
-  const [offline, setOffline] = useState(false);
-
-  if (prevTier !== filters.sellerTier) {
-    setPrevTier(filters.sellerTier);
-    setTierFilter(filters.sellerTier);
-  }
+export default function ExploreScreen({ nav }: { nav: Nav }) {
+  const { state, setSearch, setCondition, setTier, setResults } = useMarketplace();
+  const { filters, search, condition, tierFilter, cards, offline, loadedQueryKey } = state;
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -81,7 +72,9 @@ export default function ExploreScreen({ nav, filters }: { nav: Nav; filters: Pro
     () => ({ ...effectiveFilters, search: debouncedSearch || undefined }),
     [effectiveFilters, debouncedSearch],
   );
+  const queryKey = JSON.stringify(queryFilters);
   const searching = search.trim() !== debouncedSearch.trim();
+  const loading = loadedQueryKey !== queryKey;
   const activeSecurity = Boolean(
     effectiveFilters.sellerTier ||
       effectiveFilters.verified ||
@@ -96,25 +89,22 @@ export default function ExploreScreen({ nav, filters }: { nav: Nav; filters: Pro
   );
 
   useEffect(() => {
+    if (loadedQueryKey === queryKey) return;
     let cancelled = false;
     (async () => {
       try {
         const data = await getProducts(queryFilters);
         if (cancelled) return;
-        setCards(data.map(toExploreCard));
-        setOffline(false);
+        setResults(data.map(toExploreCard), false, queryKey);
       } catch {
         if (cancelled) return;
-        setCards(filterMock(queryFilters));
-        setOffline(true);
-      } finally {
-        if (!cancelled) setLoading(false);
+        setResults(filterMock(queryFilters), true, queryKey);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [queryFilters]);
+  }, [queryKey, queryFilters, loadedQueryKey, setResults]);
 
   return (
     <View className="flex-1 bg-surface">
@@ -168,7 +158,7 @@ export default function ExploreScreen({ nav, filters }: { nav: Nav; filters: Pro
               return (
                 <Pressable
                   key={opt.label}
-                  onPress={() => setTierFilter(opt.value)}
+                  onPress={() => setTier(opt.value)}
                   className={`flex-1 flex-row items-center justify-center gap-1 rounded-xl border px-2 py-2 ${
                     active ? opt.cls : 'border-[#233554] bg-[#111a2e]'
                   }`}

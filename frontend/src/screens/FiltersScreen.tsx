@@ -4,8 +4,9 @@ import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import AppHeader from '../components/AppHeader';
 import AppIcon from '../components/AppIcon';
 import BottomNav from '../components/BottomNav';
+import { useMarketplace } from '../context/MarketplaceContext';
 import { colors, glow, shadow } from '../theme';
-import type { Nav, ProductFilters, SellerTier } from '../types';
+import type { Nav, SellerTier } from '../types';
 
 type TierOption = 'all' | SellerTier;
 type WarrantyOption = 'all' | 'techshield' | 'extended';
@@ -117,15 +118,9 @@ function ToggleRow({
   );
 }
 
-export default function FiltersScreen({
-  nav,
-  filters,
-  onApply,
-}: {
-  nav: Nav;
-  filters: ProductFilters;
-  onApply: (filters: ProductFilters) => void;
-}) {
+export default function FiltersScreen({ nav }: { nav: Nav }) {
+  const { state, setFilters } = useMarketplace();
+  const filters = state.filters;
   const [tier, setTier] = useState<TierOption>(filters.sellerTier ?? 'all');
   const [verifiedOnly, setVerifiedOnly] = useState(filters.verified === true);
   const [newOnly, setNewOnly] = useState(filters.condition === 'new');
@@ -138,7 +133,7 @@ export default function FiltersScreen({
   const [hideSuspicious, setHideSuspicious] = useState(filters.hideSuspicious === true);
 
   const apply = () => {
-    onApply({
+    setFilters({
       sellerTier: tier === 'all' ? undefined : tier,
       verified: verifiedOnly ? true : undefined,
       condition: newOnly ? 'new' : undefined,
@@ -165,7 +160,7 @@ export default function FiltersScreen({
     setHideComplaints(false);
     setEscrow(false);
     setHideSuspicious(false);
-    onApply({});
+    setFilters({});
   };
 
   return (

@@ -11,19 +11,28 @@ import LoginScreen from './src/screens/LoginScreen';
 import ProductDetailScreen from './src/screens/ProductDetailScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import PublishScreen from './src/screens/PublishScreen';
+import { MarketplaceProvider, useMarketplace } from './src/context/MarketplaceContext';
 import { findProduct } from './src/data/mock';
 import { getProfile, setAuthToken } from './src/services/api';
 import { getStoredItem, removeStoredItem, setStoredItem } from './src/services/storage';
 import { colors } from './src/theme';
-import type { LoginSuccess, Nav, ProductFilters, Route } from './src/types';
+import type { LoginSuccess, Nav, Route } from './src/types';
 
 const SESSION_KEY = 'session';
 
 export default function App() {
+  return (
+    <MarketplaceProvider>
+      <AppShell />
+    </MarketplaceProvider>
+  );
+}
+
+function AppShell() {
+  const { reset } = useMarketplace();
   const [session, setSession] = useState<LoginSuccess | null>(null);
   const [restoring, setRestoring] = useState(true);
   const [route, setRoute] = useState<Route>({ name: 'explore' });
-  const [filters, setFilters] = useState<ProductFilters>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -66,7 +75,7 @@ export default function App() {
     setAuthToken(null);
     setSession(null);
     setRoute({ name: 'explore' });
-    setFilters({});
+    reset();
     try {
       await removeStoredItem(SESSION_KEY);
     } catch {
@@ -102,7 +111,7 @@ export default function App() {
 
     switch (route.name) {
       case 'explore':
-        return <ExploreScreen nav={nav} filters={filters} />;
+        return <ExploreScreen nav={nav} />;
       case 'detail': {
         const product = route.product ?? findProduct(route.productId);
         return <ProductDetailScreen nav={nav} product={product} />;
@@ -110,7 +119,7 @@ export default function App() {
       case 'inspection':
         return <InspectionScreen nav={nav} orderId={route.orderId} />;
       case 'filters':
-        return <FiltersScreen nav={nav} filters={filters} onApply={setFilters} />;
+        return <FiltersScreen nav={nav} />;
       case 'publish':
         return <PublishScreen nav={nav} />;
       case 'profile':
