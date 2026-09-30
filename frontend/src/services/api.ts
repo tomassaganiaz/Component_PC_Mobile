@@ -24,6 +24,10 @@ export function setAuthToken(token: string | null) {
   authToken = token;
 }
 
+export function getAuthToken(): string | null {
+  return authToken;
+}
+
 interface RequestOptions {
   method?: string;
   headers?: Record<string, string>;

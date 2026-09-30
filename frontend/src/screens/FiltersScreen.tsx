@@ -5,6 +5,7 @@ import AppHeader from '../components/AppHeader';
 import AppIcon from '../components/AppIcon';
 import BottomNav from '../components/BottomNav';
 import { useMarketplace } from '../context/MarketplaceContext';
+import { useTrack } from '../hooks/useTrack';
 import { colors, glow, shadow } from '../theme';
 import type { Nav, SellerTier } from '../types';
 
@@ -120,6 +121,7 @@ function ToggleRow({
 
 export default function FiltersScreen({ nav }: { nav: Nav }) {
   const { state, setFilters } = useMarketplace();
+  const trackEvent = useTrack();
   const filters = state.filters;
   const [tier, setTier] = useState<TierOption>(filters.sellerTier ?? 'all');
   const [verifiedOnly, setVerifiedOnly] = useState(filters.verified === true);
@@ -133,7 +135,7 @@ export default function FiltersScreen({ nav }: { nav: Nav }) {
   const [hideSuspicious, setHideSuspicious] = useState(filters.hideSuspicious === true);
 
   const apply = () => {
-    setFilters({
+    const next = {
       sellerTier: tier === 'all' ? undefined : tier,
       verified: verifiedOnly ? true : undefined,
       condition: newOnly ? 'new' : undefined,
@@ -145,7 +147,9 @@ export default function FiltersScreen({ nav }: { nav: Nav }) {
       hideWithComplaints: hideComplaints ? true : undefined,
       escrow: escrow ? true : undefined,
       hideSuspicious: hideSuspicious ? true : undefined,
-    });
+    };
+    setFilters(next);
+    trackEvent('filters_applied', { metadata: { ...next } });
     nav.go({ name: 'explore' });
   };
 

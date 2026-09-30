@@ -5,6 +5,7 @@ import { useLocalSearchParams } from 'expo-router';
 
 import ProductDetailScreen from '../../screens/ProductDetailScreen';
 import { findProduct } from '../../data/mock';
+import { useTrack } from '../../hooks/useTrack';
 import { createNav } from '../../navigation';
 import { getProduct } from '../../services/api';
 import { colors } from '../../theme';
@@ -15,6 +16,7 @@ export default function ProductRoute() {
   const productId = typeof id === 'string' ? id : undefined;
   const [product, setProduct] = useState(() => findProduct(productId));
   const [loading, setLoading] = useState(true);
+  const trackEvent = useTrack();
 
   useEffect(() => {
     if (!productId) return;
@@ -35,6 +37,12 @@ export default function ProductRoute() {
       cancelled = true;
     };
   }, [productId]);
+
+  useEffect(() => {
+    if (loading || !product) return;
+    trackEvent('product_view', { productId: product.id, metadata: { title: product.title, price: product.price } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   if (loading) {
     return (

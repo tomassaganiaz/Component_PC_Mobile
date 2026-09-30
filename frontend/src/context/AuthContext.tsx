@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { getProfile, setAuthToken } from '../services/api';
+import { track } from '../services/analytics';
 import { getStoredItem, removeStoredItem, setStoredItem } from '../services/storage';
 import type { LoginSuccess } from '../types';
 
@@ -55,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (nextSession: LoginSuccess) => {
     setAuthToken(nextSession.access_token);
     setSession(nextSession);
+    track('login', { page: '/login', metadata: { userId: nextSession.user.id } });
     try {
       await setStoredItem(SESSION_KEY, JSON.stringify(nextSession));
     } catch {
@@ -63,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    track('logout', { page: '/profile' });
     setAuthToken(null);
     setSession(null);
     try {

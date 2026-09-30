@@ -46,6 +46,7 @@ async function bootstrap() {
     .addTag('Orders', 'Órdenes de compra')
     .addTag('Verifications', 'Verificación de productos usados')
     .addTag('Reviews', 'Reseñas y quejas')
+    .addTag('Analytics', 'Eventos de analytics')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);

@@ -6,6 +6,7 @@ import ProductImage from '../components/ProductImage';
 import { Avatar, ProgressBar } from '../components/ui';
 import { createOrder, createReport, getTrustBadge } from '../services/api';
 import type { OrderItem, SecurityProfile } from '../services/api';
+import { useTrack } from '../hooks/useTrack';
 import { IMAGES } from '../data/mock';
 import { colors, glow, shadow } from '../theme';
 import type { ExploreCard, Nav, SellerTier } from '../types';
@@ -276,6 +277,7 @@ function SellerSecurity({ product, onReport }: { product: ExploreCard; onReport?
 }
 
 export default function ProductDetailScreen({ nav, product }: { nav: Nav; product: ExploreCard }) {
+  const trackEvent = useTrack();
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
@@ -313,6 +315,11 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
         paymentMethod,
       });
       setCreatedOrder(order);
+      trackEvent('purchase', {
+        orderId: order.id,
+        productId: product.id,
+        metadata: { total: Number(order.total), paymentMethod },
+      });
     } catch (err) {
       setOrderError(err instanceof Error ? err.message : 'No se pudo crear la orden.');
     } finally {
