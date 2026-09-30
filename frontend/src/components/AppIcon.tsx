@@ -66,6 +66,7 @@ const MAP: Record<string, MIconName> = {
   receipt_long: 'receipt-long',
   close: 'close',
   refresh: 'refresh',
+  star_border: 'star-border',
 };
 
 interface Props {

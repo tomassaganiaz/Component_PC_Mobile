@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import AppIcon from '../components/AppIcon';
 import ProductImage from '../components/ProductImage';
 import { Avatar, ProgressBar } from '../components/ui';
-import { createOrder, createReport, getTrustBadge } from '../services/api';
-import type { OrderItem, SecurityProfile } from '../services/api';
+import { createOrder, createReport, getSellerReviews, getTrustBadge } from '../services/api';
+import type { OrderItem, ReviewItem, SecurityProfile } from '../services/api';
 import { useTrack } from '../hooks/useTrack';
 import { IMAGES } from '../data/mock';
 import { colors, glow, shadow } from '../theme';
@@ -160,7 +160,15 @@ const badgeMeta: Record<SecurityProfile['badge'], { label: string; cls: string; 
   },
 };
 
-function SellerSecurity({ product, onReport }: { product: ExploreCard; onReport?: () => void }) {
+function SellerSecurity({
+  product,
+  onReport,
+  onViewReviews,
+}: {
+  product: ExploreCard;
+  onReport?: () => void;
+  onViewReviews?: () => void;
+}) {
   const [badge, setBadge] = useState<SecurityProfile | null>(null);
 
   useEffect(() => {
@@ -262,6 +270,15 @@ function SellerSecurity({ product, onReport }: { product: ExploreCard; onReport?
             ? 'Acepta todas las revisiones y testeos del producto antes de venderlo.'
             : 'Acepta pocas o ninguna revisión y testeo antes de vender.'}
         </Text>
+        {onViewReviews ? (
+          <Pressable
+            onPress={onViewReviews}
+            className="mt-1 flex-row items-center justify-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 py-2.5"
+          >
+            <AppIcon name="star" size={16} color={colors.diagnosticAmber} />
+            <Text className="text-xs font-semibold text-amber-400">Ver reseñas del vendedor</Text>
+          </Pressable>
+        ) : null}
         {onReport ? (
           <Pressable
             onPress={onReport}
@@ -290,6 +307,25 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
   const [placing, setPlacing] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
   const [createdOrder, setCreatedOrder] = useState<OrderItem | null>(null);
+
+  const [reviewsOpen, setReviewsOpen] = useState(false);
+  const [sellerReviews, setSellerReviews] = useState<ReviewItem[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsError, setReviewsError] = useState<string | null>(null);
+
+  const openSellerReviews = async () => {
+    if (!product.sellerId) return;
+    setReviewsOpen(true);
+    setReviewsLoading(true);
+    setReviewsError(null);
+    try {
+      setSellerReviews(await getSellerReviews(product.sellerId));
+    } catch (err) {
+      setReviewsError(err instanceof Error ? err.message : 'No se pudieron cargar las reseñas.');
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
 
   const gallery = product.gallery ?? [];
   const activeImage = gallery[galleryIndex]?.uri ?? product.image;
@@ -633,7 +669,11 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
           </View>
         ) : null}
 
-        <SellerSecurity product={product} onReport={product.sellerId ? () => setReportOpen(true) : undefined} />
+        <SellerSecurity
+          product={product}
+          onReport={product.sellerId ? () => setReportOpen(true) : undefined}
+          onViewReviews={product.sellerId ? openSellerReviews : undefined}
+        />
 
         {/* Seller */}
         {product.seller ? (
@@ -798,6 +838,114 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
           <Text className="text-[15px] font-semibold text-on-secondary">Comprar con TechShield</Text>
         </Pressable>
       </View>
+
+      {/* Seller reviews modal */}
+      <Modal
+        visible={reviewsOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setReviewsOpen(false)}
+      >
+        <View className="flex-1 items-center justify-end bg-black/70">
+          <View className="h-[75%] w-full rounded-t-3xl border-t border-[#233554] bg-[#0e1626] p-5" style={shadow.bottom}>
+            <View className="flex-row items-center justify-between">
+              <View className="flex-row items-center gap-2">
+                <AppIcon name="star" size={20} color={colors.diagnosticAmber} />
+                <Text className="text-lg font-semibold text-text-primary">Reseñas del vendedor</Text>
+              </View>
+              <Pressable onPress={() => setReviewsOpen(false)} className="h-9 w-9 items-center justify-center rounded-lg bg-[#111a2e]">
+                <AppIcon name="close" size={20} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+
+            <ScrollView className="mt-3 flex-1" showsVerticalScrollIndicator={false}>
+              {reviewsLoading ? (
+                <View className="items-center justify-center py-16">
+                  <ActivityIndicator color={colors.secondary} size="large" />
+                </View>
+              ) : reviewsError ? (
+                <View className="flex-row items-start gap-2 rounded-lg border border-red-500/40 bg-red-500/10 p-3">
+                  <AppIcon name="report" size={18} color={colors.diagnosticRed} />
+                  <Text className="flex-1 text-xs leading-relaxed text-red-400">{reviewsError}</Text>
+                </View>
+              ) : sellerReviews.length === 0 ? (
+                <View className="items-center justify-center gap-2 py-16">
+                  <AppIcon name="star_border" size={30} color={colors.textMuted} />
+                  <Text className="text-sm font-semibold text-text-primary">Sin reseñas aún</Text>
+                  <Text className="text-center text-xs text-text-secondary">
+                    Este vendedor todavía no tiene reseñas aprobadas.
+                  </Text>
+                </View>
+              ) : (
+                <View className="flex flex-col gap-3 pb-6">
+                  {sellerReviews.map((review) => (
+                    <View key={review.id} className="rounded-xl border border-[#233554] bg-[#111a2e] p-3.5">
+                      <View className="flex-row items-center justify-between">
+                        <View className="flex-row items-center gap-2">
+                          <View className="h-7 w-7 items-center justify-center rounded-full bg-[#162238]">
+                            <Text className="text-[11px] font-bold text-accent-cyan">
+                              {(review.buyer?.name ?? 'C').charAt(0).toUpperCase()}
+                            </Text>
+                          </View>
+                          <Text className="text-sm font-semibold text-text-primary">
+                            {review.buyer?.name ?? 'Comprador verificado'}
+                          </Text>
+                        </View>
+                        <View className="flex-row items-center gap-1">
+                          <AppIcon name="star" size={15} color={colors.diagnosticAmber} />
+                          <Text className="font-mono text-xs font-bold text-text-primary">{review.rating}</Text>
+                        </View>
+                      </View>
+                      <View className="mt-2 flex-row flex-wrap items-center gap-1.5">
+                        <View
+                          className={`rounded border px-1.5 py-0.5 ${
+                            review.type === 'positive'
+                              ? 'border-emerald-500/40 bg-emerald-500/10'
+                              : review.type === 'neutral'
+                                ? 'border-cyan-500/40 bg-cyan-500/10'
+                                : 'border-red-500/40 bg-red-500/10'
+                          }`}
+                        >
+                          <Text
+                            className="font-mono text-[10px] font-semibold uppercase tracking-wider"
+                            style={{
+                              color:
+                                review.type === 'positive'
+                                  ? colors.accentEmerald
+                                  : review.type === 'neutral'
+                                    ? colors.accentCyan
+                                    : colors.diagnosticRed,
+                            }}
+                          >
+                            {review.type}
+                          </Text>
+                        </View>
+                        {review.isVerifiedPurchase ? (
+                          <View className="flex-row items-center gap-1 rounded border border-sky-500/40 bg-sky-950/50 px-1.5 py-0.5">
+                            <AppIcon name="verified" size={11} color="#7dd3fc" />
+                            <Text className="font-mono text-[10px] font-semibold text-sky-300">COMPRA VERIFICADA</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                      {review.comment ? (
+                        <Text className="mt-2 text-xs leading-relaxed text-text-secondary">{review.comment}</Text>
+                      ) : null}
+                      {review.type === 'complaint' && review.complaintReason ? (
+                        <View className="mt-2 rounded-lg border border-red-500/30 bg-red-500/5 p-2">
+                          <Text className="text-xs leading-relaxed text-red-300/90">{review.complaintReason}</Text>
+                        </View>
+                      ) : null}
+                      <Text className="mt-2 font-mono text-[10px] text-text-muted">
+                        {new Date(review.createdAt).toLocaleDateString()}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Checkout modal */}
       <Modal

@@ -4,6 +4,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import AppHeader from '../components/AppHeader';
 import AppIcon from '../components/AppIcon';
 import BottomNav from '../components/BottomNav';
+import ReviewModal from '../components/ReviewModal';
 import { Avatar } from '../components/ui';
 import { getMyOrders, getProfile } from '../services/api';
 import type { OrderItem } from '../services/api';
@@ -47,6 +48,8 @@ export default function ProfileScreen({
 }) {
   const [profile, setProfile] = useState<UserProfile>(session.user);
   const [orders, setOrders] = useState<OrderItem[]>([]);
+  const [reviewOrder, setReviewOrder] = useState<OrderItem | null>(null);
+  const [reviewedOrderIds, setReviewedOrderIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -211,34 +214,73 @@ export default function ProfileScreen({
             </View>
           ) : (
             <View className="flex flex-col gap-2">
-              {orders.map((order) => (
-                <Pressable
-                  key={order.id}
-                  onPress={() => nav.go({ name: 'inspection', orderId: order.id })}
-                  className="flex-row items-center gap-3 rounded-xl border border-[#233554] bg-[#111a2e] p-3"
-                >
-                  <View className="h-9 w-9 items-center justify-center rounded-lg bg-[#162238]">
-                    <AppIcon name="receipt_long" size={18} color={colors.accentCyan} />
+              {orders.map((order) => {
+                const reviewable = order.status === 'delivered' || order.status === 'refunded';
+                const alreadyReviewed = reviewedOrderIds.has(order.id);
+                return (
+                  <View key={order.id} className="rounded-xl border border-[#233554] bg-[#111a2e] p-3">
+                    <Pressable
+                      onPress={() => nav.go({ name: 'inspection', orderId: order.id })}
+                      className="flex-row items-center gap-3"
+                    >
+                      <View className="h-9 w-9 items-center justify-center rounded-lg bg-[#162238]">
+                        <AppIcon name="receipt_long" size={18} color={colors.accentCyan} />
+                      </View>
+                      <View className="min-w-0 flex-1">
+                        <Text className="truncate text-sm font-semibold text-text-primary">
+                          {order.product?.title ?? `Orden #${order.id.slice(0, 8).toUpperCase()}`}
+                        </Text>
+                        <Text className="font-mono text-[11px] text-text-secondary">
+                          ${Number(order.total).toFixed(2)} · #{order.id.slice(0, 8).toUpperCase()}
+                        </Text>
+                      </View>
+                      <View className="flex-row items-center gap-1 rounded border border-[#233554] bg-[#0d1728] px-2 py-0.5">
+                        <Text className="font-mono text-[10px] font-semibold uppercase tracking-wider text-accent-cyan">
+                          {order.status.replace(/_/g, ' ')}
+                        </Text>
+                      </View>
+                      <AppIcon name="arrow_forward" size={18} color={colors.textMuted} />
+                    </Pressable>
+                    {reviewable ? (
+                      <Pressable
+                        onPress={() => {
+                          if (!alreadyReviewed) setReviewOrder(order);
+                        }}
+                        className={`mt-2.5 flex-row items-center justify-center gap-1.5 rounded-lg border py-2 ${
+                          alreadyReviewed
+                            ? 'border-[#233554] bg-[#0d1728] opacity-60'
+                            : 'border-amber-500/40 bg-amber-500/10'
+                        }`}
+                      >
+                        <AppIcon
+                          name="star"
+                          size={15}
+                          color={alreadyReviewed ? colors.textMuted : colors.diagnosticAmber}
+                        />
+                        <Text
+                          className="text-xs font-semibold"
+                          style={{ color: alreadyReviewed ? colors.textMuted : colors.diagnosticAmber }}
+                        >
+                          {alreadyReviewed ? 'Reseña enviada' : 'Reseñar esta compra'}
+                        </Text>
+                      </Pressable>
+                    ) : null}
                   </View>
-                  <View className="min-w-0 flex-1">
-                    <Text className="truncate text-sm font-semibold text-text-primary">
-                      {order.product?.title ?? `Orden #${order.id.slice(0, 8).toUpperCase()}`}
-                    </Text>
-                    <Text className="font-mono text-[11px] text-text-secondary">
-                      ${Number(order.total).toFixed(2)} · #{order.id.slice(0, 8).toUpperCase()}
-                    </Text>
-                  </View>
-                  <View className="flex-row items-center gap-1 rounded border border-[#233554] bg-[#0d1728] px-2 py-0.5">
-                    <Text className="font-mono text-[10px] font-semibold uppercase tracking-wider text-accent-cyan">
-                      {order.status.replace(/_/g, ' ')}
-                    </Text>
-                  </View>
-                  <AppIcon name="arrow_forward" size={18} color={colors.textMuted} />
-                </Pressable>
-              ))}
+                );
+              })}
             </View>
           )}
         </View>
+
+        {/* Review modal */}
+        <ReviewModal
+          visible={!!reviewOrder}
+          order={reviewOrder}
+          onClose={() => setReviewOrder(null)}
+          onSubmitted={(orderId) => {
+            setReviewedOrderIds((prev) => new Set(prev).add(orderId));
+          }}
+        />
 
         {/* Quick actions */}
         <View className="px-4 pt-4">

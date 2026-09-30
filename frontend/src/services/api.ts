@@ -169,6 +169,47 @@ export function getTrustBadge(sellerId: string): Promise<SecurityProfile> {
   return request<SecurityProfile>(`/reviews/trust-badge/${sellerId}`);
 }
 
+/* ------------------------------- Reviews -------------------------------- */
+
+export type ReviewType = 'positive' | 'neutral' | 'complaint';
+
+export interface ReviewItem {
+  id: string;
+  rating: number;
+  type: ReviewType;
+  status: string;
+  comment?: string;
+  sellerRating?: number;
+  productRating?: number;
+  complaintReason?: string;
+  isVerifiedPurchase?: boolean;
+  buyer?: { id: string; name: string };
+  product?: ApiProduct;
+  createdAt: string;
+}
+
+export interface CreateReviewInput {
+  productId: string;
+  orderId: string;
+  rating: number;
+  type: ReviewType;
+  comment?: string;
+  sellerRating?: number;
+  productRating?: number;
+  complaintReason?: string;
+}
+
+export function createReview(input: CreateReviewInput): Promise<ReviewItem> {
+  return request<ReviewItem>('/reviews', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function getSellerReviews(sellerId: string): Promise<ReviewItem[]> {
+  return request<ReviewItem[]>(`/reviews/seller/${sellerId}`);
+}
+
 export interface ChatSafetyResult {
   safe: boolean;
   warnings: string[];
