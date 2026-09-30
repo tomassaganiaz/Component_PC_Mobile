@@ -44,7 +44,9 @@ const initialState: MarketplaceState = {
   total: 0,
 };
 
-function marketplaceReducer(state: MarketplaceState, action: MarketplaceAction): MarketplaceState {
+export { initialState };
+
+export function marketplaceReducer(state: MarketplaceState, action: MarketplaceAction): MarketplaceState {
   switch (action.type) {
     case 'SET_FILTERS':
       return { ...state, filters: action.filters, tierFilter: action.filters.sellerTier };
