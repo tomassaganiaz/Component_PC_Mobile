@@ -41,10 +41,10 @@
         "backgroundColor": "#0b1326"
       }
     },
-    "plugins": [
+"plugins": [
       "expo-secure-store",
-      "expo-router",
-      "expo-image"
+      "expo-asset",
+      ["expo-router", { "asyncRoutes": "production" }]
     ]
   }
 }
