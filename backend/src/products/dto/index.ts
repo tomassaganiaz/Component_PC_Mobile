@@ -5,6 +5,7 @@ import {
   IsEnum,
   IsArray,
   IsBoolean,
+  IsInt,
   Min,
   Max,
 } from 'class-validator';
@@ -237,4 +238,19 @@ export class FilterProductDto {
   @IsOptional()
   @IsEnum(SellerSecurityTier)
   sellerTier?: SellerSecurityTier;
+
+  @ApiPropertyOptional({ example: 1, description: 'Página a devolver (empieza en 1)' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  page?: number;
+
+  @ApiPropertyOptional({ example: 20, description: 'Cantidad de ítems por página (máx 100)' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  @Type(() => Number)
+  limit?: number;
 }

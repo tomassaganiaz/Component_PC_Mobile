@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -54,11 +54,15 @@ function filterMock(filters: ProductFilters): ExploreCard[] {
   });
 }
 
+const PAGE_SIZE = 20;
+
 export default function ExploreScreen({ nav }: { nav: Nav }) {
-  const { state, setFilters, setSearch, setCondition, setTier, setResults } = useMarketplace();
-  const { filters, search, condition, tierFilter, cards, offline, loadedQueryKey } = state;
+  const { state, setFilters, setSearch, setCondition, setTier, setResults, appendResults } = useMarketplace();
+  const { filters, search, condition, tierFilter, cards, offline, loadedQueryKey, page, hasMore, total } = state;
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   const [retryNonce, setRetryNonce] = useState(0);
+  const [appending, setAppending] = useState(false);
+  const fetchedKeyRef = useRef('');
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -89,22 +93,38 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
       effectiveFilters.escrow,
   );
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
+  const fetchPage = useCallback(
+    async (targetPage: number, append: boolean) => {
       try {
-        const data = await getProducts(queryFilters);
-        if (cancelled) return;
-        setResults(data.map(toExploreCard), false, queryKey);
+        const data = await getProducts({ ...queryFilters, page: targetPage, limit: PAGE_SIZE });
+        const items = data.items.map(toExploreCard);
+        if (append) {
+          appendResults(items, data.page, data.hasMore, data.total);
+        } else {
+          setResults(items, false, queryKey, data.page, data.hasMore, data.total);
+        }
       } catch {
-        if (cancelled) return;
-        setResults(filterMock(queryFilters), true, queryKey);
+        if (!append) {
+          const fallback = filterMock({ ...queryFilters, page: 1, limit: PAGE_SIZE });
+          setResults(fallback, true, queryKey, 1, false, fallback.length);
+        }
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [queryKey, queryFilters, retryNonce, setResults]);
+    },
+    [queryFilters, queryKey, setResults, appendResults],
+  );
+
+  useEffect(() => {
+    const key = `${queryKey}:${retryNonce}`;
+    if (fetchedKeyRef.current === key) return;
+    fetchedKeyRef.current = key;
+    fetchPage(1, false);
+  }, [queryKey, retryNonce, fetchPage]);
+
+  const handleEndReached = useCallback(() => {
+    if (!hasMore || appending || loading) return;
+    setAppending(true);
+    fetchPage(page + 1, true).finally(() => setAppending(false));
+  }, [hasMore, appending, loading, page, fetchPage]);
 
   const activeFilterActions: { key: string; label: string; onRemove: () => void }[] = [];
   if (search.trim()) {
@@ -424,7 +444,9 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
               </View>
             )}
           </View>
-          <Text className="font-mono text-[11px] text-text-muted">{cards.length} ítems listos</Text>
+          <Text className="font-mono text-[11px] text-text-muted">
+            {total > 0 ? total : cards.length} {total === 1 ? 'ítem listo' : 'ítems listos'}
+          </Text>
         </View>
 
         {/* CHECK summary banner */}
@@ -499,36 +521,48 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
           </View>
         }
         ListFooterComponent={
-          <View className="px-4 pb-6 pt-4">
-            <LinearGradient
-              colors={['#121e35', '#0c1527']}
-              className="flex flex-col gap-3 overflow-hidden rounded-xl border border-[#233554] p-4"
-              style={shadow.card}
-            >
-              <View className="flex-row items-center gap-3">
-                <View
-                  className="h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-[#1b2b4d]"
-                  style={glow(colors.primary, 15, 0.2)}
-                >
-                  <AppIcon name="verified" size={24} color={colors.primary} />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-base font-semibold text-text-primary">¿Vendes hardware o móviles?</Text>
-                  <Text className="text-xs text-text-secondary">
-                    Certificamos tus componentes gratis y vendes hasta 3x más rápido.
-                  </Text>
-                </View>
+          <>
+            {appending ? (
+              <View className="flex-row items-center justify-center gap-2 py-4">
+                <ActivityIndicator size="small" color={colors.secondary} />
+                <Text className="font-mono text-[11px] uppercase tracking-wider text-text-secondary">
+                  Cargando más...
+                </Text>
               </View>
-              <Pressable
-                className="flex-row items-center justify-center gap-2 rounded-xl border border-primary/40 bg-[#1e3a73] py-2.5"
-                style={glow('#1e3a73', 15, 0.5)}
+            ) : null}
+            <View className="px-4 pb-6 pt-4">
+              <LinearGradient
+                colors={['#121e35', '#0c1527']}
+                className="flex flex-col gap-3 overflow-hidden rounded-xl border border-[#233554] p-4"
+                style={shadow.card}
               >
-                <Text className="text-xs font-semibold text-text-primary">Solicitar Kit de Auditoría Gratuito</Text>
-                <AppIcon name="arrow_forward" size={18} color={colors.primary} />
-              </Pressable>
-            </LinearGradient>
-          </View>
+                <View className="flex-row items-center gap-3">
+                  <View
+                    className="h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-[#1b2b4d]"
+                    style={glow(colors.primary, 15, 0.2)}
+                  >
+                    <AppIcon name="verified" size={24} color={colors.primary} />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-base font-semibold text-text-primary">¿Vendes hardware o móviles?</Text>
+                    <Text className="text-xs text-text-secondary">
+                      Certificamos tus componentes gratis y vendes hasta 3x más rápido.
+                    </Text>
+                  </View>
+                </View>
+                <Pressable
+                  className="flex-row items-center justify-center gap-2 rounded-xl border border-primary/40 bg-[#1e3a73] py-2.5"
+                  style={glow('#1e3a73', 15, 0.5)}
+                >
+                  <Text className="text-xs font-semibold text-text-primary">Solicitar Kit de Auditoría Gratuito</Text>
+                  <AppIcon name="arrow_forward" size={18} color={colors.primary} />
+                </Pressable>
+              </LinearGradient>
+            </View>
+          </>
         }
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.4}
       />
       <BottomNav active="explore" onNavigate={(tab) => nav.go({ name: tab })} />
     </View>

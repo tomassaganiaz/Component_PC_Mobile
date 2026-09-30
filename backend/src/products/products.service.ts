@@ -32,6 +32,15 @@ export interface ProductWithSecurity extends Product {
   };
 }
 
+export interface PaginatedProducts {
+  items: ProductWithSecurity[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
 @Injectable()
 export class ProductsService {
   constructor(
@@ -185,7 +194,7 @@ export class ProductsService {
     });
   }
 
-  async findAll(filters?: FilterProductDto): Promise<ProductWithSecurity[]> {
+  async findAll(filters?: FilterProductDto): Promise<PaginatedProducts> {
     const query = this.productRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.seller', 'seller')
@@ -267,7 +276,21 @@ export class ProductsService {
       result = result.filter((p) => p.securityTier === filters.sellerTier);
     }
 
-    return result;
+    const total = result.length;
+    const page = Math.max(1, filters?.page ?? 1);
+    const limit = Math.min(Math.max(filters?.limit ?? 20, 1), 100);
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const start = (page - 1) * limit;
+    const items = result.slice(start, start + limit);
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages,
+      hasMore: page < totalPages,
+    };
   }
 
   async findOne(id: string): Promise<ProductWithSecurity> {

@@ -9,6 +9,9 @@ interface MarketplaceState {
   cards: ExploreCard[];
   offline: boolean;
   loadedQueryKey: string | null;
+  page: number;
+  hasMore: boolean;
+  total: number;
 }
 
 type MarketplaceAction =
@@ -16,7 +19,16 @@ type MarketplaceAction =
   | { type: 'SET_SEARCH'; search: string }
   | { type: 'SET_CONDITION'; condition: number }
   | { type: 'SET_TIER'; tier: SellerTier | undefined }
-  | { type: 'SET_RESULTS'; cards: ExploreCard[]; offline: boolean; queryKey: string }
+  | {
+      type: 'SET_RESULTS';
+      cards: ExploreCard[];
+      offline: boolean;
+      queryKey: string;
+      page: number;
+      hasMore: boolean;
+      total: number;
+    }
+  | { type: 'APPEND_RESULTS'; cards: ExploreCard[]; page: number; hasMore: boolean; total: number }
   | { type: 'RESET' };
 
 const initialState: MarketplaceState = {
@@ -27,6 +39,9 @@ const initialState: MarketplaceState = {
   cards: [],
   offline: false,
   loadedQueryKey: null,
+  page: 1,
+  hasMore: false,
+  total: 0,
 };
 
 function marketplaceReducer(state: MarketplaceState, action: MarketplaceAction): MarketplaceState {
@@ -40,7 +55,23 @@ function marketplaceReducer(state: MarketplaceState, action: MarketplaceAction):
     case 'SET_TIER':
       return { ...state, tierFilter: action.tier };
     case 'SET_RESULTS':
-      return { ...state, cards: action.cards, offline: action.offline, loadedQueryKey: action.queryKey };
+      return {
+        ...state,
+        cards: action.cards,
+        offline: action.offline,
+        loadedQueryKey: action.queryKey,
+        page: action.page,
+        hasMore: action.hasMore,
+        total: action.total,
+      };
+    case 'APPEND_RESULTS':
+      return {
+        ...state,
+        cards: [...state.cards, ...action.cards],
+        page: action.page,
+        hasMore: action.hasMore,
+        total: action.total,
+      };
     case 'RESET':
       return { ...initialState };
     default:
@@ -54,7 +85,15 @@ interface MarketplaceContextValue {
   setSearch: (search: string) => void;
   setCondition: (condition: number) => void;
   setTier: (tier: SellerTier | undefined) => void;
-  setResults: (cards: ExploreCard[], offline: boolean, queryKey: string) => void;
+  setResults: (
+    cards: ExploreCard[],
+    offline: boolean,
+    queryKey: string,
+    page: number,
+    hasMore: boolean,
+    total: number,
+  ) => void;
+  appendResults: (cards: ExploreCard[], page: number, hasMore: boolean, total: number) => void;
   reset: () => void;
 }
 
@@ -70,8 +109,10 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
       setSearch: (search) => dispatch({ type: 'SET_SEARCH', search }),
       setCondition: (condition) => dispatch({ type: 'SET_CONDITION', condition }),
       setTier: (tier) => dispatch({ type: 'SET_TIER', tier }),
-      setResults: (cards, offline, queryKey) =>
-        dispatch({ type: 'SET_RESULTS', cards, offline, queryKey }),
+      setResults: (cards, offline, queryKey, page, hasMore, total) =>
+        dispatch({ type: 'SET_RESULTS', cards, offline, queryKey, page, hasMore, total }),
+      appendResults: (cards, page, hasMore, total) =>
+        dispatch({ type: 'APPEND_RESULTS', cards, page, hasMore, total }),
       reset: () => dispatch({ type: 'RESET' }),
     }),
     [state],

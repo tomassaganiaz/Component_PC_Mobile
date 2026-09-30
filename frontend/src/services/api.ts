@@ -94,7 +94,16 @@ export function getProfile(token: string): Promise<UserProfile> {
   });
 }
 
-export function getProducts(filters: ProductFilters = {}): Promise<ApiProduct[]> {
+export interface PaginatedProducts {
+  items: ApiProduct[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
+export function getProducts(filters: ProductFilters = {}): Promise<PaginatedProducts> {
   const params = new URLSearchParams();
   if (filters.category) params.set('category', filters.category);
   if (filters.condition) params.set('condition', filters.condition);
@@ -111,8 +120,10 @@ export function getProducts(filters: ProductFilters = {}): Promise<ApiProduct[]>
   if (filters.hideSuspicious === true) params.set('hideSuspicious', 'true');
   if (filters.sellerTier) params.set('sellerTier', filters.sellerTier);
   if (filters.search) params.set('search', filters.search);
+  if (filters.page !== undefined) params.set('page', String(filters.page));
+  if (filters.limit !== undefined) params.set('limit', String(filters.limit));
   const qs = params.toString();
-  return request<ApiProduct[]>(`/products${qs ? `?${qs}` : ''}`);
+  return request<PaginatedProducts>(`/products${qs ? `?${qs}` : ''}`);
 }
 
 export function getProduct(id: string): Promise<ApiProduct> {

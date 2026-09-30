@@ -82,6 +82,8 @@ export interface ProductFilters {
   hideWithComplaints?: boolean;
   hideSuspicious?: boolean;
   escrow?: boolean;
+  page?: number;
+  limit?: number;
 }
 
 export interface AuthUser {
