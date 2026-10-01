@@ -1,16 +1,9 @@
 import { Pressable, Text, View } from 'react-native';
 
 import AppIcon from './AppIcon';
+import { useI18n } from '../i18n';
 import { colors, shadow } from '../theme';
 import type { ScreenName } from '../types';
-
-const TABS: { name: ScreenName; icon: string; label: string }[] = [
-  { name: 'explore', icon: 'grid_view', label: 'Explorar' },
-  { name: 'filters', icon: 'manage_search', label: 'Filtros' },
-  { name: 'publish', icon: 'add', label: 'Publicar' },
-  { name: 'inspection', icon: 'verified_user', label: 'Auditoría' },
-  { name: 'profile', icon: 'person', label: 'Perfil' },
-];
 
 export default function BottomNav({
   active,
@@ -19,6 +12,16 @@ export default function BottomNav({
   active: ScreenName;
   onNavigate: (tab: ScreenName) => void;
 }) {
+  const { t } = useI18n();
+
+  const TABS: { name: ScreenName; icon: string; labelKey: string }[] = [
+    { name: 'explore', icon: 'grid_view', labelKey: 'nav.explore' },
+    { name: 'filters', icon: 'manage_search', labelKey: 'nav.filters' },
+    { name: 'publish', icon: 'add', labelKey: 'nav.publish' },
+    { name: 'inspection', icon: 'verified_user', labelKey: 'nav.inspection' },
+    { name: 'profile', icon: 'person', labelKey: 'nav.profile' },
+  ];
+
   return (
     <View
       className="w-full flex-row items-center justify-around bg-[#090e1a]/95 px-1"
@@ -72,7 +75,7 @@ export default function BottomNav({
                 isActive ? 'font-semibold text-primary' : 'text-text-secondary'
               }`}
             >
-              {tab.label}
+              {t(tab.labelKey)}
             </Text>
           </Pressable>
         );

@@ -6,6 +6,7 @@ import AppIcon from '../components/AppIcon';
 import BottomNav from '../components/BottomNav';
 import ReviewModal from '../components/ReviewModal';
 import { Avatar } from '../components/ui';
+import { useI18n } from '../i18n';
 import { getMyOrders, getProfile } from '../services/api';
 import type { OrderItem } from '../services/api';
 import { colors, glow, shadow } from '../theme';
@@ -46,6 +47,7 @@ export default function ProfileScreen({
   session: LoginSuccess;
   onLogout: () => void;
 }) {
+  const { t } = useI18n();
   const [profile, setProfile] = useState<UserProfile>(session.user);
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [reviewOrder, setReviewOrder] = useState<OrderItem | null>(null);
@@ -158,7 +160,7 @@ export default function ProfileScreen({
               <AppIcon name="verified_user" size={22} color={tierTone} />
             </View>
             <View className="flex-1">
-              <Text className="text-lg font-semibold text-text-primary">Tu nivel de seguridad</Text>
+              <Text className="text-lg font-semibold text-text-primary">{t('profile.section.security')}</Text>
               <View className="mt-1 self-start rounded border px-2 py-0.5" style={{ borderColor: tierTone + '66', backgroundColor: tierTone + '1a' }}>
                 <Text className="font-mono text-[11px] font-bold tracking-wider" style={{ color: tierTone }}>
                   VENDEDOR {tierLabel}
@@ -176,7 +178,7 @@ export default function ProfileScreen({
         {/* KYC checklist */}
         <View className="px-4 pt-4">
           <Text className="mb-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
-            Verificación (KYC)
+            {t('profile.section.kyc')}
           </Text>
           <View className="flex flex-col gap-2">
             <Row
@@ -203,7 +205,7 @@ export default function ProfileScreen({
         {/* Orders */}
         <View className="px-4 pt-4">
           <Text className="mb-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
-            Mis compras ({orders.length})
+            {t('profile.section.orders')} ({orders.length})
           </Text>
           {orders.length === 0 ? (
             <View className="flex-row items-center gap-2.5 rounded-xl border border-[#233554] bg-[#111a2e] p-3">
@@ -285,7 +287,7 @@ export default function ProfileScreen({
         {/* Quick actions */}
         <View className="px-4 pt-4">
           <Text className="mb-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
-            Cuenta
+            {t('profile.section.account')}
           </Text>
           <View className="flex flex-col gap-2">
             <Pressable
@@ -328,7 +330,7 @@ export default function ProfileScreen({
             className="flex-row items-center justify-center gap-2 rounded-xl border border-red-500/40 bg-red-500/10 py-3"
           >
             <AppIcon name="logout" size={18} color={colors.diagnosticRed} />
-            <Text className="text-sm font-semibold text-red-400">Cerrar sesión</Text>
+            <Text className="text-sm font-semibold text-red-400">{t('profile.logout')}</Text>
           </Pressable>
           <Text className="mt-3 text-center font-mono text-[10px] text-text-muted">
             TechShield · Marketplace Verificado · v1.0.0

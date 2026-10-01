@@ -3,11 +3,13 @@ import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import AppIcon from './../components/AppIcon';
 import { DividerLabel, PulseDot } from './../components/ui';
+import { useI18n } from './../i18n';
 import { isOtpChallenge, login, requestOtp, verifyOtp } from './../services/api';
 import { colors, shadow } from '../theme';
 import type { LoginSuccess } from '../types';
 
 export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSuccess) => void }) {
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -109,7 +111,7 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
                 <AppIcon name="shield_locked" size={28} color={colors.primary} />
               </View>
               <View className="min-w-0 flex-1">
-                <Text className="text-[28px] font-bold tracking-tight text-text-primary">Acceso Seguro</Text>
+                <Text className="text-[28px] font-bold tracking-tight text-text-primary">{t('login.title')}</Text>
                 <Text className="mt-1 text-xs leading-relaxed text-text-secondary">
                   Mercado auditado de componentes y móviles certificados con telemetría de silicio y garantía técnica.
                 </Text>
@@ -135,7 +137,7 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
                   {biometricLoading ? (
                     <View className="flex-row items-center gap-2 py-1">
                       <AppIcon name="sync" size={22} color={colors.accentCyan} />
-                      <Text className="font-mono text-xs text-text-primary">Validando sensor biométrico...</Text>
+                      <Text className="font-mono text-xs text-text-primary">{t('login.biometricValidating')}</Text>
                     </View>
                   ) : (
                     <>
@@ -164,7 +166,7 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
           <View className="flex flex-col gap-1.5">
             <View className="flex-row items-center justify-between">
               <Text className="font-mono text-[11px] uppercase text-text-secondary">
-                Identificador / Correo TechShield
+                {t('login.emailLabel')}
               </Text>
               <Text className="font-mono text-[11px] text-text-muted">AUTH_UID</Text>
             </View>
@@ -188,7 +190,7 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
           <View className="flex flex-col gap-1.5">
             <View className="flex-row items-center justify-between">
               <Text className="font-mono text-[11px] uppercase text-text-secondary">
-                Clave Criptográfica Maestra
+                {t('login.passwordLabel')}
               </Text>
               <Text className="font-mono text-[11px] text-text-muted">SHA-256</Text>
             </View>
@@ -230,7 +232,7 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
               </View>
               <Text className="text-xs text-text-secondary">Enlazar terminal (30d)</Text>
             </Pressable>
-            <Text className="text-xs text-accent-blue">¿Olvidaste tu clave?</Text>
+            <Text className="text-xs text-accent-blue">{t('login.forgot')}</Text>
           </View>
 
           {/* OTP two-step */}
@@ -238,7 +240,7 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
             <View className="flex flex-col gap-3 rounded-xl border border-accent-cyan/40 bg-[#06222e] p-4">
               <View className="flex-row items-center gap-2">
                 <AppIcon name="verified_user" size={20} color={colors.accentCyan} />
-                <Text className="text-base font-semibold text-text-primary">Verificación en dos pasos</Text>
+                <Text className="text-base font-semibold text-text-primary">{t('login.otp.title')}</Text>
               </View>
               <Text className="text-xs leading-relaxed text-text-secondary">
                 Ingresá el código de 6 dígitos enviado a tu dispositivo para completar el acceso.
@@ -271,10 +273,10 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
                 ) : (
                   <AppIcon name="verified" size={18} color="#06222e" />
                 )}
-                <Text className="text-sm font-semibold text-[#06222e]">Verificar Código</Text>
+                <Text className="text-sm font-semibold text-[#06222e]">{t('login.otp.verify')}</Text>
               </Pressable>
               <Pressable onPress={handleCancelOtp} className="items-center py-1">
-                <Text className="text-xs text-text-secondary">Volver al inicio de sesión</Text>
+                <Text className="text-xs text-text-secondary">{t('login.otp.back')}</Text>
               </Pressable>
             </View>
           ) : null}
@@ -297,12 +299,12 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
             {submitting ? (
               <>
                 <AppIcon name="sync" size={20} color={colors.onPrimary} />
-                <Text className="text-base font-semibold text-on-primary">Descifrando Enclave...</Text>
+                <Text className="text-base font-semibold text-on-primary">{t('login.submitting')}</Text>
               </>
             ) : (
               <>
                 <AppIcon name="verified_user" size={20} color={colors.onPrimary} />
-                <Text className="text-base font-semibold text-on-primary">Iniciar Sesión Auditada</Text>
+                <Text className="text-base font-semibold text-on-primary">{t('login.submit')}</Text>
               </>
             )}
           </Pressable>
