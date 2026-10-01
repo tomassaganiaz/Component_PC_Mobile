@@ -6,9 +6,11 @@ Marketplace para componentes de PC y móviles con verificación de productos usa
 
 ```
 Component_PC_Celu/
-├── backend/          # API NestJS + TypeORM + PostgreSQL
-├── frontend/         # App React Native + Expo + Tailwind
-├── AGENTS.md         # Guía de contribución
+├── backend/            # API NestJS + TypeORM + PostgreSQL
+├── Frontend/           # App React Native + Expo Router + NativeWind (iOS/Android/Web/PWA)
+├── Docs/               # Documentación de módulos y avances
+├── .github/workflows/  # CI/CD (backend + deploy web)
+├── README.md
 └── .gitignore
 ```
 
@@ -35,9 +37,17 @@ npm run start:dev       # Servidor en http://localhost:3000
 ### Frontend
 
 ```bash
-cd frontend
+cd Frontend
 npm install
-npx expo start          # Abrir en emulador o dispositivo
+cp .env.example .env    # Opcional: EXPO_PUBLIC_API_URL para apuntar a otro backend
+npx expo start          # Abrir en emulador, dispositivo o web (w)
+```
+
+#### Web / PWA
+
+```bash
+npm run build:web       # Genera el sitio estático en dist/ (SSG + code-splitting)
+npm run web             # Dev server web
 ```
 
 ## Comandos Disponibles
@@ -62,6 +72,10 @@ npx expo start          # Abrir en emulador o dispositivo
 | `npx expo start` | Dev server |
 | `npx expo start --android` | Abrir en Android |
 | `npx expo start --ios` | Abrir en iOS |
+| `npm run web` | Dev server web |
+| `npm run start:tunnel` | Dev server por túnel (ngrok) |
+| `npm run build:web` | Export estático del sitio (SSG) |
+| `npm run test` | Tests con Jest |
 | `npm run lint` | Linting con ESLint |
 | `npm run typecheck` | Verificación de tipos |
 
