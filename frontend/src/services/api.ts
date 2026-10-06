@@ -1,6 +1,7 @@
 import { API_URL } from '../config';
 import type {
   ApiProduct,
+  AuthUser,
   LoginResponse,
   LoginSuccess,
   OtpChallenge,
@@ -67,6 +68,18 @@ export function login(email: string, password: string): Promise<LoginResponse> {
   return request<LoginResponse>('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
+  });
+}
+
+export function register(input: {
+  name: string;
+  email: string;
+  password: string;
+  phone?: string;
+}): Promise<AuthUser> {
+  return request<AuthUser>('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(input),
   });
 }
 

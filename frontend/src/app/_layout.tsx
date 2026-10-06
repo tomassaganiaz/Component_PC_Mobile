@@ -26,7 +26,7 @@ function ProtectedRouter() {
 
   useEffect(() => {
     if (restoring) return;
-    const inAuthGroup = segments[0] === 'login';
+    const inAuthGroup = segments[0] === 'login' || segments[0] === 'register';
     if (!session && !inAuthGroup) {
       router.replace('/login');
     } else if (session && inAuthGroup) {
@@ -48,6 +48,7 @@ function ProtectedRouter() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="login" />
+      <Stack.Screen name="register" />
       <Stack.Screen name="index" />
       <Stack.Screen name="filters" />
       <Stack.Screen name="publish" />
