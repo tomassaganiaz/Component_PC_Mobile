@@ -7,7 +7,7 @@ import AppIcon from '../components/AppIcon';
 import BottomNav from '../components/BottomNav';
 import ProductImage from '../components/ProductImage';
 import { Pill, PulseDot } from '../components/ui';
-import { chatSafetyCheck, getOrder, getOrderProtection } from '../services/api';
+import { chatSafetyCheck, getOrder, getOrderProtection, requestOrderCoverage, requestOrderReturn } from '../services/api';
 import { IMAGES, INSPECTION_STEPS } from '../data/mock';
 import { colors, glow, shadow } from '../theme';
 import type { ChatSafetyResult, OrderItem, OrderProtection } from '../services/api';
@@ -98,6 +98,45 @@ function OrderTracking({
   error: string | null;
   nav: Nav;
 }) {
+  const [returnOpen, setReturnOpen] = useState(false);
+  const [returnReason, setReturnReason] = useState('');
+  const [returnLoading, setReturnLoading] = useState(false);
+  const [returnError, setReturnError] = useState<string | null>(null);
+  const [returnDone, setReturnDone] = useState(false);
+  const [coverageLoading, setCoverageLoading] = useState(false);
+  const [coverageError, setCoverageError] = useState<string | null>(null);
+  const [coverageResult, setCoverageResult] = useState<{ ticketId: string; message: string } | null>(null);
+
+  const handleReturn = async () => {
+    if (!order || returnReason.trim().length < 10) {
+      setReturnError('Contanos el motivo (mínimo 10 caracteres).');
+      return;
+    }
+    setReturnLoading(true);
+    setReturnError(null);
+    try {
+      await requestOrderReturn(order.id, returnReason.trim());
+      setReturnDone(true);
+    } catch (err) {
+      setReturnError(err instanceof Error ? err.message : 'No se pudo solicitar la devolución.');
+    } finally {
+      setReturnLoading(false);
+    }
+  };
+
+  const handleCoverage = async () => {
+    if (!order) return;
+    setCoverageLoading(true);
+    setCoverageError(null);
+    try {
+      setCoverageResult(await requestOrderCoverage(order.id));
+    } catch (err) {
+      setCoverageError(err instanceof Error ? err.message : 'No se pudo solicitar la cobertura.');
+    } finally {
+      setCoverageLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center gap-3">
@@ -132,6 +171,7 @@ function OrderTracking({
   const title = product?.title ?? `Orden #${order.id.slice(0, 8).toUpperCase()}`;
 
   return (
+    <>
     <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
       <View className="px-4 pb-4 pt-3">
         <View className="overflow-hidden rounded-xl border border-[#22324f] bg-[#111a2e] p-4" style={shadow.card}>
@@ -262,6 +302,48 @@ function OrderTracking({
               </View>
             </View>
             <Text className="mt-3 text-xs leading-relaxed text-slate-400">{protection.rules.returnPolicy}</Text>
+
+            {coverageError ? <Text className="mt-2 text-xs text-red-400">{coverageError}</Text> : null}
+            {coverageResult ? (
+              <View className="mt-3 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3">
+                <View className="flex-row items-center gap-1.5">
+                  <AppIcon name="check_circle" size={16} color={colors.accentEmerald} />
+                  <Text className="font-mono text-[11px] font-bold text-emerald-300">{coverageResult.ticketId}</Text>
+                </View>
+                <Text className="mt-1 text-xs leading-relaxed text-slate-300">{coverageResult.message}</Text>
+              </View>
+            ) : null}
+
+            <View className="mt-3 flex-row gap-2">
+              {protection.returnWindowOpen && order.status !== 'refunded' && order.status !== 'cancelled' ? (
+                <Pressable
+                  onPress={() => {
+                    setReturnOpen(true);
+                    setReturnDone(false);
+                    setReturnError(null);
+                  }}
+                  className="flex-1 flex-row items-center justify-center gap-2 rounded-xl border border-red-500/40 bg-red-500/10 py-3"
+                >
+                  <AppIcon name="replay" size={18} color={colors.diagnosticRed} />
+                  <Text className="text-xs font-semibold text-red-400">Solicitar devolución</Text>
+                </Pressable>
+              ) : null}
+              {protection.coverageActive && order.status === 'delivered' ? (
+                <Pressable
+                  onPress={handleCoverage}
+                  disabled={coverageLoading}
+                  className="flex-1 flex-row items-center justify-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 py-3"
+                  style={coverageLoading ? { opacity: 0.7 } : undefined}
+                >
+                  {coverageLoading ? (
+                    <AppIcon name="sync" size={18} color={colors.accentEmerald} />
+                  ) : (
+                    <AppIcon name="shield_with_heart" size={18} color={colors.accentEmerald} />
+                  )}
+                  <Text className="text-xs font-semibold text-emerald-300">Solicitar cobertura</Text>
+                </Pressable>
+              ) : null}
+            </View>
           </View>
         </View>
       ) : null}
@@ -277,6 +359,75 @@ function OrderTracking({
         </Pressable>
       </View>
     </ScrollView>
+
+    {/* Return request modal */}
+    <Modal visible={returnOpen} transparent animationType="slide" onRequestClose={() => setReturnOpen(false)}>
+      <View className="flex-1 items-center justify-end bg-black/70">
+        <View className="w-full rounded-t-3xl border-t border-[#233554] bg-[#0e1626] p-5" style={shadow.bottom}>
+          {returnDone ? (
+            <View className="flex flex-col items-center gap-3 py-6">
+              <View
+                className="h-16 w-16 items-center justify-center rounded-2xl border border-emerald-500/40 bg-emerald-500/10"
+                style={glow('#10b981', 18, 0.3)}
+              >
+                <AppIcon name="check_circle" size={34} color={colors.accentEmerald} />
+              </View>
+              <Text className="text-xl font-bold text-slate-100">Devolución solicitada</Text>
+              <Text className="text-center text-xs leading-relaxed text-slate-400">
+                Tu dinero permanece blindado hasta que el laboratorio evalúe la devolución y revenda el producto.
+              </Text>
+              <Pressable
+                onPress={() => setReturnOpen(false)}
+                className="mt-2 w-full items-center justify-center rounded-xl bg-secondary py-3"
+              >
+                <Text className="text-sm font-semibold text-on-secondary">Cerrar</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <>
+              <View className="flex-row items-center gap-2">
+                <AppIcon name="replay" size={20} color={colors.diagnosticRed} />
+                <Text className="text-lg font-semibold text-slate-100">Solicitar devolución</Text>
+              </View>
+              <Text className="mt-1 text-xs leading-relaxed text-slate-400">
+                Estás dentro de la ventana de devolución de 10 días. Contanos el motivo para que el laboratorio evalúe.
+              </Text>
+              <TextInput
+                value={returnReason}
+                onChangeText={setReturnReason}
+                placeholder="Motivo de la devolución (mín. 10 caracteres)"
+                placeholderTextColor={colors.textMuted}
+                multiline
+                className="mt-3 min-h-[90px] rounded-xl border border-[#22324f] bg-[#111a2e] p-3 text-sm text-slate-100"
+              />
+              {returnError ? <Text className="mt-2 text-xs text-red-400">{returnError}</Text> : null}
+              <View className="mt-4 flex-row gap-2">
+                <Pressable
+                  onPress={() => setReturnOpen(false)}
+                  className="flex-1 items-center justify-center rounded-xl border border-[#22324f] bg-[#111a2e] py-3"
+                >
+                  <Text className="text-sm font-semibold text-slate-400">Cancelar</Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleReturn}
+                  disabled={returnLoading}
+                  className="flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-red-500 py-3"
+                  style={returnLoading ? { opacity: 0.7 } : undefined}
+                >
+                  {returnLoading ? (
+                    <AppIcon name="sync" size={18} color="#ffffff" />
+                  ) : (
+                    <AppIcon name="replay" size={18} color="#ffffff" />
+                  )}
+                  <Text className="text-sm font-semibold text-white">Confirmar devolución</Text>
+                </Pressable>
+              </View>
+            </>
+          )}
+        </View>
+      </View>
+    </Modal>
+    </>
   );
 }
 
