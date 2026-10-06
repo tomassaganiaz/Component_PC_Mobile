@@ -24,7 +24,7 @@ export default function AppHeader({
       }}
     >
       <View className="flex-row items-center gap-2.5">
-        <View className="h-8 w-8 items-center justify-center overflow-hidden rounded-lg border border-[#23324d] bg-[#131c2e] p-0.5">
+        <View className="h-8 w-8 items-center justify-center overflow-hidden rounded-lg border border-line bg-surface-low p-0.5">
           <Image source={{ uri: IMAGES.logo }} style={{ width: 28, height: 28 }} resizeMode="contain" />
         </View>
         <View className="flex-row items-baseline gap-1.5">
@@ -35,7 +35,7 @@ export default function AppHeader({
         </View>
         {activeTab ? (
           <>
-            <View className="h-4 w-px bg-[#23324d]" />
+            <View className="h-4 w-px bg-elevated" />
             <Text className="max-w-[120px] truncate text-xs text-text-secondary">{subtitle}</Text>
           </>
         ) : null}

@@ -15,7 +15,7 @@ import type { ExploreCard, Nav, ProductFilters, SellerTier } from '../types';
 import { toExploreCard } from '../utils/product';
 
 const TIER_FILTERS: { value: SellerTier | undefined; label: string; cls: string; icon: string }[] = [
-  { value: undefined, label: 'Todos', cls: 'border-[#233554] bg-[#111a2e] text-text-secondary', icon: 'verified_user' },
+  { value: undefined, label: 'Todos', cls: 'border-line bg-panel text-text-secondary', icon: 'verified_user' },
   { value: 'secure', label: 'Seguro', cls: 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300', icon: 'verified' },
   { value: 'normal', label: 'Normal', cls: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300', icon: 'verified_user' },
   { value: 'not_secure', label: 'No Seguro', cls: 'border-red-500/40 bg-red-500/10 text-red-400', icon: 'report' },
@@ -202,10 +202,10 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
               onChangeText={setSearch}
               placeholder="Ryzen 7 7800X3D, RTX 3080, Galaxy S23..."
               placeholderTextColor={colors.textMuted}
-              className="h-11 w-full rounded-xl border border-[#23324d] bg-[#131c2e] pl-10 pr-24 text-xs text-on-surface"
+              className="h-11 w-full rounded-xl border border-line bg-surface-low pl-10 pr-24 text-xs text-on-surface"
             />
             <View
-              className="absolute right-2 flex-row items-center gap-1 rounded-lg border border-[#2d4063] bg-[#1c2942] px-2 py-0.5"
+              className="absolute right-2 flex-row items-center gap-1 rounded-lg border border-line bg-elevated px-2 py-0.5"
             >
               <AppIcon name="verified" size={14} color={colors.accentCyan} />
               <Text className="font-mono text-[10px] font-semibold tracking-tight text-primary">CUSTODIA</Text>
@@ -235,7 +235,7 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
                   key={opt.label}
                   onPress={() => setTier(opt.value)}
                   className={`flex-1 flex-row items-center justify-center gap-1 rounded-xl border px-2 py-2 ${
-                    active ? opt.cls : 'border-[#233554] bg-[#111a2e]'
+                    active ? opt.cls : 'border-line bg-panel'
                   }`}
                   style={active ? glow(colors.primary, 8, 0.15) : undefined}
                 >
@@ -261,7 +261,7 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
         {activeSecurity && !offline ? (
           <View className="flex-row flex-wrap items-center gap-2 px-4 pt-2">
             {effectiveFilters.sellerTier ? (
-              <View className="flex-row items-center gap-1 rounded-full border border-primary/40 bg-[#182845] px-2.5 py-0.5">
+              <View className="flex-row items-center gap-1 rounded-full border border-primary/40 bg-primary-soft px-2.5 py-0.5">
                 <AppIcon name="verified_user" size={13} color={colors.primary} />
                 <Text className="font-mono text-[10px] font-semibold text-primary">
                   {effectiveFilters.sellerTier === 'secure' ? 'SEGURO' : effectiveFilters.sellerTier === 'normal' ? 'NORMAL' : 'NO SEGURO'}
@@ -269,7 +269,7 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
               </View>
             ) : null}
             {effectiveFilters.condition === 'new' ? (
-              <View className="flex-row items-center gap-1 rounded-full border border-sky-400/60 bg-[#0a1b2e] px-2.5 py-0.5">
+              <View className="flex-row items-center gap-1 rounded-full border border-sky-400/60 bg-info-soft px-2.5 py-0.5">
                 <AppIcon name="inventory_2" size={13} color="#7dd3fc" />
                 <Text className="font-mono text-[10px] font-semibold text-sky-300">NUEVOS · SIN ABRIR</Text>
               </View>
@@ -290,12 +290,12 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
               </View>
             ) : null}
             {effectiveFilters.maxHoursOfUse ? (
-              <View className="flex-row items-center gap-1 rounded-full border border-[#233554] bg-[#111a2e] px-2.5 py-0.5">
+              <View className="flex-row items-center gap-1 rounded-full border border-line bg-panel px-2.5 py-0.5">
                 <Text className="font-mono text-[10px] font-semibold text-text-secondary">{"<"} {effectiveFilters.maxHoursOfUse} H DE USO</Text>
               </View>
             ) : null}
             {effectiveFilters.noMining ? (
-              <View className="flex-row items-center gap-1 rounded-full border border-[#233554] bg-[#111a2e] px-2.5 py-0.5">
+              <View className="flex-row items-center gap-1 rounded-full border border-line bg-panel px-2.5 py-0.5">
                 <Text className="font-mono text-[10px] font-semibold text-text-secondary">SIN MINERÍA</Text>
               </View>
             ) : null}
@@ -336,8 +336,8 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
         {/* Trust hero */}
         <View className="px-4 py-2">
           <LinearGradient
-            colors={['#101e3d', '#0e1933', '#0c152b']}
-            className="overflow-hidden rounded-xl border border-[#23385d] p-4"
+            colors={[colors.primarySoft, colors.brandSoft, colors.elevated]}
+            className="overflow-hidden rounded-xl border border-line p-4"
             style={shadow.card}
           >
             <View className="pointer-events-none absolute -bottom-6 -right-6 h-36 w-36 rounded-full bg-secondary/15" />
@@ -362,13 +362,13 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
                 </Text>
               </View>
               <View
-                className="h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[#294373] bg-[#172748]"
+                className="h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-line bg-primary-soft"
                 style={glow(colors.accentCyan, 15, 0.25)}
               >
                 <AppIcon name="hardware" size={28} color={colors.accentCyan} />
               </View>
             </View>
-            <View className="mt-3 flex-row gap-2 rounded-lg border border-[#1e2f4f]/80 bg-[#081020]/75 p-2.5">
+            <View className="mt-3 flex-row gap-2 rounded-lg border border-line/80 bg-inset/75 p-2.5">
               <View className="flex-1 flex-row items-center gap-1.5">
                 <AppIcon name="check_circle" size={16} color={colors.secondary} />
                 <Text className="font-mono text-[10.5px] font-medium text-on-surface">Pines & Socket</Text>
@@ -398,7 +398,7 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
               cat.active ? (
                 <Pressable
                   key={cat.label}
-                  className="flex-row items-center gap-1.5 rounded-xl border border-primary/40 bg-[#162744] px-3 py-2"
+                  className="flex-row items-center gap-1.5 rounded-xl border border-primary/40 bg-primary-soft px-3 py-2"
                   style={glow(colors.primary, 12, 0.15)}
                 >
                   <AppIcon name={cat.icon} size={18} color={colors.accentCyan} />
@@ -407,7 +407,7 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
               ) : (
                 <Pressable
                   key={cat.label}
-                  className="flex-row items-center gap-1.5 rounded-xl border border-[#20304a] bg-[#111b2e] px-3 py-2"
+                  className="flex-row items-center gap-1.5 rounded-xl border border-line bg-card px-3 py-2"
                 >
                   <AppIcon name={cat.icon} size={18} color={colors.outline} />
                   <Text className="text-xs font-medium text-text-secondary">{cat.label}</Text>
@@ -431,7 +431,7 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
           <View className="flex-row items-center gap-2">
             <Text className="text-xl text-text-primary">Auditoría Reciente</Text>
             {searching ? (
-              <View className="flex-row items-center gap-1 rounded-full border border-primary/40 bg-[#182845] px-2 py-0.5">
+              <View className="flex-row items-center gap-1 rounded-full border border-primary/40 bg-primary-soft px-2 py-0.5">
                 <ActivityIndicator size={10} color={colors.primary} />
                 <Text className="font-mono text-[10px] font-semibold uppercase tracking-wider text-primary">
                   Buscando
@@ -477,7 +477,7 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
                 </Text>
               </View>
             ) : (
-              <View className="items-center justify-center gap-3 rounded-xl border border-[#233554] bg-[#111a2e] px-6 py-10">
+              <View className="items-center justify-center gap-3 rounded-xl border border-line bg-panel px-6 py-10">
                 <AppIcon name="search" size={32} color={colors.textMuted} />
                 <Text className="text-base font-semibold text-text-primary">Sin resultados</Text>
                 <Text className="max-w-[280px] text-center text-xs leading-relaxed text-text-secondary">
@@ -494,7 +494,7 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
                         <Pressable
                           key={a.key}
                           onPress={a.onRemove}
-                          className="flex-row items-center gap-1 rounded-full border border-[#233554] bg-[#162238] px-2.5 py-1"
+                          className="flex-row items-center gap-1 rounded-full border border-line bg-elevated px-2.5 py-1"
                         >
                           <AppIcon name="close" size={13} color={colors.textSecondary} />
                           <Text className="font-mono text-[10.5px] font-semibold text-text-secondary">{a.label}</Text>
@@ -532,13 +532,13 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
             ) : null}
             <View className="px-4 pb-6 pt-4">
               <LinearGradient
-                colors={['#121e35', '#0c1527']}
-                className="flex flex-col gap-3 overflow-hidden rounded-xl border border-[#233554] p-4"
+                colors={[colors.elevated, colors.inset]}
+                className="flex flex-col gap-3 overflow-hidden rounded-xl border border-line p-4"
                 style={shadow.card}
               >
                 <View className="flex-row items-center gap-3">
                   <View
-                    className="h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-[#1b2b4d]"
+                    className="h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary-soft"
                     style={glow(colors.primary, 15, 0.2)}
                   >
                     <AppIcon name="verified" size={24} color={colors.primary} />
@@ -551,8 +551,8 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
                   </View>
                 </View>
                 <Pressable
-                  className="flex-row items-center justify-center gap-2 rounded-xl border border-primary/40 bg-[#1e3a73] py-2.5"
-                  style={glow('#1e3a73', 15, 0.5)}
+                  className="flex-row items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary-mid py-2.5"
+                  style={glow(colors.primaryMid, 15, 0.5)}
                 >
                   <Text className="text-xs font-semibold text-text-primary">Solicitar Kit de Auditoría Gratuito</Text>
                   <AppIcon name="arrow_forward" size={18} color={colors.primary} />

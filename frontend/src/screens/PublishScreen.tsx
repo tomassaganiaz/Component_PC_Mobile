@@ -49,7 +49,7 @@ function Input({
       placeholderTextColor={colors.textMuted}
       multiline={multiline}
       keyboardType={numeric ? 'numeric' : 'default'}
-      className={`w-full rounded-xl border border-[#233554] bg-[#111a2e] px-3 text-sm text-text-primary ${
+      className={`w-full rounded-xl border border-line bg-panel px-3 text-sm text-text-primary ${
         multiline ? 'min-h-[84px] py-3' : 'py-2.5'
       }`}
     />
@@ -128,7 +128,7 @@ export default function PublishScreen({ nav }: { nav: Nav }) {
             Tu producto entró a la cola de auditoría TechShield. Cuando el laboratorio lo chequee, aparecerá con el
             check verde en el marketplace.
           </Text>
-          <View className="mt-1 rounded-lg border border-[#233554] bg-[#111a2e] px-4 py-2">
+          <View className="mt-1 rounded-lg border border-line bg-panel px-4 py-2">
             <Text className="font-mono text-[11px] text-text-secondary">ID: #{publishedId.slice(0, 8).toUpperCase()}</Text>
           </View>
           <Pressable
@@ -186,8 +186,8 @@ export default function PublishScreen({ nav }: { nav: Nav }) {
                     onPress={() => setCategory(cat.value)}
                     className="flex-row items-center gap-1.5 rounded-xl border px-3 py-2"
                     style={{
-                      borderColor: active ? colors.primary : '#233554',
-                      backgroundColor: active ? '#182845' : '#111a2e',
+                      borderColor: active ? colors.primary : colors.line,
+                      backgroundColor: active ? colors.primarySoft : colors.panel,
                       ...(active ? glow(colors.primary, 8, 0.15) : undefined),
                     }}
                   >
@@ -270,7 +270,7 @@ export default function PublishScreen({ nav }: { nav: Nav }) {
             </Text>
           </Pressable>
 
-          <View className="flex-row items-start gap-2.5 rounded-lg border border-[#233554] bg-[#111a2e] p-3">
+          <View className="flex-row items-start gap-2.5 rounded-lg border border-line bg-panel p-3">
             <AppIcon name="security" size={18} color={colors.accentEmerald} style={{ marginTop: 1 }} />
             <Text className="flex-1 text-xs leading-relaxed text-text-secondary">
               Al publicar aceptás el envío del componente al centro técnico TechShield para auditoría de pines,

@@ -41,7 +41,7 @@ const TIER_OPTIONS: {
 ];
 
 const toneMap = {
-  emerald: { border: '#34d399', bg: '#06271a', text: '#6ee7b7' },
+  emerald: { border: '#34d399', bg: colors.successSoft, text: '#6ee7b7' },
   cyan: { border: '#22d3ee', bg: '#06222e', text: '#67e8f9' },
   red: { border: '#f87171', bg: '#2a1010', text: '#fca5a5' },
 } as const;
@@ -70,8 +70,8 @@ function Chip({
       onPress={onPress}
       className="rounded-xl border px-3 py-2"
       style={{
-        borderColor: active ? color : '#233554',
-        backgroundColor: active ? '#131c2e' : '#111a2e',
+        borderColor: active ? color : colors.line,
+        backgroundColor: active ? colors.surfaceLow : colors.panel,
         ...(active ? glow(color, 8, 0.2) : undefined),
       }}
     >
@@ -99,7 +99,7 @@ function ToggleRow({
 }) {
   return (
     <View
-      className="flex-row items-center justify-between gap-3 rounded-xl border border-[#233554] bg-[#111a2e] p-3"
+      className="flex-row items-center justify-between gap-3 rounded-xl border border-line bg-panel p-3"
       style={value ? { borderColor: activeColor + '66', ...glow(activeColor, 10, 0.15) } : undefined}
     >
       <View className="flex-1 flex-row items-start gap-2.5">
@@ -113,7 +113,7 @@ function ToggleRow({
         value={value}
         onValueChange={onChange}
         trackColor={{ false: '#334155', true: activeColor }}
-        thumbColor="#0b1326"
+        thumbColor={colors.surface}
       />
     </View>
   );
@@ -185,7 +185,7 @@ export default function FiltersScreen({ nav }: { nav: Nav }) {
           <View className="mt-2 flex flex-col gap-2">
             <Pressable
               onPress={() => setTier('all')}
-              className="flex-row items-center gap-2 rounded-xl border border-[#233554] bg-[#111a2e] p-3"
+              className="flex-row items-center gap-2 rounded-xl border border-line bg-panel p-3"
               style={tier === 'all' ? { borderColor: colors.primary, ...glow(colors.primary, 10, 0.2) } : undefined}
             >
               <View
@@ -206,8 +206,8 @@ export default function FiltersScreen({ nav }: { nav: Nav }) {
                   onPress={() => setTier(opt.value)}
                   className="flex-row items-start gap-3 rounded-xl border p-3"
                   style={{
-                    borderColor: active ? tone.border : '#233554',
-                    backgroundColor: active ? tone.bg : '#111a2e',
+                    borderColor: active ? tone.border : colors.line,
+                    backgroundColor: active ? tone.bg : colors.panel,
                     ...(active ? glow(tone.border, 10, 0.25) : undefined),
                   }}
                 >
@@ -349,7 +349,7 @@ export default function FiltersScreen({ nav }: { nav: Nav }) {
           </Pressable>
           <Pressable
             onPress={reset}
-            className="flex-row items-center justify-center gap-2 rounded-xl border border-[#233554] bg-[#111a2e] py-3"
+            className="flex-row items-center justify-center gap-2 rounded-xl border border-line bg-panel py-3"
           >
             <AppIcon name="replay" size={20} color={colors.textSecondary} />
             <Text className="text-sm font-semibold text-text-secondary">Restablecer filtros</Text>

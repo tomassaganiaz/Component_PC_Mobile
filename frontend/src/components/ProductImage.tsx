@@ -20,7 +20,7 @@ export default function ProductImage({
   contentFit = 'cover',
   icon = 'hardware',
   iconSize = 32,
-  backgroundColor = '#131c2e',
+  backgroundColor = colors.surfaceLow,
 }: Props) {
   const [failed, setFailed] = useState(false);
   const showFallback = !uri || failed;

@@ -134,7 +134,7 @@ function OrderTracking({
   return (
     <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
       <View className="px-4 pb-4 pt-3">
-        <View className="overflow-hidden rounded-xl border border-[#22324f] bg-[#111a2e] p-4" style={shadow.card}>
+        <View className="overflow-hidden rounded-xl border border-line bg-panel p-4" style={shadow.card}>
           <View className="mb-2 flex-row items-center justify-between">
             <Pill icon="verified" tone="emerald">
               {order.status === 'in_custody' ? 'Custodia Activa' : statusLabel}
@@ -144,7 +144,7 @@ function OrderTracking({
             </Text>
           </View>
           <View className="mt-3 flex-row items-start gap-3">
-            <View className="h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-700/60 bg-[#0a0f1d] p-1">
+            <View className="h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-700/60 bg-inset p-1">
               <ProductImage uri={product?.images?.[0]} style={{ width: '100%', height: '100%' }} iconSize={26} />
             </View>
             <View className="min-w-0 flex-1">
@@ -160,7 +160,7 @@ function OrderTracking({
               </Text>
             </View>
           </View>
-          <View className="mt-4 flex-row items-center justify-between rounded-lg border border-[#22324f]/70 bg-[#0a0f1d]/80 p-3">
+          <View className="mt-4 flex-row items-center justify-between rounded-lg border border-line/70 bg-inset/80 p-3">
             <View>
               <Text className="block text-[11px] text-slate-400">Total retenido en bóveda</Text>
               <View className="flex-row items-baseline gap-1">
@@ -188,14 +188,14 @@ function OrderTracking({
             <AppIcon name="science" size={20} color={colors.accentCyan} />
             <Text className="text-xl font-semibold text-slate-100">Trazabilidad de Seguridad</Text>
           </View>
-          <View className="rounded border border-[#22324f] bg-[#162238] px-2 py-0.5">
+          <View className="rounded border border-line bg-elevated px-2 py-0.5">
             <Text className="font-mono text-[11px] text-cyan-300">
               Fase {steps.findIndex((s) => s.state === 'active') + 1 || 5} de {steps.length}
             </Text>
           </View>
         </View>
 
-        <View className="flex flex-col gap-4 rounded-xl border border-[#22324f] bg-[#111a2e] p-4" style={shadow.panel}>
+        <View className="flex flex-col gap-4 rounded-xl border border-line bg-panel p-4" style={shadow.panel}>
           {steps.map((step, i) => (
             <View key={step.title} className="flex-row gap-3">
               <View className="flex flex-col items-center">
@@ -234,7 +234,7 @@ function OrderTracking({
       {/* Protection */}
       {protection ? (
         <View className="mb-4 px-4">
-          <View className="rounded-xl border border-[#22324f] bg-[#111a2e] p-4" style={shadow.panel}>
+          <View className="rounded-xl border border-line bg-panel p-4" style={shadow.panel}>
             <View className="mb-3 flex-row items-center justify-between">
               <View className="flex-row items-center gap-1.5">
                 <AppIcon name="shield_with_heart" size={20} color={colors.accentEmerald} />
@@ -242,7 +242,7 @@ function OrderTracking({
               </View>
             </View>
             <View className="flex-row gap-2">
-              <View className="flex-1 rounded-lg border border-[#22324f] bg-[#0a0f1d] p-2.5">
+              <View className="flex-1 rounded-lg border border-line bg-inset p-2.5">
                 <Text className="block font-mono text-[10px] uppercase text-slate-400">Devolución</Text>
                 <Text className="text-xl font-bold text-emerald-400">
                   {protection.returnWindowOpen ? `${protection.returnDaysLeft} días` : 'Vencida'}
@@ -251,7 +251,7 @@ function OrderTracking({
                   Hasta {new Date(protection.escrowUntil).toLocaleDateString()}
                 </Text>
               </View>
-              <View className="flex-1 rounded-lg border border-[#22324f] bg-[#0a0f1d] p-2.5">
+              <View className="flex-1 rounded-lg border border-line bg-inset p-2.5">
                 <Text className="block font-mono text-[10px] uppercase text-slate-400">Cobertura empresa</Text>
                 <Text className="text-xl font-bold text-slate-100">
                   {protection.coverageActive ? `${protection.coverageDaysLeft} días` : 'Vencida'}
@@ -297,7 +297,7 @@ function StepNode({ state }: { state: 'done' | 'active' | 'pending' }) {
     );
   }
   return (
-    <View className="h-7 w-7 items-center justify-center rounded-full border border-[#22324f] bg-[#162238]">
+    <View className="h-7 w-7 items-center justify-center rounded-full border border-line bg-elevated">
       <AppIcon name="inventory_2" size={16} color="#64748b" />
     </View>
   );
@@ -363,7 +363,7 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
         {/* Status aura banner */}
         <View className="px-4 pb-4 pt-3">
           <View
-            className="overflow-hidden rounded-xl border border-[#22324f] bg-[#111a2e] p-4"
+            className="overflow-hidden rounded-xl border border-line bg-panel p-4"
             style={shadow.card}
           >
             <View className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-emerald-500/10" />
@@ -372,7 +372,7 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
               <Text className="font-mono text-[11px] font-medium text-text-secondary">ID: TS-40922-LAB</Text>
             </View>
             <View className="mt-3 flex-row items-start gap-3">
-              <View className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-slate-700/60 bg-[#0a0f1d] p-1">
+              <View className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-slate-700/60 bg-inset p-1">
                 <Image source={{ uri: BUNDLE_IMAGE }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
               </View>
               <View className="min-w-0 flex-1">
@@ -389,7 +389,7 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
               </View>
             </View>
             <View
-              className="mt-4 flex-row items-center justify-between rounded-lg border border-[#22324f]/70 bg-[#0a0f1d]/80 p-3"
+              className="mt-4 flex-row items-center justify-between rounded-lg border border-line/70 bg-inset/80 p-3"
             >
               <View>
                 <Text className="block text-[11px] text-slate-400">Total retenido en bóveda</Text>
@@ -411,8 +411,8 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
 
         {/* Lead inspector */}
         <View className="mb-4 px-4">
-          <View className="flex-row items-center gap-3 rounded-xl border border-[#22324f] bg-[#111a2e] p-3" style={shadow.panel}>
-            <View className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-cyan-500/40 bg-[#0a0f1d] p-0.5">
+          <View className="flex-row items-center gap-3 rounded-xl border border-line bg-panel p-3" style={shadow.panel}>
+            <View className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-cyan-500/40 bg-inset p-0.5">
               <Image source={{ uri: IMAGES.inspector }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
             </View>
             <View className="min-w-0 flex-1">
@@ -424,7 +424,7 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
             </View>
             <Pressable
               onPress={() => setChatOpen(true)}
-              className="flex-row items-center gap-1 rounded-lg border border-cyan-500/30 bg-[#162238] px-3 py-1.5"
+              className="flex-row items-center gap-1 rounded-lg border border-cyan-500/30 bg-elevated px-3 py-1.5"
             >
               <AppIcon name="chat" size={17} color={colors.accentCyan} />
               <Text className="text-xs font-semibold text-cyan-300">Chat</Text>
@@ -439,12 +439,12 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
               <AppIcon name="science" size={20} color={colors.accentCyan} />
               <Text className="text-xl font-semibold text-slate-100">Trazabilidad de Seguridad</Text>
             </View>
-            <View className="rounded border border-[#22324f] bg-[#162238] px-2 py-0.5">
+            <View className="rounded border border-line bg-elevated px-2 py-0.5">
               <Text className="font-mono text-[11px] text-cyan-300">Fase 3 de 5</Text>
             </View>
           </View>
 
-          <View className="flex flex-col gap-4 rounded-xl border border-[#22324f] bg-[#111a2e] p-4" style={shadow.panel}>
+          <View className="flex flex-col gap-4 rounded-xl border border-line bg-panel p-4" style={shadow.panel}>
             {INSPECTION_STEPS.map((step, i) => (
               <View key={step.title} className="flex-row gap-3">
                 <View className="flex flex-col items-center">
@@ -495,11 +495,11 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
                   </Text>
 
                   {step.state === 'active' && step.checkpoints ? (
-                    <View className="mt-3 flex flex-col gap-2 rounded-lg border border-[#22324f] bg-[#0a0f1d] p-2.5">
+                    <View className="mt-3 flex flex-col gap-2 rounded-lg border border-line bg-inset p-2.5">
                       {step.checkpoints.map((cp) => (
                         <View
                           key={cp.title}
-                          className="flex-row items-center justify-between rounded border border-[#22324f]/60 bg-[#111a2e]/90 px-2.5 py-1.5"
+                          className="flex-row items-center justify-between rounded border border-line/60 bg-panel/90 px-2.5 py-1.5"
                           style={cp.status === 'running' ? { borderColor: '#3b82f6' } : undefined}
                         >
                           <View className="flex-row items-center gap-2">
@@ -537,28 +537,28 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
 
         {/* Telemetry snapshot */}
         <View className="mb-4 px-4">
-          <View className="rounded-xl border border-[#22324f] bg-[#111a2e] p-4" style={shadow.panel}>
+          <View className="rounded-xl border border-line bg-panel p-4" style={shadow.panel}>
             <View className="mb-3 flex-row items-center justify-between">
               <View className="flex-row items-center gap-1.5">
                 <AppIcon name="equalizer" size={20} color={colors.accentEmerald} />
                 <Text className="text-xl font-semibold text-slate-100">Telemetría de la Muestra</Text>
               </View>
-              <View className="rounded border border-[#22324f] bg-[#0a0f1d] px-2 py-0.5">
+              <View className="rounded border border-line bg-inset px-2 py-0.5">
                 <Text className="font-mono text-[11px] text-slate-400">Hash: #9a4f-88e2</Text>
               </View>
             </View>
             <View className="flex-row gap-2">
-              <View className="flex-1 rounded-lg border border-[#22324f] bg-[#0a0f1d] p-2.5">
+              <View className="flex-1 rounded-lg border border-line bg-inset p-2.5">
                 <Text className="block font-mono text-[10px] uppercase text-slate-400">Temp Max</Text>
                 <Text className="text-xl font-bold text-emerald-400">67.4°C</Text>
                 <Text className="mt-0.5 block text-[11px] text-emerald-300/80">Óptimo (&lt;85°C)</Text>
               </View>
-              <View className="flex-1 rounded-lg border border-[#22324f] bg-[#0a0f1d] p-2.5">
+              <View className="flex-1 rounded-lg border border-line bg-inset p-2.5">
                 <Text className="block font-mono text-[10px] uppercase text-slate-400">Multi-Core</Text>
                 <Text className="text-xl font-bold text-slate-100">14,890</Text>
                 <Text className="mt-0.5 block text-[11px] text-slate-400">Pts R23 Cinebench</Text>
               </View>
-              <View className="flex-1 rounded-lg border border-[#22324f] bg-[#0a0f1d] p-2.5">
+              <View className="flex-1 rounded-lg border border-line bg-inset p-2.5">
                 <Text className="block font-mono text-[10px] uppercase text-slate-400">Salud Pines</Text>
                 <Text className="text-xl font-bold text-emerald-400">100%</Text>
                 <Text className="mt-0.5 block text-[11px] text-emerald-300/80">1331/1331 AM4</Text>
@@ -570,7 +570,7 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
         {/* Download certificate */}
         <View className="mb-4 px-4">
           <Pressable
-            className="flex-row items-center justify-between rounded-xl border border-[#22324f] bg-[#111a2e] p-4"
+            className="flex-row items-center justify-between rounded-xl border border-line bg-panel p-4"
             style={shadow.panel}
           >
             <View className="flex-row items-center gap-3">
@@ -635,7 +635,7 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
             <Text className="text-sm font-semibold text-white">Verificar Detalle de Custodia Financiera</Text>
           </Pressable>
           <Pressable
-            className="flex-row items-center justify-center gap-2 rounded-xl border border-[#22324f] bg-[#111a2e] py-3"
+            className="flex-row items-center justify-center gap-2 rounded-xl border border-line bg-panel py-3"
           >
             <AppIcon name="contact_support" size={20} color={colors.accentCyan} />
             <Text className="text-sm font-semibold text-slate-200">
@@ -649,13 +649,13 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
       {/* Chat safety modal */}
       <Modal visible={chatOpen} transparent animationType="slide" onRequestClose={() => setChatOpen(false)}>
         <View className="flex-1 items-center justify-end bg-black/70">
-          <View className="w-full rounded-t-3xl border-t border-[#233554] bg-[#0e1626] p-5" style={shadow.bottom}>
+          <View className="w-full rounded-t-3xl border-t border-line bg-panel p-5" style={shadow.bottom}>
             <View className="flex-row items-center gap-2">
               <AppIcon name="chat" size={20} color={colors.accentCyan} />
               <Text className="text-lg font-semibold text-text-primary">Chat seguro</Text>
             </View>
 
-            <View className="mt-3 flex flex-col gap-1.5 rounded-xl border border-[#22324f] bg-[#111a2e] p-3">
+            <View className="mt-3 flex flex-col gap-1.5 rounded-xl border border-line bg-panel p-3">
               <Text className="font-mono text-[11px] font-bold uppercase tracking-wider text-cyan-300">
                 Consejos de seguridad
               </Text>
@@ -676,7 +676,7 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
               placeholder="Escribí el mensaje para analizarlo..."
               placeholderTextColor={colors.textMuted}
               multiline
-              className="mt-3 min-h-[70px] rounded-xl border border-[#22324f] bg-[#111a2e] p-3 text-sm text-text-primary"
+              className="mt-3 min-h-[70px] rounded-xl border border-line bg-panel p-3 text-sm text-text-primary"
             />
 
             {chatError ? <Text className="mt-2 text-xs text-diagnostic-red">{chatError}</Text> : null}
@@ -686,7 +686,7 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
                 className="mt-3 rounded-xl border p-3"
                 style={{
                   borderColor: chatResult.safe ? colors.secondary + '66' : colors.diagnosticAmber + '66',
-                  backgroundColor: chatResult.safe ? '#06271a' : '#2a1f08',
+                  backgroundColor: chatResult.safe ? colors.successSoft : colors.warningSoft,
                 }}
               >
                 <Text
@@ -711,7 +711,7 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
             <View className="mt-4 flex-row gap-2">
               <Pressable
                 onPress={() => setChatOpen(false)}
-                className="flex-1 items-center justify-center rounded-xl border border-[#22324f] bg-[#111a2e] py-3"
+                className="flex-1 items-center justify-center rounded-xl border border-line bg-panel py-3"
               >
                 <Text className="text-sm font-semibold text-text-secondary">Cerrar</Text>
               </Pressable>
@@ -722,7 +722,7 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
                 style={chatChecking ? { opacity: 0.7 } : undefined}
               >
                 {chatChecking ? <AppIcon name="sync" size={16} color="#06222e" /> : <AppIcon name="verified" size={16} color="#06222e" />}
-                <Text className="text-sm font-semibold text-[#06222e]">Analizar</Text>
+                <Text className="text-sm font-semibold text-on-tertiary">Analizar</Text>
               </Pressable>
             </View>
           </View>

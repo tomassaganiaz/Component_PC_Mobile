@@ -235,7 +235,7 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
 
           {/* OTP two-step */}
           {otpToken ? (
-            <View className="flex flex-col gap-3 rounded-xl border border-accent-cyan/40 bg-[#06222e] p-4">
+            <View className="flex flex-col gap-3 rounded-xl border border-accent-cyan/40 bg-brand-soft p-4">
               <View className="flex-row items-center gap-2">
                 <AppIcon name="verified_user" size={20} color={colors.accentCyan} />
                 <Text className="text-base font-semibold text-text-primary">Verificación en dos pasos</Text>
@@ -257,7 +257,7 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
                 placeholderTextColor={colors.textMuted}
                 keyboardType="number-pad"
                 maxLength={6}
-                className="rounded-lg border border-[#233554] bg-surface-low px-4 py-3 font-mono text-center text-lg tracking-[6px] text-text-primary"
+                className="rounded-lg border border-line bg-surface-low px-4 py-3 font-mono text-center text-lg tracking-[6px] text-text-primary"
               />
               {otpError ? <Text className="text-xs text-diagnostic-red">{otpError}</Text> : null}
               <Pressable
@@ -271,7 +271,7 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
                 ) : (
                   <AppIcon name="verified" size={18} color="#06222e" />
                 )}
-                <Text className="text-sm font-semibold text-[#06222e]">Verificar Código</Text>
+                <Text className="text-sm font-semibold text-on-tertiary">Verificar Código</Text>
               </Pressable>
               <Pressable onPress={handleCancelOtp} className="items-center py-1">
                 <Text className="text-xs text-text-secondary">Volver al inicio de sesión</Text>
@@ -312,14 +312,14 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
             <View className="flex-row gap-2">
               <Pressable
                 className="flex-1 flex-row items-center justify-center gap-2 rounded-lg bg-surface-container py-2.5"
-                style={{ borderWidth: 1, borderColor: '#1e293b' }}
+                style={{ borderWidth: 1, borderColor: colors.borderSubtle }}
               >
                 <AppIcon name="token" size={18} color={colors.accentCyan} />
                 <Text className="font-mono text-[11px] tracking-tight text-text-primary">Llave FIDO2 / NFC</Text>
               </Pressable>
               <Pressable
                 className="flex-1 flex-row items-center justify-center gap-2 rounded-lg bg-surface-container py-2.5"
-                style={{ borderWidth: 1, borderColor: '#1e293b' }}
+                style={{ borderWidth: 1, borderColor: colors.borderSubtle }}
               >
                 <Text style={{ color: '#4285F4', fontWeight: '700', fontSize: 16 }}>G</Text>
                 <Text className="font-mono text-[11px] tracking-tight text-text-primary">Cuenta Google</Text>

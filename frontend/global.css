@@ -1,3 +1,142 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Paleta MODO CLARO (por defecto) — modernista, fondos cálidos */
+:root {
+  --canvas: 240 242 245;
+  --surface: 250 250 250;
+  --surface-dim: 250 250 250;
+  --surface-bright: 255 255 255;
+  --surface-card: 254 254 254;
+  --surface-elevated: 241 243 245;
+  --surface-lowest: 245 245 245;
+  --surface-low: 248 249 251;
+  --surface-container: 255 255 255;
+  --surface-high: 255 255 255;
+  --surface-highest: 237 239 242;
+  --surface-variant: 237 239 242;
+
+  --on-surface: 51 51 51;
+  --on-surface-variant: 90 100 114;
+  --on-primary: 255 255 255;
+  --on-secondary: 255 255 255;
+  --on-tertiary: 255 255 255;
+
+  --primary: 0 109 119;          /* azul petróleo */
+  --primary-container: 224 242 244;
+  --secondary: 0 150 136;        /* verde azulado */
+  --secondary-container: 224 242 238;
+  --tertiary: 224 122 95;        /* terracota */
+  --tertiary-container: 252 232 226;
+
+  --accent-cyan: 0 109 119;
+  --accent-emerald: 0 150 136;
+  --accent-blue: 37 99 235;
+
+  --text-primary: 51 51 51;
+  --text-secondary: 90 100 114;
+  --text-muted: 154 163 174;
+
+  --border-subtle: 224 224 224;
+  --border-active: 189 189 189;
+  --outline: 189 189 189;
+  --outline-variant: 214 214 214;
+
+  --diagnostic-amber: 245 158 11;
+  --diagnostic-red: 239 68 68;
+
+  /* Superficies geométricas */
+  --panel: 255 255 255;
+  --card: 252 252 252;
+  --elevated: 241 243 245;
+  --inset: 234 236 239;
+  --line: 214 214 214;
+  --line-sub: 224 224 224;
+  --input: 255 255 255;
+  --overlay: 0 0 0;
+
+  --primary-soft: 230 241 243;
+  --primary-mid: 0 140 158;      /* hover petróleo saturado */
+
+  --success-soft: 231 246 240;
+  --brand-soft: 224 242 244;
+  --info-soft: 232 244 253;
+  --warning-soft: 255 244 229;
+  --danger-soft: 253 236 236;
+
+  --success-fg: 4 120 87;
+  --brand-fg: 14 116 144;
+  --info-fg: 30 64 175;
+  --warning-fg: 180 83 9;
+  --danger-fg: 220 38 38;
+}
+
+/* Paleta MODO OSCURO */
+.dark {
+  --canvas: 10 15 29;
+  --surface: 11 19 38;
+  --surface-dim: 11 19 38;
+  --surface-bright: 49 57 77;
+  --surface-card: 17 28 51;
+  --surface-elevated: 30 41 59;
+  --surface-lowest: 6 14 32;
+  --surface-low: 19 26 46;
+  --surface-container: 23 31 51;
+  --surface-high: 34 42 61;
+  --surface-highest: 45 52 73;
+  --surface-variant: 45 52 73;
+
+  --on-surface: 218 226 253;
+  --on-surface-variant: 194 198 214;
+  --on-primary: 0 46 106;
+  --on-secondary: 0 56 36;
+  --on-tertiary: 0 54 64;
+
+  --primary: 173 198 255;
+  --primary-container: 77 142 255;
+  --secondary: 78 222 163;
+  --secondary-container: 0 165 114;
+  --tertiary: 76 215 246;
+  --tertiary-container: 0 158 185;
+
+  --accent-cyan: 6 182 212;
+  --accent-emerald: 52 211 153;
+  --accent-blue: 96 165 250;
+
+  --text-primary: 248 250 252;
+  --text-secondary: 148 163 184;
+  --text-muted: 100 116 139;
+
+  --border-subtle: 30 41 59;
+  --border-active: 51 65 85;
+  --outline: 140 144 159;
+  --outline-variant: 66 71 84;
+
+  --diagnostic-amber: 245 158 11;
+  --diagnostic-red: 239 68 68;
+
+  --panel: 17 26 46;
+  --card: 17 28 51;
+  --elevated: 22 34 56;
+  --inset: 10 15 29;
+  --line: 35 53 84;
+  --line-sub: 34 50 79;
+  --input: 17 26 46;
+  --overlay: 0 0 0;
+
+  --primary-soft: 24 40 69;
+  --primary-mid: 30 58 115;
+
+  --success-soft: 6 39 26;
+  --brand-soft: 6 34 46;
+  --info-soft: 10 27 46;
+  --warning-soft: 42 31 8;
+  --danger-soft: 42 16 16;
+
+  --success-fg: 110 231 183;
+  --brand-fg: 103 232 249;
+  --info-fg: 125 211 252;
+  --warning-fg: 252 211 77;
+  --danger-fg: 248 113 113;
+}

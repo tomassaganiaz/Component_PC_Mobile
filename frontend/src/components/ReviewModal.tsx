@@ -96,7 +96,7 @@ export default function ReviewModal({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
       <View className="flex-1 items-center justify-end bg-black/70">
-        <View className="w-full rounded-t-3xl border-t border-[#233554] bg-[#0e1626] p-5" style={shadow.bottom}>
+        <View className="w-full rounded-t-3xl border-t border-line bg-panel p-5" style={shadow.bottom}>
           {done ? (
             <View className="flex flex-col items-center gap-3 py-6">
               <View
@@ -136,8 +136,8 @@ export default function ReviewModal({
                       onPress={() => setType(t.value)}
                       className="flex-1 items-center rounded-xl border px-2 py-2.5"
                       style={{
-                        borderColor: active ? t.tone : '#233554',
-                        backgroundColor: active ? t.tone + '1a' : '#111a2e',
+                        borderColor: active ? t.tone : colors.line,
+                        backgroundColor: active ? t.tone + '1a' : colors.panel,
                       }}
                     >
                       <Text className="font-mono text-[11px] font-semibold" style={{ color: active ? t.tone : colors.textSecondary }}>
@@ -162,7 +162,7 @@ export default function ReviewModal({
                 placeholder="Contanos cómo fue la experiencia (mín. 10 caracteres)"
                 placeholderTextColor={colors.textMuted}
                 multiline
-                className="min-h-[80px] w-full rounded-xl border border-[#233554] bg-[#111a2e] px-3 py-2.5 text-sm text-text-primary"
+                className="min-h-[80px] w-full rounded-xl border border-line bg-panel px-3 py-2.5 text-sm text-text-primary"
               />
 
               {type === 'complaint' ? (
@@ -176,7 +176,7 @@ export default function ReviewModal({
                     placeholder="Detallá el problema (mín. 20 caracteres)"
                     placeholderTextColor={colors.textMuted}
                     multiline
-                    className="min-h-[80px] w-full rounded-xl border border-red-500/40 bg-[#2a1010] px-3 py-2.5 text-sm text-text-primary"
+                    className="min-h-[80px] w-full rounded-xl border border-red-500/40 bg-danger-soft px-3 py-2.5 text-sm text-text-primary"
                   />
                 </>
               ) : null}
@@ -191,7 +191,7 @@ export default function ReviewModal({
               <View className="mt-4 flex-row gap-2 pb-4">
                 <Pressable
                   onPress={handleClose}
-                  className="flex-1 items-center justify-center rounded-xl border border-[#233554] bg-[#111a2e] py-3"
+                  className="flex-1 items-center justify-center rounded-xl border border-line bg-panel py-3"
                 >
                   <Text className="text-sm font-semibold text-text-secondary">Cancelar</Text>
                 </Pressable>
