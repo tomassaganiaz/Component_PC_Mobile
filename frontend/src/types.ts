@@ -5,7 +5,8 @@ export type ScreenName =
   | 'inspection'
   | 'filters'
   | 'publish'
-  | 'profile';
+  | 'profile'
+  | 'analytics';
 
 export interface Route {
   name: ScreenName;

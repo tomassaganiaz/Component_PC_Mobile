@@ -11,6 +11,8 @@ function routeHref(next: Route): Parameters<typeof router.push>[0] {
       return '/publish';
     case 'profile':
       return '/profile';
+    case 'analytics':
+      return '/analytics';
     case 'inspection':
       return next.orderId
         ? { pathname: '/inspection', params: { orderId: next.orderId } }
