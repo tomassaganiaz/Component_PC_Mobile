@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import AppHeader from '../components/AppHeader';
@@ -6,7 +6,7 @@ import AppIcon from '../components/AppIcon';
 import BottomNav from '../components/BottomNav';
 import ReviewModal from '../components/ReviewModal';
 import { Avatar } from '../components/ui';
-import { getMyOrders, getProfile } from '../services/api';
+import { getMyOrders, getProfile, verifyIdentity, verifyPhone } from '../services/api';
 import type { OrderItem } from '../services/api';
 import { colors, glow, shadow } from '../theme';
 import type { LoginSuccess, Nav, UserProfile } from '../types';
@@ -50,6 +50,34 @@ export default function ProfileScreen({
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [reviewOrder, setReviewOrder] = useState<OrderItem | null>(null);
   const [reviewedOrderIds, setReviewedOrderIds] = useState<Set<string>>(new Set());
+  const [verifying, setVerifying] = useState<'phone' | 'identity' | null>(null);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+
+  const refreshProfile = useCallback(async () => {
+    try {
+      const data = await getProfile(session.access_token);
+      setProfile(data);
+    } catch {
+      // keep current
+    }
+  }, [session.access_token]);
+
+  const handleVerify = async (kind: 'phone' | 'identity') => {
+    setVerifying(kind);
+    setVerifyError(null);
+    try {
+      if (kind === 'phone') {
+        await verifyPhone();
+      } else {
+        await verifyIdentity();
+      }
+      await refreshProfile();
+    } catch (err) {
+      setVerifyError(err instanceof Error ? err.message : 'No se pudo completar la verificación.');
+    } finally {
+      setVerifying(null);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -197,6 +225,40 @@ export default function ProfileScreen({
               value={acceptsTesting ? 'SÍ' : 'NO'}
               tone={acceptsTesting ? colors.accentEmerald : colors.textMuted}
             />
+
+            <View className="mt-1 flex-col gap-2">
+              {!phoneVerified ? (
+                <Pressable
+                  onPress={() => handleVerify('phone')}
+                  disabled={!!verifying}
+                  className="flex-row items-center justify-center gap-2 rounded-lg border border-sky-500/40 bg-sky-950/50 py-2.5"
+                  style={verifying ? { opacity: 0.6 } : undefined}
+                >
+                  {verifying === 'phone' ? (
+                    <AppIcon name="sync" size={16} color="#7dd3fc" />
+                  ) : (
+                    <AppIcon name="phone_android" size={16} color="#7dd3fc" />
+                  )}
+                  <Text className="text-xs font-semibold text-sky-300">Verificar teléfono</Text>
+                </Pressable>
+              ) : null}
+              {!idVerified ? (
+                <Pressable
+                  onPress={() => handleVerify('identity')}
+                  disabled={!!verifying}
+                  className="flex-row items-center justify-center gap-2 rounded-lg border border-sky-500/40 bg-sky-950/50 py-2.5"
+                  style={verifying ? { opacity: 0.6 } : undefined}
+                >
+                  {verifying === 'identity' ? (
+                    <AppIcon name="sync" size={16} color="#7dd3fc" />
+                  ) : (
+                    <AppIcon name="badge" size={16} color="#7dd3fc" />
+                  )}
+                  <Text className="text-xs font-semibold text-sky-300">Verificar documento (ID)</Text>
+                </Pressable>
+              ) : null}
+              {verifyError ? <Text className="text-xs text-diagnostic-red">{verifyError}</Text> : null}
+            </View>
           </View>
         </View>
 
