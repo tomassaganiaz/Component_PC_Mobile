@@ -210,6 +210,26 @@ export function getSellerReviews(sellerId: string): Promise<ReviewItem[]> {
   return request<ReviewItem[]>(`/reviews/seller/${sellerId}`);
 }
 
+/* ---------------------------- Verifications ----------------------------- */
+
+export interface VerificationItem {
+  id: string;
+  result: 'pass' | 'fail' | 'conditional';
+  notes: string;
+  hoursOfUse?: number;
+  physicalState?: string;
+  functionalTest?: string;
+  cosmeticGrade?: string;
+  qualityScore?: number;
+  productId: string;
+  verifiedBy?: string;
+  createdAt: string;
+}
+
+export function getProductVerifications(productId: string): Promise<VerificationItem[]> {
+  return request<VerificationItem[]>(`/verifications/product/${productId}`);
+}
+
 export interface ChatSafetyResult {
   safe: boolean;
   warnings: string[];
