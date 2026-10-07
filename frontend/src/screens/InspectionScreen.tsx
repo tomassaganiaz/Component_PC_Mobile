@@ -7,10 +7,10 @@ import AppIcon from '../components/AppIcon';
 import BottomNav from '../components/BottomNav';
 import ProductImage from '../components/ProductImage';
 import { Pill, PulseDot } from '../components/ui';
-import { chatSafetyCheck, getOrder, getOrderProtection, requestOrderCoverage, requestOrderReturn } from '../services/api';
+import { chatSafetyCheck, getOrder, getOrderProtection, getProductVerifications, requestOrderCoverage, requestOrderReturn } from '../services/api';
 import { IMAGES, INSPECTION_STEPS } from '../data/mock';
 import { colors, glow, shadow } from '../theme';
-import type { ChatSafetyResult, OrderItem, OrderProtection } from '../services/api';
+import type { ChatSafetyResult, OrderItem, OrderProtection, VerificationItem } from '../services/api';
 import type { Nav } from '../types';
 
 const BUNDLE_IMAGE =
@@ -98,7 +98,7 @@ function OrderTracking({
   error: string | null;
   nav: Nav;
 }) {
-  const [returnOpen, setReturnOpen] = useState(false);
+const [returnOpen, setReturnOpen] = useState(false);
   const [returnReason, setReturnReason] = useState('');
   const [returnLoading, setReturnLoading] = useState(false);
   const [returnError, setReturnError] = useState<string | null>(null);
@@ -106,6 +106,7 @@ function OrderTracking({
   const [coverageLoading, setCoverageLoading] = useState(false);
   const [coverageError, setCoverageError] = useState<string | null>(null);
   const [coverageResult, setCoverageResult] = useState<{ ticketId: string; message: string } | null>(null);
+  const [verification, setVerification] = useState<VerificationItem | null>(null);
 
   const handleReturn = async () => {
     if (!order || returnReason.trim().length < 10) {
@@ -136,6 +137,22 @@ function OrderTracking({
       setCoverageLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!order?.productId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await getProductVerifications(order.productId!);
+        if (!cancelled && list.length > 0) setVerification(list[0]);
+      } catch {
+        // sin verificación registrada
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [order?.productId]);
 
   if (loading) {
     return (
@@ -344,6 +361,83 @@ function OrderTracking({
                 </Pressable>
               ) : null}
             </View>
+          </View>
+        </View>
+      ) : null}
+
+      {/* Verificación del laboratorio */}
+      {verification ? (
+        <View className="mb-4 px-4">
+          <View className="rounded-xl border border-[#22324f] bg-[#111a2e] p-4" style={shadow.panel}>
+            <View className="mb-3 flex-row items-center justify-between">
+              <View className="flex-row items-center gap-1.5">
+                <AppIcon name="biotech" size={20} color={colors.accentEmerald} />
+                <Text className="text-xl font-semibold text-slate-100">Informe de Laboratorio</Text>
+              </View>
+              <View
+                className={`rounded border px-2 py-0.5 ${
+                  verification.result === 'pass'
+                    ? 'border-emerald-500/40 bg-emerald-500/10'
+                    : verification.result === 'conditional'
+                      ? 'border-amber-500/40 bg-amber-500/10'
+                      : 'border-red-500/40 bg-red-500/10'
+                }`}
+              >
+                <Text
+                  className="font-mono text-[11px] font-bold uppercase tracking-wider"
+                  style={{
+                    color:
+                      verification.result === 'pass'
+                        ? colors.accentEmerald
+                        : verification.result === 'conditional'
+                          ? colors.diagnosticAmber
+                          : colors.diagnosticRed,
+                  }}
+                >
+                  {verification.result === 'pass' ? 'APROBADO' : verification.result === 'conditional' ? 'CONDICIONAL' : 'RECHAZADO'}
+                </Text>
+              </View>
+            </View>
+
+            <View className="flex-row gap-2">
+              {verification.qualityScore != null ? (
+                <View className="flex-1 rounded-lg border border-[#22324f] bg-[#0a0f1d] p-2.5">
+                  <Text className="block font-mono text-[10px] uppercase text-slate-400">Score de calidad</Text>
+                  <Text className="text-xl font-bold text-emerald-400">{verification.qualityScore.toFixed(2)}</Text>
+                </View>
+              ) : null}
+              {verification.hoursOfUse != null ? (
+                <View className="flex-1 rounded-lg border border-[#22324f] bg-[#0a0f1d] p-2.5">
+                  <Text className="block font-mono text-[10px] uppercase text-slate-400">Horas de uso</Text>
+                  <Text className="text-xl font-bold text-slate-100">{verification.hoursOfUse} h</Text>
+                </View>
+              ) : null}
+              {verification.cosmeticGrade ? (
+                <View className="flex-1 rounded-lg border border-[#22324f] bg-[#0a0f1d] p-2.5">
+                  <Text className="block font-mono text-[10px] uppercase text-slate-400">Grado estético</Text>
+                  <Text className="text-xl font-bold text-accent-cyan">{verification.cosmeticGrade}</Text>
+                </View>
+              ) : null}
+            </View>
+
+            {verification.functionalTest ? (
+              <View className="mt-2.5 rounded-lg border border-[#22324f] bg-[#0a0f1d] p-2.5">
+                <Text className="font-mono text-[10px] uppercase text-slate-400">Test funcional</Text>
+                <Text className="mt-0.5 text-xs leading-relaxed text-slate-300">{verification.functionalTest}</Text>
+              </View>
+            ) : null}
+            {verification.physicalState ? (
+              <View className="mt-2.5 rounded-lg border border-[#22324f] bg-[#0a0f1d] p-2.5">
+                <Text className="font-mono text-[10px] uppercase text-slate-400">Estado físico</Text>
+                <Text className="mt-0.5 text-xs leading-relaxed text-slate-300">{verification.physicalState}</Text>
+              </View>
+            ) : null}
+            {verification.notes ? (
+              <Text className="mt-2.5 text-xs leading-relaxed text-slate-400">{verification.notes}</Text>
+            ) : null}
+            <Text className="mt-2 font-mono text-[10px] text-slate-500">
+              Verificado el {new Date(verification.createdAt).toLocaleDateString()}
+            </Text>
           </View>
         </View>
       ) : null}
