@@ -70,6 +70,8 @@ const MAP: Record<string, MIconName> = {
   visibility: 'visibility',
   visibility_off: 'visibility-off',
   languages: 'language',
+  light_mode: 'light-mode',
+  nightlight: 'nightlight',
 };
 
 interface Props {

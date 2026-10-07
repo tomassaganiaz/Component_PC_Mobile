@@ -6,6 +6,7 @@ import AppIcon from '../components/AppIcon';
 import BottomNav from '../components/BottomNav';
 import ReviewModal from '../components/ReviewModal';
 import { Avatar } from '../components/ui';
+import { useThemeCtx } from '../context/ThemeContext';
 import { getMyOrders, getProfile, verifyIdentity, verifyPhone } from '../services/api';
 import type { OrderItem } from '../services/api';
 import { colors, glow, shadow } from '../theme';
@@ -23,9 +24,9 @@ function Row({
   tone?: string;
 }) {
   return (
-    <View className="flex-row items-center justify-between rounded-xl border border-[#233554] bg-[#111a2e] px-3 py-3">
+    <View className="flex-row items-center justify-between rounded-xl border border-line bg-panel px-3 py-3">
       <View className="flex-row items-center gap-2.5">
-        <View className="h-8 w-8 items-center justify-center rounded-lg bg-[#162238]">
+        <View className="h-8 w-8 items-center justify-center rounded-lg bg-elevated">
           <AppIcon name={icon} size={17} color={tone} />
         </View>
         <Text className="text-sm text-text-primary">{label}</Text>
@@ -47,6 +48,7 @@ export default function ProfileScreen({
   onLogout: () => void;
 }) {
   const [profile, setProfile] = useState<UserProfile>(session.user);
+  const { theme, toggle } = useThemeCtx();
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [reviewOrder, setReviewOrder] = useState<OrderItem | null>(null);
   const [reviewedOrderIds, setReviewedOrderIds] = useState<Set<string>>(new Set());
@@ -136,14 +138,14 @@ export default function ProfileScreen({
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
         {/* Identity card */}
         <View className="px-4 pt-3">
-          <View className="flex-row items-center gap-3.5 rounded-xl border border-[#233554] bg-[#111c33] p-4" style={shadow.card}>
+          <View className="flex-row items-center gap-3.5 rounded-xl border border-line bg-card p-4" style={shadow.card}>
             <View className="relative">
               <Avatar uri={profile.avatar ?? undefined} size={60} initial={(profile.name[0] ?? 'T').toUpperCase()} ringColor={colors.primary + '66'} />
               <View
                 className="absolute -bottom-1 -right-1 h-5 w-5 items-center justify-center rounded-full"
                 style={{ backgroundColor: idVerified ? colors.secondary : colors.diagnosticAmber }}
               >
-                <AppIcon name={idVerified ? 'verified' : 'badge'} size={12} color="#002e1b" />
+                <AppIcon name={idVerified ? 'verified' : 'badge'} size={12} color={colors.onSecondary} />
               </View>
             </View>
             <View className="min-w-0 flex-1">
@@ -161,7 +163,7 @@ export default function ProfileScreen({
                     {idVerified ? 'ID VERIFICADO' : 'ID PENDIENTE'}
                   </Text>
                 </View>
-                <View className="flex-row items-center gap-1 rounded border border-[#233554] bg-[#111a2e] px-1.5 py-0.5">
+                <View className="flex-row items-center gap-1 rounded border border-line bg-panel px-1.5 py-0.5">
                   <AppIcon name="phone_android" size={12} color={phoneVerified ? colors.accentEmerald : colors.textMuted} />
                   <Text className="font-mono text-[10px] font-semibold text-text-secondary">
                     {phoneVerified ? 'TEL VERIFICADO' : 'TEL SIN VERIFICAR'}
@@ -178,7 +180,7 @@ export default function ProfileScreen({
             className="flex-row items-start gap-3 rounded-xl border p-4"
             style={{
               borderColor: tierTone + '55',
-              backgroundColor: '#0d1728',
+              backgroundColor: colors.inset,
               ...glow(tierTone, 12, 0.12),
             }}
           >
@@ -268,7 +270,7 @@ export default function ProfileScreen({
             Mis compras ({orders.length})
           </Text>
           {orders.length === 0 ? (
-            <View className="flex-row items-center gap-2.5 rounded-xl border border-[#233554] bg-[#111a2e] p-3">
+            <View className="flex-row items-center gap-2.5 rounded-xl border border-line bg-panel p-3">
               <AppIcon name="receipt_long" size={18} color={colors.textMuted} />
               <Text className="flex-1 text-xs leading-relaxed text-text-secondary">
                 Aún no tenés compras. Tus órdenes con custodia van a aparecer acá.
@@ -280,12 +282,12 @@ export default function ProfileScreen({
                 const reviewable = order.status === 'delivered' || order.status === 'refunded';
                 const alreadyReviewed = reviewedOrderIds.has(order.id);
                 return (
-                  <View key={order.id} className="rounded-xl border border-[#233554] bg-[#111a2e] p-3">
+                  <View key={order.id} className="rounded-xl border border-line bg-panel p-3">
                     <Pressable
                       onPress={() => nav.go({ name: 'inspection', orderId: order.id })}
                       className="flex-row items-center gap-3"
                     >
-                      <View className="h-9 w-9 items-center justify-center rounded-lg bg-[#162238]">
+                      <View className="h-9 w-9 items-center justify-center rounded-lg bg-elevated">
                         <AppIcon name="receipt_long" size={18} color={colors.accentCyan} />
                       </View>
                       <View className="min-w-0 flex-1">
@@ -296,7 +298,7 @@ export default function ProfileScreen({
                           ${Number(order.total).toFixed(2)} · #{order.id.slice(0, 8).toUpperCase()}
                         </Text>
                       </View>
-                      <View className="flex-row items-center gap-1 rounded border border-[#233554] bg-[#0d1728] px-2 py-0.5">
+                      <View className="flex-row items-center gap-1 rounded border border-line bg-inset px-2 py-0.5">
                         <Text className="font-mono text-[10px] font-semibold uppercase tracking-wider text-accent-cyan">
                           {order.status.replace(/_/g, ' ')}
                         </Text>
@@ -310,7 +312,7 @@ export default function ProfileScreen({
                         }}
                         className={`mt-2.5 flex-row items-center justify-center gap-1.5 rounded-lg border py-2 ${
                           alreadyReviewed
-                            ? 'border-[#233554] bg-[#0d1728] opacity-60'
+                            ? 'border-line bg-inset opacity-60'
                             : 'border-amber-500/40 bg-amber-500/10'
                         }`}
                       >
@@ -352,9 +354,9 @@ export default function ProfileScreen({
           <View className="flex flex-col gap-2">
             <Pressable
               onPress={() => nav.go({ name: 'publish' })}
-              className="flex-row items-center gap-3 rounded-xl border border-[#233554] bg-[#111a2e] p-3"
+              className="flex-row items-center gap-3 rounded-xl border border-line bg-panel p-3"
             >
-              <View className="h-8 w-8 items-center justify-center rounded-lg bg-[#162238]">
+              <View className="h-8 w-8 items-center justify-center rounded-lg bg-elevated">
                 <AppIcon name="add" size={17} color={colors.primary} />
               </View>
               <Text className="flex-1 text-sm text-text-primary">Publicar un producto</Text>
@@ -362,9 +364,9 @@ export default function ProfileScreen({
             </Pressable>
             <Pressable
               onPress={() => nav.go({ name: 'inspection' })}
-              className="flex-row items-center gap-3 rounded-xl border border-[#233554] bg-[#111a2e] p-3"
+              className="flex-row items-center gap-3 rounded-xl border border-line bg-panel p-3"
             >
-              <View className="h-8 w-8 items-center justify-center rounded-lg bg-[#162238]">
+              <View className="h-8 w-8 items-center justify-center rounded-lg bg-elevated">
                 <AppIcon name="verified_user" size={17} color={colors.accentCyan} />
               </View>
               <Text className="flex-1 text-sm text-text-primary">Seguimiento de auditoría</Text>
@@ -372,22 +374,34 @@ export default function ProfileScreen({
             </Pressable>
             <Pressable
               onPress={() => nav.go({ name: 'filters' })}
-              className="flex-row items-center gap-3 rounded-xl border border-[#233554] bg-[#111a2e] p-3"
+              className="flex-row items-center gap-3 rounded-xl border border-line bg-panel p-3"
             >
-              <View className="h-8 w-8 items-center justify-center rounded-lg bg-[#162238]">
+              <View className="h-8 w-8 items-center justify-center rounded-lg bg-elevated">
                 <AppIcon name="manage_search" size={17} color={colors.accentEmerald} />
               </View>
               <Text className="flex-1 text-sm text-text-primary">Filtros de seguridad</Text>
               <AppIcon name="arrow_forward" size={18} color={colors.textMuted} />
             </Pressable>
             <Pressable
-              onPress={() => nav.go({ name: 'analytics' })}
-              className="flex-row items-center gap-3 rounded-xl border border-[#233554] bg-[#111a2e] p-3"
+onPress={() => nav.go({ name: 'analytics' })}
+              className="flex-row items-center gap-3 rounded-xl border border-line bg-panel p-3"
             >
-              <View className="h-8 w-8 items-center justify-center rounded-lg bg-[#162238]">
+              <View className="h-8 w-8 items-center justify-center rounded-lg bg-elevated">
                 <AppIcon name="equalizer" size={17} color={colors.primary} />
               </View>
               <Text className="flex-1 text-sm text-text-primary">Dashboard de analytics</Text>
+              <AppIcon name="arrow_forward" size={18} color={colors.textMuted} />
+            </Pressable>
+            <Pressable
+              onPress={toggle}
+              className="flex-row items-center gap-3 rounded-xl border border-line bg-panel p-3"
+            >
+              <View className="h-8 w-8 items-center justify-center rounded-lg bg-elevated">
+                <AppIcon name={theme === 'dark' ? 'light_mode' : 'nightlight'} size={17} color={colors.primary} />
+              </View>
+              <Text className="flex-1 text-sm text-text-primary">
+                {theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+              </Text>
               <AppIcon name="arrow_forward" size={18} color={colors.textMuted} />
             </Pressable>
           </View>

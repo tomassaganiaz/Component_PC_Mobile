@@ -42,9 +42,9 @@ type PillTone = 'emerald' | 'cyan' | 'primary' | 'amber' | 'slate' | 'blue';
 const pillClasses: Record<PillTone, string> = {
   emerald: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300',
   cyan: 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300',
-  primary: 'bg-[#182845] border-primary/30 text-primary',
+  primary: 'bg-primary-soft border-primary/30 text-primary',
   amber: 'bg-amber-500/15 border-amber-500/30 text-amber-300',
-  slate: 'bg-[#162238] border-[#22324f] text-slate-300',
+  slate: 'bg-elevated border-line text-slate-300',
   blue: 'bg-blue-950/70 border-blue-500/40 text-cyan-300',
 };
 
@@ -93,7 +93,7 @@ export function SectionLabel({ children, className = '' }: { children: React.Rea
 
 export function ProgressBar({
   percent,
-  track = '#0b1326',
+  track = colors.surface,
   fill = '#4edea3',
   height = 10,
   glowColor = colors.secondary,
@@ -107,7 +107,7 @@ export function ProgressBar({
   return (
     <View
       className="w-full overflow-hidden rounded-full"
-      style={{ backgroundColor: track, height, borderWidth: 1, borderColor: '#233554' }}
+      style={{ backgroundColor: track, height, borderWidth: 1, borderColor: colors.line }}
     >
       <View
         style={{
@@ -127,7 +127,7 @@ export function Avatar({
   uri,
   size = 32,
   initial = 'T',
-  ringColor = '#233554',
+  ringColor = colors.line,
 }: {
   uri?: string;
   size?: number;
@@ -143,7 +143,7 @@ export function Avatar({
       style={{
         width: size,
         height: size,
-        backgroundColor: '#162238',
+        backgroundColor: colors.surfacePanel,
         borderWidth: 1,
         borderColor: ringColor,
       }}
@@ -183,7 +183,7 @@ export function Segmented({
   onChange: (index: number) => void;
 }) {
   return (
-    <View className="flex-row items-center justify-between gap-1 rounded-xl border border-[#1e2c45] bg-[#10192b] p-1">
+    <View className="flex-row items-center justify-between gap-1 rounded-xl border border-line bg-panel p-1">
       {options.map((opt, i) => {
         const active = i === value;
         return (
@@ -192,7 +192,7 @@ export function Segmented({
             onPress={() => onChange(i)}
             className={`flex-1 items-center rounded-lg px-2 py-1.5 ${
               active
-                ? 'border border-primary/30 bg-[#1a2842] shadow-sm'
+                ? 'border border-primary/30 bg-primary-soft shadow-sm'
                 : 'border border-transparent'
             }`}
           >
@@ -221,7 +221,7 @@ export function Card({
 }) {
   return (
     <View
-      className={`rounded-xl border border-[#233554] bg-[#111c33] ${className}`}
+      className={`rounded-xl border border-line bg-card ${className}`}
       style={style}
     >
       {children}

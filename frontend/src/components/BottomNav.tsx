@@ -21,7 +21,7 @@ export default function BottomNav({
 }) {
   return (
     <View
-      className="w-full flex-row items-center justify-around bg-[#090e1a]/95 px-1"
+      className="w-full flex-row items-center justify-around bg-surface/95 px-1"
       style={{
         borderTopWidth: 1,
         borderTopColor: '#1d2b45',
@@ -41,7 +41,7 @@ export default function BottomNav({
               <View
                 className="h-9 w-9 items-center justify-center rounded-xl"
                 style={{
-                  backgroundColor: '#1e3a73',
+                  backgroundColor: colors.primaryMid,
                   borderWidth: 1,
                   borderColor: colors.primary + '66',
                 }}

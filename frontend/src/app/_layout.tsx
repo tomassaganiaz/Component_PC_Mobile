@@ -8,6 +8,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { MarketplaceProvider } from '../context/MarketplaceContext';
+import { ThemeProvider } from '../context/ThemeContext';
 import { colors } from '../theme';
 
 if (Platform.OS === 'web') {
@@ -62,17 +63,19 @@ function ProtectedRouter() {
 
 export default function RootLayout() {
   return (
-    <Head.Provider>
-      <AuthProvider>
-        <MarketplaceProvider>
-          <SafeAreaProvider>
-            <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface }} edges={['top', 'bottom']}>
-              <StatusBar style="light" />
-              <ProtectedRouter />
-            </SafeAreaView>
-          </SafeAreaProvider>
-        </MarketplaceProvider>
-      </AuthProvider>
-    </Head.Provider>
+    <ThemeProvider>
+      <Head.Provider>
+        <AuthProvider>
+          <MarketplaceProvider>
+            <SafeAreaProvider>
+              <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface }} edges={['top', 'bottom']}>
+                <StatusBar style="auto" />
+                <ProtectedRouter />
+              </SafeAreaView>
+            </SafeAreaProvider>
+          </MarketplaceProvider>
+        </AuthProvider>
+      </Head.Provider>
+    </ThemeProvider>
   );
 }

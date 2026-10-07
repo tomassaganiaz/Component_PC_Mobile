@@ -54,7 +54,7 @@ function VerificationData({ product }: { product: ExploreCard }) {
   if (!verified) {
     return (
       <View className="px-4 pt-4">
-        <View className="flex-row items-start gap-3 rounded-xl border border-[#233554] bg-[#111a2e] p-4">
+        <View className="flex-row items-start gap-3 rounded-xl border border-line bg-panel p-4">
           <AppIcon name="science" size={22} color={colors.diagnosticAmber} style={{ marginTop: 2 }} />
           <View className="flex-1">
             <Text className="text-sm font-semibold text-text-primary">Producto en auditoría</Text>
@@ -83,14 +83,14 @@ function VerificationData({ product }: { product: ExploreCard }) {
 
   return (
     <View className="px-4 pt-4">
-      <View className="flex flex-col gap-3 rounded-xl border border-[#233554] bg-[#111c33] p-4" style={shadow.panel}>
+      <View className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4" style={shadow.panel}>
         <View className="flex-row items-center gap-2">
           <AppIcon name="hardware" size={20} color={colors.accentCyan} />
           <Text className="text-lg font-semibold text-text-primary">Datos Reales del Producto</Text>
         </View>
 
         {hasComparison ? (
-          <View className="flex-col gap-1.5 rounded-lg border border-[#233554]/60 bg-[#162444] p-2.5">
+          <View className="flex-col gap-1.5 rounded-lg border border-line/60 bg-elevated p-2.5">
             <View className="flex-row items-center justify-between">
               <Text className="text-xs text-text-secondary">Horas de uso verificadas</Text>
               <Text className="font-mono text-sm font-bold text-secondary">
@@ -105,7 +105,7 @@ function VerificationData({ product }: { product: ExploreCard }) {
               className="mt-1 flex-row items-center justify-between rounded border px-2 py-1"
               style={{
                 borderColor: match ? colors.secondary + '66' : colors.diagnosticAmber + '66',
-                backgroundColor: match ? '#06271a' : '#2a1f08',
+                backgroundColor: match ? colors.successSoft : colors.warningSoft,
               }}
             >
               <Text className="font-mono text-[10px] font-bold uppercase tracking-wider" style={{ color: match ? colors.accentEmerald : colors.diagnosticAmber }}>
@@ -118,13 +118,13 @@ function VerificationData({ product }: { product: ExploreCard }) {
 
         <View className="flex-row flex-wrap gap-2">
           {product.usageType ? (
-            <View className="flex-1 min-w-[45%] flex-col gap-1 rounded-lg border border-[#233554]/60 bg-[#0b1326] p-2.5">
+            <View className="flex-1 min-w-[45%] flex-col gap-1 rounded-lg border border-line/60 bg-surface p-2.5">
               <Text className="font-mono text-[10px] uppercase text-text-muted">Tipo de uso</Text>
               <Text className="text-xs font-semibold text-text-primary">{product.usageType}</Text>
             </View>
           ) : null}
           {product.conditionGrade ? (
-            <View className="flex-1 min-w-[45%] flex-col gap-1 rounded-lg border border-[#233554]/60 bg-[#0b1326] p-2.5">
+            <View className="flex-1 min-w-[45%] flex-col gap-1 rounded-lg border border-line/60 bg-surface p-2.5">
               <Text className="font-mono text-[10px] uppercase text-text-muted">Grado</Text>
               <Text className="text-xs font-semibold text-secondary">{product.conditionGrade}</Text>
             </View>
@@ -132,7 +132,7 @@ function VerificationData({ product }: { product: ExploreCard }) {
         </View>
 
         {product.stressTest ? (
-          <View className="flex-col gap-1 rounded-lg border border-[#233554]/60 bg-[#0b1326] p-2.5">
+          <View className="flex-col gap-1 rounded-lg border border-line/60 bg-surface p-2.5">
             <Text className="font-mono text-[10px] uppercase text-text-muted">Estrés soportado</Text>
             <Text className="text-xs leading-relaxed text-text-secondary">{product.stressTest}</Text>
           </View>
@@ -212,7 +212,7 @@ function SellerSecurity({
 
   return (
     <View className="px-4 pt-4">
-      <View className="flex flex-col gap-2 rounded-xl border border-[#233554] bg-[#131d30] p-4" style={shadow.panel}>
+      <View className="flex flex-col gap-2 rounded-xl border border-line bg-card p-4" style={shadow.panel}>
         <View className="flex-row items-center gap-2">
           <AppIcon name="verified_user" size={20} color={meta.dot} />
           <Text className="text-lg font-semibold text-text-primary">Seguridad del Vendedor</Text>
@@ -250,7 +250,7 @@ function SellerSecurity({
 
         {breakdown ? (
           <View className="mt-1 flex flex-col gap-1.5">
-            <View className="h-1.5 w-full flex-row overflow-hidden rounded-full bg-[#162238]">
+            <View className="h-1.5 w-full flex-row overflow-hidden rounded-full bg-elevated">
               <View className="h-full bg-emerald-500" style={{ flex: breakdown.positive / maxBreakdown }} />
               <View className="h-full bg-amber-500" style={{ flex: breakdown.neutral / maxBreakdown }} />
               <View className="h-full bg-red-500" style={{ flex: breakdown.complaint / maxBreakdown }} />
@@ -386,7 +386,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
       {/* Header */}
       <View
         className="flex-row items-center justify-between bg-surface px-4 py-2.5"
-        style={{ borderBottomWidth: 1, borderBottomColor: '#233554', ...shadow.top }}
+        style={{ borderBottomWidth: 1, borderBottomColor: colors.line, ...shadow.top }}
       >
         <View className="flex-row items-center gap-2">
           <Pressable onPress={nav.back} className="h-10 w-10 items-center justify-center rounded-lg">
@@ -427,40 +427,40 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
         {/* Gallery */}
         <View className="px-4 pt-1">
           <View
-            className="overflow-hidden rounded-xl border border-[#233554] bg-[#111c33]"
+            className="overflow-hidden rounded-xl border border-line bg-card"
             style={shadow.card}
           >
-            <View className="overflow-hidden bg-[#060e20]" style={{ aspectRatio: 4 / 3 }}>
+            <View className="overflow-hidden bg-inset" style={{ aspectRatio: 4 / 3 }}>
               <ProductImage
                 uri={activeImage}
                 style={{ width: '100%', height: '100%' }}
                 iconSize={56}
                 contentFit="cover"
               />
-              <View className="absolute left-3 top-3 flex-row items-center gap-1.5 rounded-full border border-secondary/40 bg-[#0b1326]/90 px-2.5 py-1">
+              <View className="absolute left-3 top-3 flex-row items-center gap-1.5 rounded-full border border-secondary/40 bg-surface/90 px-2.5 py-1">
                 <AppIcon name="verified_user" size={15} color={colors.secondary} />
                 <Text className="font-mono text-[11px] font-semibold tracking-wider text-secondary">
                   LAB PHOTO #{String(galleryIndex + 1).padStart(2, '0')} • TECHSHIELD CERTIFIED
                 </Text>
               </View>
-              <View className="absolute bottom-3 right-3 flex-row items-center gap-1.5 rounded-full border border-[#233554] bg-[#0b1326]/90 px-2.5 py-1">
+              <View className="absolute bottom-3 right-3 flex-row items-center gap-1.5 rounded-full border border-line bg-surface/90 px-2.5 py-1">
                 <View className="h-2 w-2 rounded-full bg-secondary" />
                 <Text className="font-mono text-[11px] text-text-primary">{marker}</Text>
               </View>
             </View>
             {gallery.length > 0 ? (
-              <View className="flex-row items-center gap-2 overflow-hidden border-t border-[#233554]/50 bg-[#060e20] p-2">
+              <View className="flex-row items-center gap-2 overflow-hidden border-t border-line/50 bg-inset p-2">
                 {gallery.map((g, i) => (
                   <Pressable
                     key={i}
                     onPress={() => setGalleryIndex(i)}
-                    className="relative h-16 w-16 overflow-hidden rounded-lg bg-[#111c33]"
+                    className="relative h-16 w-16 overflow-hidden rounded-lg bg-card"
                     style={i === galleryIndex ? { borderWidth: 2, borderColor: colors.secondary } : undefined}
                   >
                     <ProductImage uri={g.uri} style={{ width: '100%', height: '100%' }} iconSize={22} />
                     <View
                       className="absolute inset-x-0 bottom-0 items-center py-0.5"
-                      style={{ backgroundColor: '#0b1326' + 'e6' }}
+                      style={{ backgroundColor: colors.surface + 'e6' }}
                     >
                       <Text
                         className={`font-mono text-[9px] font-medium ${
@@ -486,12 +486,12 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
             </Text>
           </View>
 {product.condition === 'new' ? (
-          <View className="flex-row items-center gap-1.5 rounded-full border border-sky-400/60 bg-[#0a1b2e] px-3 py-1">
+          <View className="flex-row items-center gap-1.5 rounded-full border border-sky-400/60 bg-info-soft px-3 py-1">
             <AppIcon name="inventory_2" size={15} color="#7dd3fc" />
             <Text className="font-mono text-[11px] font-bold tracking-wide text-sky-300">NUEVO · SIN USO · SIN ABRIR</Text>
           </View>
         ) : null}
-        <View className="flex-row items-center gap-1.5 rounded-full border border-[#233554] bg-[#162444] px-3 py-1">
+        <View className="flex-row items-center gap-1.5 rounded-full border border-line bg-elevated px-3 py-1">
           <AppIcon name="inventory_2" size={15} color={colors.primary} />
           <Text className="font-mono text-[11px] text-on-surface-variant">CAJA ORIGINAL + ACCESORIOS</Text>
         </View>
@@ -507,7 +507,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
 
         {/* Price */}
         <View className="px-4 pt-3">
-          <View className="flex flex-col gap-1 rounded-xl border border-[#233554] bg-[#111c33] p-4" style={shadow.panel}>
+          <View className="flex flex-col gap-1 rounded-xl border border-line bg-card p-4" style={shadow.panel}>
             <View className="flex-row items-baseline justify-between">
               <View className="flex-row items-baseline gap-2">
                 <Text className="text-[28px] font-bold text-text-primary">${product.price}</Text>
@@ -546,7 +546,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
 
         {product.warranty ? (
           <View className="px-4 pt-4">
-            <View className="flex flex-col gap-2 rounded-xl border border-[#233554] bg-[#131d30] p-4" style={shadow.panel}>
+            <View className="flex flex-col gap-2 rounded-xl border border-line bg-card p-4" style={shadow.panel}>
               <View className="flex-row items-center gap-2">
                 <AppIcon
                   name="security"
@@ -587,10 +587,10 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
         {/* Report */}
         {product.report ? (
           <View className="px-4 pt-4">
-            <View className="flex flex-col gap-4 rounded-xl border border-[#233554] bg-[#111c33] p-4" style={shadow.panel}>
+            <View className="flex flex-col gap-4 rounded-xl border border-line bg-card p-4" style={shadow.panel}>
               {/* Report header */}
               <View
-                className="-m-4 mb-0 flex-row items-start justify-between gap-2 rounded-t-xl border-b border-[#233554] bg-[#162444]/70 p-4"
+                className="-m-4 mb-0 flex-row items-start justify-between gap-2 rounded-t-xl border-b border-line bg-elevated/70 p-4"
               >
                 <View className="flex-row items-center gap-3">
                   <View
@@ -604,7 +604,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
                     <Text className="font-mono text-[11px] text-text-secondary">{product.report.code}</Text>
                   </View>
                 </View>
-                <View className="rounded-full border border-[#233554] bg-[#0b1326] px-2.5 py-1">
+                <View className="rounded-full border border-line bg-surface px-2.5 py-1">
                   <Text className="font-mono text-[10px] font-semibold tracking-wider text-tertiary">
                     {product.report.tests}
                   </Text>
@@ -613,7 +613,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
 
               {/* Battery */}
               {product.report.battery ? (
-                <View className="flex flex-col gap-2 rounded-lg border border-[#233554]/70 bg-[#162444] p-2.5">
+                <View className="flex flex-col gap-2 rounded-lg border border-line/70 bg-elevated p-2.5">
                   <View className="flex-row items-center justify-between">
                     <View className="flex-row items-center gap-1.5">
                       <AppIcon name="battery_charging_full" size={18} color={colors.secondary} />
@@ -641,7 +641,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
               {product.report.checklist ? (
                 <View className="flex flex-col gap-2.5">
                   {product.report.checklist.map((item) => (
-                    <View key={item.title} className="flex-row items-start gap-3 rounded-lg border border-[#233554]/60 bg-[#162444] p-2.5">
+                    <View key={item.title} className="flex-row items-start gap-3 rounded-lg border border-line/60 bg-elevated p-2.5">
                       <AppIcon name={item.icon} size={20} color={colors.secondary} style={{ marginTop: 2 }} />
                       <View className="min-w-0 flex-1">
                         <View className="flex-row items-center justify-between">
@@ -678,10 +678,10 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
         {/* Seller */}
         {product.seller ? (
           <View className="px-4 pt-4">
-            <View className="flex-row items-center justify-between gap-3 rounded-xl border border-[#233554] bg-[#131d30] p-4" style={shadow.panel}>
+            <View className="flex-row items-center justify-between gap-3 rounded-xl border border-line bg-card p-4" style={shadow.panel}>
               <View className="flex-row items-center gap-3">
                 <View className="relative">
-                  <Avatar uri={product.seller.avatar} size={48} ringColor="#233554" />
+                  <Avatar uri={product.seller.avatar} size={48} ringColor={colors.line} />
                   <View className="absolute -bottom-1 -right-1 h-4 w-4 items-center justify-center rounded-full bg-secondary">
                     <Text className="text-[10px] font-bold text-on-secondary">✓</Text>
                   </View>
@@ -711,13 +711,13 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
 
         {/* Garantía */}
         <View className="px-4 pt-4">
-          <View className="flex flex-col gap-4 rounded-xl border border-[#233554] bg-[#131d30] p-4" style={shadow.panel}>
+          <View className="flex flex-col gap-4 rounded-xl border border-line bg-card p-4" style={shadow.panel}>
             <View className="flex-row items-center gap-2">
               <AppIcon name="security" size={22} color={colors.secondary} />
               <Text className="text-xl font-semibold text-text-primary">Garantía TechShield Total</Text>
             </View>
             <View className="flex-row gap-2">
-              <View className="flex-1 flex-col gap-1 rounded-lg border border-[#233554]/60 bg-[#0b1326] p-2.5">
+              <View className="flex-1 flex-col gap-1 rounded-lg border border-line/60 bg-surface p-2.5">
                 <View className="flex-row items-center gap-1.5">
                   <AppIcon name="verified" size={16} color={colors.secondary} />
                   <Text className="font-mono text-[11px] font-semibold text-secondary">90 DÍAS</Text>
@@ -726,7 +726,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
                   Garantía de hardware completa gestionada directamente por TechShield.
                 </Text>
               </View>
-              <View className="flex-1 flex-col gap-1 rounded-lg border border-[#233554]/60 bg-[#0b1326] p-2.5">
+              <View className="flex-1 flex-col gap-1 rounded-lg border border-line/60 bg-surface p-2.5">
                 <View className="flex-row items-center gap-1.5">
                   <AppIcon name="replay" size={16} color={colors.secondary} />
                   <Text className="font-mono text-[11px] font-semibold text-secondary">14 DÍAS</Text>
@@ -736,7 +736,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
                 </Text>
               </View>
             </View>
-            <View className="flex-row items-start gap-2.5 rounded-lg border border-[#233554]/60 bg-[#0b1326] p-2.5">
+            <View className="flex-row items-start gap-2.5 rounded-lg border border-line/60 bg-surface p-2.5">
               <AppIcon name="account_balance_wallet" size={20} color={colors.primary} style={{ marginTop: 2 }} />
               <View className="flex-1">
                 <Text className="font-mono text-[11px] font-bold text-primary">
@@ -754,13 +754,13 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
         {/* Specs */}
         {product.specs ? (
           <View className="px-4 pt-4">
-            <View className="flex flex-col gap-2 rounded-xl border border-[#233554] bg-[#111c33] p-4" style={shadow.panel}>
+            <View className="flex flex-col gap-2 rounded-xl border border-line bg-card p-4" style={shadow.panel}>
               <Text className="text-xl font-semibold text-text-primary">Especificaciones Validadas</Text>
               {product.specs.map(([label, value], i) => (
                 <View
                   key={label}
                   className="flex-row items-center justify-between py-2"
-                  style={i < product.specs!.length - 1 ? { borderBottomWidth: 1, borderBottomColor: '#233554' } : undefined}
+                  style={i < product.specs!.length - 1 ? { borderBottomWidth: 1, borderBottomColor: colors.line } : undefined}
                 >
                   <Text className="font-mono text-[11px] text-text-secondary">{label}</Text>
                   <Text className="font-mono text-[11px] font-semibold text-text-primary">{value}</Text>
@@ -774,7 +774,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
       {/* Report modal */}
       <Modal visible={reportOpen} transparent animationType="fade" onRequestClose={() => setReportOpen(false)}>
         <View className="flex-1 items-center justify-center bg-black/70 px-6">
-          <View className="w-full rounded-2xl border border-[#233554] bg-[#111a2e] p-5" style={shadow.card}>
+          <View className="w-full rounded-2xl border border-line bg-panel p-5" style={shadow.card}>
             <View className="flex-row items-center gap-2">
               <AppIcon name="report" size={20} color={colors.diagnosticRed} />
               <Text className="text-lg font-semibold text-text-primary">Reportar vendedor</Text>
@@ -789,13 +789,13 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
               placeholder="Motivo del reporte (mínimo 10 caracteres)"
               placeholderTextColor={colors.textMuted}
               multiline
-              className="mt-3 min-h-[90px] rounded-xl border border-[#233554] bg-surface-low p-3 text-sm text-text-primary"
+              className="mt-3 min-h-[90px] rounded-xl border border-line bg-surface-low p-3 text-sm text-text-primary"
             />
             {reportError ? <Text className="mt-2 text-xs text-diagnostic-red">{reportError}</Text> : null}
             <View className="mt-4 flex-row gap-2">
               <Pressable
                 onPress={() => setReportOpen(false)}
-                className="flex-1 items-center justify-center rounded-xl border border-[#233554] bg-[#162238] py-3"
+                className="flex-1 items-center justify-center rounded-xl border border-line bg-elevated py-3"
               >
                 <Text className="text-sm font-semibold text-text-secondary">Cancelar</Text>
               </Pressable>
@@ -819,8 +819,8 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
 
       {/* Sticky purchase bar */}
       <View
-        className="w-full flex-row items-center gap-3 bg-[#0b1326]/95 px-4 py-3"
-        style={{ borderTopWidth: 1, borderTopColor: '#233554', ...shadow.bottom }}
+        className="w-full flex-row items-center gap-3 bg-surface/95 px-4 py-3"
+        style={{ borderTopWidth: 1, borderTopColor: colors.line, ...shadow.bottom }}
       >
         <View>
           <Text className="font-mono text-[11px] text-text-secondary">PRECIO FINAL</Text>
@@ -847,13 +847,13 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
         onRequestClose={() => setReviewsOpen(false)}
       >
         <View className="flex-1 items-center justify-end bg-black/70">
-          <View className="h-[75%] w-full rounded-t-3xl border-t border-[#233554] bg-[#0e1626] p-5" style={shadow.bottom}>
+          <View className="h-[75%] w-full rounded-t-3xl border-t border-line bg-panel p-5" style={shadow.bottom}>
             <View className="flex-row items-center justify-between">
               <View className="flex-row items-center gap-2">
                 <AppIcon name="star" size={20} color={colors.diagnosticAmber} />
                 <Text className="text-lg font-semibold text-text-primary">Reseñas del vendedor</Text>
               </View>
-              <Pressable onPress={() => setReviewsOpen(false)} className="h-9 w-9 items-center justify-center rounded-lg bg-[#111a2e]">
+              <Pressable onPress={() => setReviewsOpen(false)} className="h-9 w-9 items-center justify-center rounded-lg bg-panel">
                 <AppIcon name="close" size={20} color={colors.textSecondary} />
               </Pressable>
             </View>
@@ -879,10 +879,10 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
               ) : (
                 <View className="flex flex-col gap-3 pb-6">
                   {sellerReviews.map((review) => (
-                    <View key={review.id} className="rounded-xl border border-[#233554] bg-[#111a2e] p-3.5">
+                    <View key={review.id} className="rounded-xl border border-line bg-panel p-3.5">
                       <View className="flex-row items-center justify-between">
                         <View className="flex-row items-center gap-2">
-                          <View className="h-7 w-7 items-center justify-center rounded-full bg-[#162238]">
+                          <View className="h-7 w-7 items-center justify-center rounded-full bg-elevated">
                             <Text className="text-[11px] font-bold text-accent-cyan">
                               {(review.buyer?.name ?? 'C').charAt(0).toUpperCase()}
                             </Text>
@@ -955,7 +955,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
         onRequestClose={() => setCheckoutOpen(false)}
       >
         <View className="flex-1 items-center justify-end bg-black/70">
-          <View className="w-full rounded-t-3xl border-t border-[#233554] bg-[#0e1626] p-5" style={shadow.bottom}>
+          <View className="w-full rounded-t-3xl border-t border-line bg-panel p-5" style={shadow.bottom}>
             {createdOrder ? (
               <View className="flex flex-col items-center gap-3 py-4">
                 <View
@@ -969,7 +969,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
                   Tus {product.currency} ${Number(createdOrder.total).toFixed(2)} quedaron retenidos en la bóveda
                   TechShield. El vendedor no cobra hasta que recibas y verifiques el producto.
                 </Text>
-                <View className="mt-1 flex-row items-center gap-1.5 rounded-lg border border-[#233554] bg-[#111a2e] px-3 py-2">
+                <View className="mt-1 flex-row items-center gap-1.5 rounded-lg border border-line bg-panel px-3 py-2">
                   <AppIcon name="verified" size={15} color={colors.accentCyan} />
                   <Text className="font-mono text-[11px] text-text-secondary">
                     ORDER ID: #{createdOrder.id.slice(0, 8).toUpperCase()}
@@ -990,7 +990,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
                 </Pressable>
                 <Pressable
                   onPress={() => setCheckoutOpen(false)}
-                  className="w-full items-center justify-center rounded-xl border border-[#233554] bg-[#111a2e] py-3"
+                  className="w-full items-center justify-center rounded-xl border border-line bg-panel py-3"
                 >
                   <Text className="text-sm font-semibold text-text-secondary">Seguir explorando</Text>
                 </Pressable>
@@ -1002,8 +1002,8 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
                   <Text className="text-lg font-semibold text-text-primary">Checkout TechShield</Text>
                 </View>
 
-                <View className="mt-3 flex-row items-center gap-3 rounded-xl border border-[#233554] bg-[#111a2e] p-3">
-                  <View className="h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#131c2e]">
+                <View className="mt-3 flex-row items-center gap-3 rounded-xl border border-line bg-panel p-3">
+                  <View className="h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-surface-low">
                     <AppIcon name="hardware" size={24} color={colors.accentCyan} />
                   </View>
                   <View className="min-w-0 flex-1">
@@ -1021,7 +1021,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
                   onChangeText={setShippingAddress}
                   placeholder="Ej: Av. Corrientes 1234, CABA"
                   placeholderTextColor={colors.textMuted}
-                  className="w-full rounded-xl border border-[#233554] bg-[#111a2e] px-3 py-2.5 text-sm text-text-primary"
+                  className="w-full rounded-xl border border-line bg-panel px-3 py-2.5 text-sm text-text-primary"
                 />
 
                 <Text className="mb-1.5 mt-4 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
@@ -1041,8 +1041,8 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
                         onPress={() => setPaymentMethod(method)}
                         className="flex-1 items-center rounded-xl border px-2 py-2.5"
                         style={{
-                          borderColor: active ? colors.secondary : '#233554',
-                          backgroundColor: active ? '#06271a' : '#111a2e',
+                          borderColor: active ? colors.secondary : colors.line,
+                          backgroundColor: active ? colors.successSoft : colors.panel,
                           ...(active ? glow(colors.secondary, 8, 0.15) : undefined),
                         }}
                       >
@@ -1067,7 +1067,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
                 <View className="mt-4 flex-row gap-2">
                   <Pressable
                     onPress={() => setCheckoutOpen(false)}
-                    className="flex-1 items-center justify-center rounded-xl border border-[#233554] bg-[#111a2e] py-3"
+                    className="flex-1 items-center justify-center rounded-xl border border-line bg-panel py-3"
                   >
                     <Text className="text-sm font-semibold text-text-secondary">Cancelar</Text>
                   </Pressable>

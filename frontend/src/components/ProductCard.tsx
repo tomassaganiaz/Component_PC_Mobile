@@ -11,12 +11,12 @@ const tagTones: Record<Tone, string> = {
   cyan: 'border-accent-cyan/50 text-accent-cyan',
   primary: 'border-primary/50 text-primary',
   amber: 'border-amber-500/50 text-amber-400',
-  blue: 'border-sky-400/60 bg-[#0a1b2e] text-sky-300',
+  blue: 'border-sky-400/60 bg-info-soft text-sky-300',
 };
 
 const gradeTones: Record<'primary' | 'secondary', string> = {
-  primary: 'bg-[#182845] border-primary/30 text-primary',
-  secondary: 'bg-[#0e2a22] border-secondary/40 text-secondary',
+  primary: 'bg-primary-soft border-primary/30 text-primary',
+  secondary: 'bg-primary-soft border-secondary/40 text-secondary',
 };
 
 const tierMeta: Record<SellerTier, { label: string; cls: string }> = {
@@ -28,7 +28,7 @@ const tierMeta: Record<SellerTier, { label: string; cls: string }> = {
 function VerifiedBadge() {
   return (
     <View
-      className="absolute right-1.5 top-1.5 z-10 flex-row items-center gap-1 rounded bg-[#04140c]/95 px-2 py-0.5"
+      className="absolute right-1.5 top-1.5 z-10 flex-row items-center gap-1 rounded bg-success-soft/95 px-2 py-0.5"
       style={{ borderWidth: 1, borderColor: colors.secondary + '99', ...glow(colors.secondary, 8, 0.3) }}
     >
       <AppIcon name="verified" size={12} color={colors.accentEmerald} />
@@ -44,7 +44,7 @@ function TelemetryPanel({ card }: { card: ExploreCard }) {
 
   if (t.kind === 'verified') {
     return (
-      <View className="flex flex-col gap-1.5 rounded-lg border border-secondary/30 bg-[#06271a]/70 p-2.5">
+      <View className="flex flex-col gap-1.5 rounded-lg border border-secondary/30 bg-success-soft/70 p-2.5">
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center gap-1.5">
             <AppIcon name="task_alt" size={16} color={colors.secondary} />
@@ -53,7 +53,7 @@ function TelemetryPanel({ card }: { card: ExploreCard }) {
             </Text>
           </View>
           {t.conditionGrade ? (
-            <View className="rounded border border-secondary/40 bg-[#13233b] px-1.5 py-0.5">
+            <View className="rounded border border-secondary/40 bg-elevated px-1.5 py-0.5">
               <Text className="font-mono text-[11px] font-semibold text-secondary">GRADO {t.conditionGrade}</Text>
             </View>
           ) : null}
@@ -75,7 +75,7 @@ function TelemetryPanel({ card }: { card: ExploreCard }) {
 
   if (t.kind === 'unverified') {
     return (
-      <View className="flex flex-row items-center gap-2 rounded-lg border border-[#1b2b45] bg-[#0c1626] p-2.5">
+      <View className="flex flex-row items-center gap-2 rounded-lg border border-line bg-inset p-2.5">
         <AppIcon name="science" size={16} color={colors.diagnosticAmber} />
         <Text className="flex-1 text-[11px] text-text-secondary">{t.reason}</Text>
       </View>
@@ -84,7 +84,7 @@ function TelemetryPanel({ card }: { card: ExploreCard }) {
 
   if (t.kind === 'checklist') {
     return (
-      <View className="flex flex-col gap-1.5 rounded-lg border border-[#1b2b45] bg-[#0c1626] p-2.5">
+      <View className="flex flex-col gap-1.5 rounded-lg border border-line bg-inset p-2.5">
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center gap-1.5">
             <AppIcon name={t.icon} size={16} color={colors.secondary} />
@@ -92,7 +92,7 @@ function TelemetryPanel({ card }: { card: ExploreCard }) {
               {t.title}
             </Text>
           </View>
-          <View className="rounded bg-[#13233b] border border-secondary/40 px-1.5 py-0.5">
+          <View className="rounded bg-elevated border border-secondary/40 px-1.5 py-0.5">
             <Text className="font-mono text-[11px] font-semibold text-secondary">{t.pts}</Text>
           </View>
         </View>
@@ -109,7 +109,7 @@ function TelemetryPanel({ card }: { card: ExploreCard }) {
   }
   if (t.kind === 'battery') {
     return (
-      <View className="flex flex-col gap-2 rounded-lg border border-[#1b2b45] bg-[#0c1626] p-2.5">
+      <View className="flex flex-col gap-2 rounded-lg border border-line bg-inset p-2.5">
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center gap-1.5">
             <AppIcon name="battery_charging_full" size={16} color={colors.secondary} />
@@ -130,9 +130,9 @@ function TelemetryPanel({ card }: { card: ExploreCard }) {
         {t.cells.map((cell) => (
           <View
             key={cell.label}
-            className="flex-1 flex-row items-center gap-2 rounded-lg border border-[#1b2b45] bg-[#0c1626] p-2"
+            className="flex-1 flex-row items-center gap-2 rounded-lg border border-line bg-inset p-2"
           >
-            <View className="h-7 w-7 items-center justify-center rounded-lg bg-[#15233b]">
+            <View className="h-7 w-7 items-center justify-center rounded-lg bg-elevated">
               <AppIcon
                 name={cell.icon}
                 size={16}
@@ -149,7 +149,7 @@ function TelemetryPanel({ card }: { card: ExploreCard }) {
     );
   }
   return (
-    <View className="flex-row items-center justify-between rounded-lg border border-[#1b2b45] bg-[#0c1626] p-2.5">
+    <View className="flex-row items-center justify-between rounded-lg border border-line bg-inset p-2.5">
       <View className="flex-row items-center gap-1.5">
         <AppIcon name={t.icon} size={18} color={colors.primary} />
         <Text className="text-xs text-text-secondary">{t.text}</Text>
@@ -162,7 +162,7 @@ function TelemetryPanel({ card }: { card: ExploreCard }) {
 function PassedCheckBanner() {
   return (
     <View
-      className="flex-row items-center gap-2 rounded-lg border border-secondary/50 bg-[#06271a] px-2.5 py-1.5"
+      className="flex-row items-center gap-2 rounded-lg border border-secondary/50 bg-success-soft px-2.5 py-1.5"
       style={glow(colors.secondary, 10, 0.25)}
     >
       <View className="h-6 w-6 items-center justify-center rounded-full border border-secondary/60 bg-secondary/20">
@@ -197,16 +197,16 @@ export default function ProductCard({
   return (
     <Pressable
       onPress={onPress}
-      className="flex flex-col gap-3 rounded-xl border border-[#20304a] bg-[#111b2e] p-3.5"
+      className="flex flex-col gap-3 rounded-xl border border-line bg-card p-3.5"
       style={shadow.card}
     >
       {checked ? <PassedCheckBanner /> : null}
       <View className="flex-row gap-3">
-        <View className="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl border border-[#1b273d] bg-[#0a101d]">
+        <View className="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl border border-line bg-inset">
           <ProductImage uri={card.image} style={{ width: '100%', height: '100%' }} iconSize={32} />
           {card.verified ? <VerifiedBadge /> : null}
           <View
-            className={`absolute left-1.5 top-1.5 rounded border px-2 py-0.5 bg-[#090f1d]/90 ${tagTones[card.tagTone]}`}
+            className={`absolute left-1.5 top-1.5 rounded border px-2 py-0.5 bg-inset/90 ${tagTones[card.tagTone]}`}
           >
             <Text className="font-mono text-[11px] font-bold">{card.tag}</Text>
           </View>
@@ -235,8 +235,8 @@ export default function ProductCard({
               className="h-9 flex-row items-center gap-1.5 rounded-lg bg-secondary px-3.5"
               style={shadow.panel}
             >
-              <AppIcon name="lock" size={16} color="#002e1b" />
-              <Text className="text-xs font-semibold text-[#002e1b]">Comprar</Text>
+              <AppIcon name="lock" size={16} color={colors.onSecondary} />
+              <Text className="text-xs font-semibold text-on-secondary">Comprar</Text>
             </Pressable>
           </View>
         </View>
@@ -254,7 +254,7 @@ export default function ProductCard({
             className="flex-row items-center gap-1 rounded border px-1.5 py-0.5"
             style={{
               borderColor: card.warranty.extended ? colors.accentCyan + '66' : colors.secondary + '66',
-              backgroundColor: card.warranty.extended ? '#06222e' : '#06271a',
+              backgroundColor: card.warranty.extended ? '#06222e' : colors.successSoft,
             }}
           >
             <AppIcon
