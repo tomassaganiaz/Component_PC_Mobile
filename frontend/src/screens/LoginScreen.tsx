@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Link } from 'expo-router';
 
 import AppIcon from './../components/AppIcon';
 import { DividerLabel, PulseDot } from './../components/ui';
@@ -346,7 +347,9 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
         <View className="flex flex-col items-center gap-1 py-4 text-center">
           <Text className="text-xs text-text-secondary">
             ¿Aún no tienes registro técnico?{' '}
-            <Text className="font-semibold text-accent-emerald">Crear cuenta verificada</Text>
+            <Link href="/register" className="font-semibold text-accent-emerald">
+              Crear cuenta verificada
+            </Link>
           </Text>
           <View className="mt-1 flex-row items-center gap-2">
             <PulseDot size={6} />
