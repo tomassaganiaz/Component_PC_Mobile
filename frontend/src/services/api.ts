@@ -251,6 +251,23 @@ export function getProductVerifications(productId: string): Promise<Verification
   return request<VerificationItem[]>(`/verifications/product/${productId}`);
 }
 
+/* ------------------------------ Analytics ------------------------------- */
+
+export interface AnalyticsEventItem {
+  id: string;
+  event: string;
+  page?: string;
+  productId?: string;
+  orderId?: string;
+  metadata?: Record<string, unknown>;
+  userId?: string;
+  createdAt: string;
+}
+
+export function getAnalyticsEvents(limit = 100): Promise<AnalyticsEventItem[]> {
+  return request<AnalyticsEventItem[]>(`/analytics/events?limit=${limit}`);
+}
+
 export interface ChatSafetyResult {
   safe: boolean;
   warnings: string[];

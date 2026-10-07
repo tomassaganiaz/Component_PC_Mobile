@@ -67,6 +67,9 @@ const MAP: Record<string, MIconName> = {
   close: 'close',
   refresh: 'refresh',
   star_border: 'star-border',
+  visibility: 'visibility',
+  visibility_off: 'visibility-off',
+  languages: 'language',
 };
 
 interface Props {

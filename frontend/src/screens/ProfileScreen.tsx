@@ -380,6 +380,16 @@ export default function ProfileScreen({
               <Text className="flex-1 text-sm text-text-primary">Filtros de seguridad</Text>
               <AppIcon name="arrow_forward" size={18} color={colors.textMuted} />
             </Pressable>
+            <Pressable
+              onPress={() => nav.go({ name: 'analytics' })}
+              className="flex-row items-center gap-3 rounded-xl border border-[#233554] bg-[#111a2e] p-3"
+            >
+              <View className="h-8 w-8 items-center justify-center rounded-lg bg-[#162238]">
+                <AppIcon name="equalizer" size={17} color={colors.primary} />
+              </View>
+              <Text className="flex-1 text-sm text-text-primary">Dashboard de analytics</Text>
+              <AppIcon name="arrow_forward" size={18} color={colors.textMuted} />
+            </Pressable>
           </View>
         </View>
 
