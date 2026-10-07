@@ -94,6 +94,14 @@ export function getProfile(token: string): Promise<UserProfile> {
   });
 }
 
+export function verifyPhone(): Promise<UserProfile> {
+  return request<UserProfile>('/auth/verify-phone', { method: 'PATCH' });
+}
+
+export function verifyIdentity(): Promise<UserProfile> {
+  return request<UserProfile>('/auth/verify-identity', { method: 'PATCH' });
+}
+
 export interface PaginatedProducts {
   items: ApiProduct[];
   total: number;
