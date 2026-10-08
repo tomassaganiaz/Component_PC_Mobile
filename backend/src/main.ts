@@ -12,6 +12,22 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const logger = new Logger('Bootstrap');
 
+  const nodeEnv = configService.get('NODE_ENV', 'development');
+  const jwtSecret = configService.get('JWT_SECRET');
+  if (nodeEnv === 'production') {
+    const weak =
+      !jwtSecret ||
+      jwtSecret === 'default_secret' ||
+      jwtSecret.includes('your_super_secret') ||
+      jwtSecret.length < 32;
+    if (weak) {
+      logger.error(
+        'JWT_SECRET inválido para producción: usá un secreto aleatorio de al menos 32 caracteres.',
+      );
+      process.exit(1);
+    }
+  }
+
   // Global prefix
   app.setGlobalPrefix('api', { exclude: [{ path: '/', method: RequestMethod.GET }] });
 

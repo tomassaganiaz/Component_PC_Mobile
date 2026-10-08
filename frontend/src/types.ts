@@ -107,6 +107,7 @@ export interface UserProfile extends AuthUser {
 
 export interface LoginSuccess {
   access_token: string;
+  refresh_token: string;
   user: AuthUser;
 }
 

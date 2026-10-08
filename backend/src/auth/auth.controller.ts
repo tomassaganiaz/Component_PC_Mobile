@@ -6,7 +6,7 @@ import { LoginDto } from '../users/dto';
 import { CreateUserDto } from '../users/dto';
 import { UsersService } from '../users/users.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { RequestOtpDto, VerifyOtpDto } from './dto';
+import { RequestOtpDto, VerifyOtpDto, RefreshTokenDto } from './dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -38,6 +38,18 @@ export class AuthController {
   @ApiOperation({ summary: 'Verificar código OTP y completar el login' })
   verifyOtp(@Body() dto: VerifyOtpDto) {
     return this.authService.verifyOtp(dto.otpToken, dto.code);
+  }
+
+  @Post('refresh')
+  @ApiOperation({ summary: 'Renovar par de tokens con refresh token (rotación)' })
+  refresh(@Body() dto: RefreshTokenDto) {
+    return this.authService.refresh(dto.refreshToken);
+  }
+
+  @Post('logout')
+  @ApiOperation({ summary: 'Revocar refresh token (cierra sesión)' })
+  logout(@Body() dto: RefreshTokenDto) {
+    return this.authService.logout(dto.refreshToken);
   }
 
   @Get('profile')

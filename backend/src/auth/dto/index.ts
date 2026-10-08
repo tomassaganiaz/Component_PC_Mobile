@@ -17,3 +17,11 @@ export class VerifyOtpDto {
   @Matches(/^\d{6}$/)
   code: string;
 }
+
+export class RefreshTokenDto {
+  @ApiProperty({ description: 'Refresh token emitido al iniciar sesión' })
+  @IsString()
+  @MinLength(20)
+  @MaxLength(500)
+  refreshToken: string;
+}

@@ -20,13 +20,43 @@ export class ApiError extends Error {
 }
 
 let authToken: string | null = null;
+let refreshToken: string | null = null;
+let onTokensRefreshed: ((access: string, refresh: string) => void) | null = null;
 
 export function setAuthToken(token: string | null) {
   authToken = token;
 }
 
+export function setAuthTokens(access: string | null, refresh: string | null) {
+  authToken = access;
+  refreshToken = refresh;
+}
+
+export function setRefreshTokensCallback(cb: ((access: string, refresh: string) => void) | null) {
+  onTokensRefreshed = cb;
+}
+
 export function getAuthToken(): string | null {
   return authToken;
+}
+
+async function refreshSession(): Promise<boolean> {
+  if (!refreshToken) return false;
+  try {
+    const res = await fetch(`${API_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    authToken = data.access_token;
+    refreshToken = data.refresh_token;
+    onTokensRefreshed?.(data.access_token, data.refresh_token);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 interface RequestOptions {
@@ -36,15 +66,30 @@ interface RequestOptions {
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, {
-    method: options.method ?? 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-      ...options.headers,
-    },
-    body: options.body,
-  });
+  const doFetch = () =>
+    fetch(`${API_URL}${path}`, {
+      method: options.method ?? 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        ...options.headers,
+      },
+      body: options.body,
+    });
+
+  let response = await doFetch();
+
+  // Si el access token expiró (401), se rota el refresh y se reintenta una vez.
+  const noRetry =
+    path.includes('/auth/login') ||
+    path.includes('/auth/register') ||
+    path.includes('/auth/refresh') ||
+    path.includes('/auth/otp');
+  if (response.status === 401 && authToken && !noRetry) {
+    if (await refreshSession()) {
+      response = await doFetch();
+    }
+  }
 
   if (!response.ok) {
     let message = `Error ${response.status}`;
@@ -101,9 +146,16 @@ export function isOtpChallenge(result: LoginResponse): result is OtpChallenge {
   return (result as OtpChallenge).requiresOtp === true;
 }
 
-export function getProfile(token: string): Promise<UserProfile> {
+export function getProfile(token?: string): Promise<UserProfile> {
   return request<UserProfile>('/auth/profile', {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+}
+
+export function logoutSession(refreshToken: string): Promise<{ success: boolean }> {
+  return request<{ success: boolean }>('/auth/logout', {
+    method: 'POST',
+    body: JSON.stringify({ refreshToken }),
   });
 }
 
