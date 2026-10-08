@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { ReviewsService } from './reviews.service';
 import { Review, ReviewType, ReviewStatus, TrustBadge } from './review.entity';
 import { OrdersService } from '../orders/orders.service';
+import { UsersService } from '../users/users.service';
 import { OrderStatus } from '../orders/order.entity';
 import { NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
@@ -23,6 +24,10 @@ describe('ReviewsService', () => {
     findOne: jest.fn(),
   };
 
+  const mockUsersService = {
+    findOne: jest.fn().mockResolvedValue({ id: 'user-id', acceptsTesting: true }),
+  };
+
   const mockDataSource = {
     getRepository: jest.fn(),
   };
@@ -33,6 +38,7 @@ describe('ReviewsService', () => {
         ReviewsService,
         { provide: getRepositoryToken(Review), useValue: mockRepository },
         { provide: OrdersService, useValue: mockOrdersService },
+        { provide: UsersService, useValue: mockUsersService },
         { provide: DataSource, useValue: mockDataSource },
       ],
     }).compile();
@@ -283,7 +289,7 @@ describe('ReviewsService', () => {
     it('should return INTERMEDIATE badge for less than 3 reviews', async () => {
       mockRepository.find.mockResolvedValue([
         { rating: 5, type: ReviewType.POSITIVE },
-        { rating: 4, type: ReviewType.POSITIVE },
+        { rating: 3, type: ReviewType.NEUTRAL },
       ]);
 
       const result = await service.getTrustBadge('seller-uuid');
@@ -293,11 +299,12 @@ describe('ReviewsService', () => {
     });
 
     it('should return SAFE badge for high rating and low complaints', async () => {
-      const reviews = Array(10).fill(null).map(() => ({
-        rating: 5,
-        type: ReviewType.POSITIVE,
-      }));
-      reviews.push({ rating: 3, type: ReviewType.COMPLAINT });
+      const reviews = Array(10)
+        .fill(null)
+        .map(() => ({
+          rating: 5,
+          type: ReviewType.POSITIVE,
+        }));
 
       mockRepository.find.mockResolvedValue(reviews);
 

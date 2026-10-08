@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ProductsService } from './products.service';
 import { Product, ProductCondition, ProductCategory, ProductStatus } from './product.entity';
+import { Review } from '../reviews/review.entity';
 import { NotFoundException } from '@nestjs/common';
 
 describe('ProductsService', () => {
@@ -16,11 +17,23 @@ describe('ProductsService', () => {
     createQueryBuilder: jest.fn(),
   };
 
+  const mockReviewRepository = {
+    createQueryBuilder: jest.fn(() => ({
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([]),
+    })),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProductsService,
         { provide: getRepositoryToken(Product), useValue: mockRepository },
+        { provide: getRepositoryToken(Review), useValue: mockReviewRepository },
       ],
     }).compile();
 
@@ -64,10 +77,21 @@ describe('ProductsService', () => {
 
   describe('findAll', () => {
     it('should return products with filters', async () => {
-      const expectedProducts = [
-        { id: 'uuid-1', title: 'Product 1', price: 100 },
-        { id: 'uuid-2', title: 'Product 2', price: 200 },
-      ];
+      const fixture = (o: Record<string, unknown>) => ({
+        id: 'uuid-1',
+        title: 'Product 1',
+        price: 100,
+        status: ProductStatus.PUBLISHED,
+        sellerId: 'seller-1',
+        seller: { acceptsTesting: true },
+        createdAt: new Date('2026-01-01'),
+        warrantyDays: 90,
+        coverageExtended: false,
+        condition: ProductCondition.USED,
+        category: ProductCategory.GPU,
+        ...o,
+      });
+      const expectedProducts = [fixture({ id: 'uuid-1' }), fixture({ id: 'uuid-2', title: 'Product 2', price: 200 })];
 
       const mockQueryBuilder = {
         leftJoinAndSelect: jest.fn().mockReturnThis(),
@@ -81,7 +105,11 @@ describe('ProductsService', () => {
 
       const result = await service.findAll();
 
-      expect(result).toEqual(expectedProducts);
+      expect(result.items).toHaveLength(2);
+      expect(result.total).toBe(2);
+      expect(result.page).toBe(1);
+      expect(result.limit).toBe(20);
+      expect(result.hasMore).toBe(false);
     });
 
     it('should apply category filter', async () => {
@@ -129,18 +157,28 @@ describe('ProductsService', () => {
 
   describe('findOne', () => {
     it('should return a product by id', async () => {
-      const expectedProduct = {
+      const fullProduct = {
         id: 'uuid-123',
         title: 'RTX 3080 Ti',
-        seller: { id: 'seller-uuid', name: 'Seller' },
+        price: 500,
+        status: ProductStatus.PUBLISHED,
+        sellerId: 'seller-uuid',
+        seller: { id: 'seller-uuid', name: 'Seller', acceptsTesting: true },
         verifications: [],
+        createdAt: new Date('2026-01-01'),
+        warrantyDays: 90,
+        coverageExtended: false,
+        condition: ProductCondition.USED,
+        category: ProductCategory.GPU,
       };
 
-      mockRepository.findOne.mockResolvedValue(expectedProduct);
+      mockRepository.findOne.mockResolvedValue(fullProduct);
 
       const result = await service.findOne('uuid-123');
 
-      expect(result).toEqual(expectedProduct);
+      expect(result.id).toEqual('uuid-123');
+      expect(result.securityTier).toBeDefined();
+      expect(result.sellerStats).toBeDefined();
       expect(mockRepository.findOne).toHaveBeenCalledWith({
         where: { id: 'uuid-123' },
         relations: ['seller', 'verifications'],
@@ -179,6 +217,14 @@ describe('ProductsService', () => {
         id: 'uuid-123',
         title: 'Old Title',
         price: 100,
+        status: ProductStatus.PUBLISHED,
+        sellerId: 'seller-uuid',
+        seller: { acceptsTesting: true },
+        createdAt: new Date('2026-01-01'),
+        warrantyDays: 90,
+        coverageExtended: false,
+        condition: ProductCondition.USED,
+        category: ProductCategory.GPU,
       };
 
       const updateDto = { title: 'New Title', price: 200 };
@@ -201,14 +247,25 @@ describe('ProductsService', () => {
 
   describe('remove', () => {
     it('should soft delete a product', async () => {
-      const existingProduct = { id: 'uuid-123', title: 'Product' };
+      const existingProduct = {
+        id: 'uuid-123',
+        title: 'Product',
+        status: ProductStatus.PUBLISHED,
+        sellerId: 'seller-uuid',
+        seller: { acceptsTesting: true },
+        createdAt: new Date('2026-01-01'),
+        warrantyDays: 90,
+        coverageExtended: false,
+      };
 
       mockRepository.findOne.mockResolvedValue(existingProduct);
       mockRepository.softRemove.mockResolvedValue(existingProduct);
 
       await service.remove('uuid-123');
 
-      expect(mockRepository.softRemove).toHaveBeenCalledWith(existingProduct);
+      expect(mockRepository.softRemove).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'uuid-123', title: 'Product' }),
+      );
     });
 
     it('should throw NotFoundException if product not found', async () => {

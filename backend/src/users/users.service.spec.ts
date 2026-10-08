@@ -128,7 +128,19 @@ describe('UsersService', () => {
       expect(result).toEqual(expectedUser);
       expect(mockRepository.findOne).toHaveBeenCalledWith({
         where: { email: 'test@example.com' },
-        select: ['id', 'email', 'password', 'name', 'role'],
+        select: [
+          'id',
+          'email',
+          'password',
+          'name',
+          'role',
+          'acceptsTesting',
+          'phoneVerified',
+          'documentVerified',
+          'otpEnabled',
+          'otpCode',
+          'otpExpiresAt',
+        ],
       });
     });
 
