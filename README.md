@@ -35,10 +35,28 @@ npm run start:dev       # Servidor en http://localhost:3000
 ### Frontend
 
 ```bash
-cd frontend
+cd Frontend
 npm install
 npx expo start          # Abrir en emulador o dispositivo
 ```
+
+#### Túnel (dispositivo remoto, fuera de la LAN)
+
+Expo `--tunnel` usa el token compartido de ngrok de Expo (puede saturarse, ERR_NGROK_108).
+Con tu cuenta ngrok (gratis en https://ngrok.com):
+
+```bash
+$env:NGROK_AUTHTOKEN="tu_token"
+
+# Backend: expone la API por un túnel exp.direct
+cd backend && npm run tunnel
+
+# Frontend: abre ngrok a Metro y lanza expo con EXPO_PACKAGER_PROXY_URL
+# (opcional) $env:EXPO_PUBLIC_API_URL="https://backend-xxx.exp.direct/api"
+cd Frontend && npm run start:tunnel
+```
+
+El QR de Metro llevará a `exp://app-xxxx.exp.direct`.
 
 ## Comandos Disponibles
 
