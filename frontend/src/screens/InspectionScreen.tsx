@@ -7,6 +7,7 @@ import AppIcon from '../components/AppIcon';
 import BottomNav from '../components/BottomNav';
 import ProductImage from '../components/ProductImage';
 import { Pill, PulseDot } from '../components/ui';
+import { useI18n } from '../i18n';
 import { chatSafetyCheck, getOrder, getOrderProtection, getProductVerifications, requestOrderCoverage, requestOrderReturn } from '../services/api';
 import { IMAGES, INSPECTION_STEPS } from '../data/mock';
 import { colors, glow, shadow } from '../theme';
@@ -15,16 +16,6 @@ import type { Nav } from '../types';
 
 const BUNDLE_IMAGE =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuDzj_nGfzBo7QtQwKBhnSx1ENuov_qVPfyvx_YZqg1Lcloc8ake35CYfySDw9vH0_qo4vHWptdzGFVp9TEgslYgekvtQItt0DdcU9H0LgE5Sc0NXsZ6zmFA20HekCsN1mHuXDIVRAh4CMKMT9UdC64Pi_9W4HpPldUuf3n-uK0kFXB3zBVG2lh47m2kv7v1zn3DMc5tI9T1r6D-SYhBHroFfRgHCxQDkZOq7rXQJvS1IG4fep0zHcA';
-
-const STATUS_LABEL: Record<string, string> = {
-  pending: 'Pago pendiente',
-  paid: 'Pago confirmado',
-  in_custody: 'Fondos en custodia',
-  shipped: 'En camino al laboratorio',
-  delivered: 'Entregado',
-  cancelled: 'Cancelada',
-  refunded: 'Reembolsada',
-};
 
 const STATUS_TONE: Record<string, string> = {
   pending: colors.diagnosticAmber,
@@ -98,7 +89,8 @@ function OrderTracking({
   error: string | null;
   nav: Nav;
 }) {
-const [returnOpen, setReturnOpen] = useState(false);
+  const { t, formatDate } = useI18n();
+  const [returnOpen, setReturnOpen] = useState(false);
   const [returnReason, setReturnReason] = useState('');
   const [returnLoading, setReturnLoading] = useState(false);
   const [returnError, setReturnError] = useState<string | null>(null);
@@ -110,7 +102,7 @@ const [returnOpen, setReturnOpen] = useState(false);
 
   const handleReturn = async () => {
     if (!order || returnReason.trim().length < 10) {
-      setReturnError('Contanos el motivo (mínimo 10 caracteres).');
+      setReturnError(t('inspection.errReason'));
       return;
     }
     setReturnLoading(true);
@@ -119,7 +111,7 @@ const [returnOpen, setReturnOpen] = useState(false);
       await requestOrderReturn(order.id, returnReason.trim());
       setReturnDone(true);
     } catch (err) {
-      setReturnError(err instanceof Error ? err.message : 'No se pudo solicitar la devolución.');
+      setReturnError(err instanceof Error ? err.message : t('inspection.errReturn'));
     } finally {
       setReturnLoading(false);
     }
@@ -132,7 +124,7 @@ const [returnOpen, setReturnOpen] = useState(false);
     try {
       setCoverageResult(await requestOrderCoverage(order.id));
     } catch (err) {
-      setCoverageError(err instanceof Error ? err.message : 'No se pudo solicitar la cobertura.');
+      setCoverageError(err instanceof Error ? err.message : t('inspection.errCoverage'));
     } finally {
       setCoverageLoading(false);
     }
@@ -159,7 +151,7 @@ const [returnOpen, setReturnOpen] = useState(false);
       <View className="flex-1 items-center justify-center gap-3">
         <ActivityIndicator color={colors.accentCyan} size="large" />
         <Text className="font-mono text-[11px] uppercase tracking-wider text-text-secondary">
-          Cargando seguimiento...
+          {t('inspection.loading')}
         </Text>
       </View>
     );
@@ -169,20 +161,20 @@ const [returnOpen, setReturnOpen] = useState(false);
     return (
       <View className="flex-1 items-center justify-center gap-3 px-8">
         <AppIcon name="report" size={32} color={colors.diagnosticRed} />
-        <Text className="text-base font-semibold text-text-primary">No se pudo cargar la orden</Text>
+        <Text className="text-base font-semibold text-text-primary">{t('inspection.notFound')}</Text>
         <Text className="text-center text-xs text-text-secondary">{error}</Text>
         <Pressable
           onPress={() => nav.go({ name: 'explore' })}
           className="mt-2 flex-row items-center gap-2 rounded-xl bg-primary px-5 py-3"
         >
-          <Text className="text-sm font-semibold text-on-primary">Volver al Marketplace</Text>
+          <Text className="text-sm font-semibold text-on-primary">{t('inspection.backMarketplace')}</Text>
         </Pressable>
       </View>
     );
   }
 
   const tone = STATUS_TONE[order.status] ?? colors.accentCyan;
-  const statusLabel = STATUS_LABEL[order.status] ?? order.status;
+  const statusLabel = t(`inspection.status.${order.status}`);
   const steps = statusSteps(order.status);
   const product = order.product;
   const title = product?.title ?? `Orden #${order.id.slice(0, 8).toUpperCase()}`;
@@ -194,7 +186,7 @@ const [returnOpen, setReturnOpen] = useState(false);
         <View className="overflow-hidden rounded-xl border border-line bg-panel p-4" style={shadow.card}>
           <View className="mb-2 flex-row items-center justify-between">
             <Pill icon="verified" tone="emerald">
-              {order.status === 'in_custody' ? 'Custodia Activa' : statusLabel}
+              {order.status === 'in_custody' ? t('inspection.custodyActive') : statusLabel}
             </Pill>
             <Text className="font-mono text-[11px] font-medium text-text-secondary">
               ID: #{order.id.slice(0, 8).toUpperCase()}
@@ -219,7 +211,7 @@ const [returnOpen, setReturnOpen] = useState(false);
           </View>
           <View className="mt-4 flex-row items-center justify-between rounded-lg border border-line/70 bg-inset/80 p-3">
             <View>
-              <Text className="block text-[11px] text-slate-400">Total retenido en bóveda</Text>
+              <Text className="block text-[11px] text-slate-400">{t('inspection.heldFunds')}</Text>
               <View className="flex-row items-baseline gap-1">
                 <Text className="text-2xl font-bold tracking-tight text-white">${Number(order.total).toFixed(2)}</Text>
                 <Text className="font-mono text-[11px] text-slate-400">USD</Text>
@@ -243,7 +235,7 @@ const [returnOpen, setReturnOpen] = useState(false);
         <View className="mb-2 flex-row items-center justify-between">
           <View className="flex-row items-center gap-1.5">
             <AppIcon name="science" size={20} color={colors.accentCyan} />
-            <Text className="text-xl font-semibold text-slate-100">Trazabilidad de Seguridad</Text>
+            <Text className="text-xl font-semibold text-slate-100">{t('inspection.trace')}</Text>
           </View>
           <View className="rounded border border-line bg-elevated px-2 py-0.5">
             <Text className="font-mono text-[11px] text-cyan-300">
@@ -295,26 +287,26 @@ const [returnOpen, setReturnOpen] = useState(false);
             <View className="mb-3 flex-row items-center justify-between">
               <View className="flex-row items-center gap-1.5">
                 <AppIcon name="shield_with_heart" size={20} color={colors.accentEmerald} />
-                <Text className="text-xl font-semibold text-slate-100">Ventana de Protección</Text>
+                <Text className="text-xl font-semibold text-slate-100">{t('inspection.protection')}</Text>
               </View>
             </View>
             <View className="flex-row gap-2">
               <View className="flex-1 rounded-lg border border-line bg-inset p-2.5">
-                <Text className="block font-mono text-[10px] uppercase text-slate-400">Devolución</Text>
+                <Text className="block font-mono text-[10px] uppercase text-slate-400">{t('inspection.return')}</Text>
                 <Text className="text-xl font-bold text-emerald-400">
                   {protection.returnWindowOpen ? `${protection.returnDaysLeft} días` : 'Vencida'}
                 </Text>
                 <Text className="mt-0.5 block text-[11px] text-slate-400">
-                  Hasta {new Date(protection.escrowUntil).toLocaleDateString()}
+                  {t('inspection.until', { date: formatDate(protection.escrowUntil) })}
                 </Text>
               </View>
               <View className="flex-1 rounded-lg border border-line bg-inset p-2.5">
-                <Text className="block font-mono text-[10px] uppercase text-slate-400">Cobertura empresa</Text>
+                <Text className="block font-mono text-[10px] uppercase text-slate-400">{t('inspection.coverage')}</Text>
                 <Text className="text-xl font-bold text-slate-100">
                   {protection.coverageActive ? `${protection.coverageDaysLeft} días` : 'Vencida'}
                 </Text>
                 <Text className="mt-0.5 block text-[11px] text-slate-400">
-                  Hasta {new Date(protection.coverageUntil).toLocaleDateString()}
+                  {t('inspection.until', { date: formatDate(protection.coverageUntil) })}
                 </Text>
               </View>
             </View>
@@ -342,7 +334,7 @@ const [returnOpen, setReturnOpen] = useState(false);
                   className="flex-1 flex-row items-center justify-center gap-2 rounded-xl border border-red-500/40 bg-red-500/10 py-3"
                 >
                   <AppIcon name="replay" size={18} color={colors.diagnosticRed} />
-                  <Text className="text-xs font-semibold text-red-400">Solicitar devolución</Text>
+                  <Text className="text-xs font-semibold text-red-400">{t('inspection.requestReturn')}</Text>
                 </Pressable>
               ) : null}
               {protection.coverageActive && order.status === 'delivered' ? (
@@ -357,7 +349,7 @@ const [returnOpen, setReturnOpen] = useState(false);
                   ) : (
                     <AppIcon name="shield_with_heart" size={18} color={colors.accentEmerald} />
                   )}
-                  <Text className="text-xs font-semibold text-emerald-300">Solicitar cobertura</Text>
+                  <Text className="text-xs font-semibold text-emerald-300">{t('inspection.requestCoverage')}</Text>
                 </Pressable>
               ) : null}
             </View>
@@ -372,7 +364,7 @@ const [returnOpen, setReturnOpen] = useState(false);
             <View className="mb-3 flex-row items-center justify-between">
               <View className="flex-row items-center gap-1.5">
                 <AppIcon name="biotech" size={20} color={colors.accentEmerald} />
-                <Text className="text-xl font-semibold text-slate-100">Informe de Laboratorio</Text>
+                <Text className="text-xl font-semibold text-slate-100">{t('inspection.labReport')}</Text>
               </View>
               <View
                 className={`rounded border px-2 py-0.5 ${
@@ -394,7 +386,7 @@ const [returnOpen, setReturnOpen] = useState(false);
                           : colors.diagnosticRed,
                   }}
                 >
-                  {verification.result === 'pass' ? 'APROBADO' : verification.result === 'conditional' ? 'CONDICIONAL' : 'RECHAZADO'}
+                  {verification.result === 'pass' ? t('inspection.approved') : verification.result === 'conditional' ? t('inspection.conditional') : t('inspection.rejected')}
                 </Text>
               </View>
             </View>
@@ -402,19 +394,19 @@ const [returnOpen, setReturnOpen] = useState(false);
             <View className="flex-row gap-2">
               {verification.qualityScore != null ? (
                 <View className="flex-1 rounded-lg border border-[#22324f] bg-[#0a0f1d] p-2.5">
-                  <Text className="block font-mono text-[10px] uppercase text-slate-400">Score de calidad</Text>
+                  <Text className="block font-mono text-[10px] uppercase text-slate-400">{t('inspection.quality')}</Text>
                   <Text className="text-xl font-bold text-emerald-400">{verification.qualityScore.toFixed(2)}</Text>
                 </View>
               ) : null}
               {verification.hoursOfUse != null ? (
                 <View className="flex-1 rounded-lg border border-[#22324f] bg-[#0a0f1d] p-2.5">
-                  <Text className="block font-mono text-[10px] uppercase text-slate-400">Horas de uso</Text>
+                  <Text className="block font-mono text-[10px] uppercase text-slate-400">{t('inspection.hoursOfUse')}</Text>
                   <Text className="text-xl font-bold text-slate-100">{verification.hoursOfUse} h</Text>
                 </View>
               ) : null}
               {verification.cosmeticGrade ? (
                 <View className="flex-1 rounded-lg border border-[#22324f] bg-[#0a0f1d] p-2.5">
-                  <Text className="block font-mono text-[10px] uppercase text-slate-400">Grado estético</Text>
+                  <Text className="block font-mono text-[10px] uppercase text-slate-400">{t('inspection.cosmeticGrade')}</Text>
                   <Text className="text-xl font-bold text-accent-cyan">{verification.cosmeticGrade}</Text>
                 </View>
               ) : null}
@@ -422,13 +414,13 @@ const [returnOpen, setReturnOpen] = useState(false);
 
             {verification.functionalTest ? (
               <View className="mt-2.5 rounded-lg border border-[#22324f] bg-[#0a0f1d] p-2.5">
-                <Text className="font-mono text-[10px] uppercase text-slate-400">Test funcional</Text>
+                <Text className="font-mono text-[10px] uppercase text-slate-400">{t('inspection.functionalTest')}</Text>
                 <Text className="mt-0.5 text-xs leading-relaxed text-slate-300">{verification.functionalTest}</Text>
               </View>
             ) : null}
             {verification.physicalState ? (
               <View className="mt-2.5 rounded-lg border border-[#22324f] bg-[#0a0f1d] p-2.5">
-                <Text className="font-mono text-[10px] uppercase text-slate-400">Estado físico</Text>
+                <Text className="font-mono text-[10px] uppercase text-slate-400">{t('inspection.physicalState')}</Text>
                 <Text className="mt-0.5 text-xs leading-relaxed text-slate-300">{verification.physicalState}</Text>
               </View>
             ) : null}
@@ -436,7 +428,7 @@ const [returnOpen, setReturnOpen] = useState(false);
               <Text className="mt-2.5 text-xs leading-relaxed text-slate-400">{verification.notes}</Text>
             ) : null}
             <Text className="mt-2 font-mono text-[10px] text-slate-500">
-              Verificado el {new Date(verification.createdAt).toLocaleDateString()}
+              Verificado el {formatDate(verification.createdAt)}
             </Text>
           </View>
         </View>
@@ -449,7 +441,7 @@ const [returnOpen, setReturnOpen] = useState(false);
           style={glow('#2563eb', 20, 0.35)}
         >
           <AppIcon name="arrow_back" size={20} color="#ffffff" />
-          <Text className="text-sm font-semibold text-white">Volver al Marketplace</Text>
+          <Text className="text-sm font-semibold text-white">{t('inspection.backMarketplace')}</Text>
         </Pressable>
       </View>
     </ScrollView>
@@ -466,7 +458,7 @@ const [returnOpen, setReturnOpen] = useState(false);
               >
                 <AppIcon name="check_circle" size={34} color={colors.accentEmerald} />
               </View>
-              <Text className="text-xl font-bold text-slate-100">Devolución solicitada</Text>
+              <Text className="text-xl font-bold text-slate-100">{t('inspection.returnDone')}</Text>
               <Text className="text-center text-xs leading-relaxed text-slate-400">
                 Tu dinero permanece blindado hasta que el laboratorio evalúe la devolución y revenda el producto.
               </Text>
@@ -474,14 +466,14 @@ const [returnOpen, setReturnOpen] = useState(false);
                 onPress={() => setReturnOpen(false)}
                 className="mt-2 w-full items-center justify-center rounded-xl bg-secondary py-3"
               >
-                <Text className="text-sm font-semibold text-on-secondary">Cerrar</Text>
+                <Text className="text-sm font-semibold text-on-secondary">{t('common.close')}</Text>
               </Pressable>
             </View>
           ) : (
             <>
               <View className="flex-row items-center gap-2">
                 <AppIcon name="replay" size={20} color={colors.diagnosticRed} />
-                <Text className="text-lg font-semibold text-slate-100">Solicitar devolución</Text>
+                <Text className="text-lg font-semibold text-slate-100">{t('inspection.requestReturn')}</Text>
               </View>
               <Text className="mt-1 text-xs leading-relaxed text-slate-400">
                 Estás dentro de la ventana de devolución de 10 días. Contanos el motivo para que el laboratorio evalúe.
@@ -489,7 +481,7 @@ const [returnOpen, setReturnOpen] = useState(false);
               <TextInput
                 value={returnReason}
                 onChangeText={setReturnReason}
-                placeholder="Motivo de la devolución (mín. 10 caracteres)"
+                placeholder={t('inspection.returnPh')}
                 placeholderTextColor={colors.textMuted}
                 multiline
                 className="mt-3 min-h-[90px] rounded-xl border border-[#22324f] bg-[#111a2e] p-3 text-sm text-slate-100"
@@ -500,7 +492,7 @@ const [returnOpen, setReturnOpen] = useState(false);
                   onPress={() => setReturnOpen(false)}
                   className="flex-1 items-center justify-center rounded-xl border border-[#22324f] bg-[#111a2e] py-3"
                 >
-                  <Text className="text-sm font-semibold text-slate-400">Cancelar</Text>
+                  <Text className="text-sm font-semibold text-slate-400">{t('common.cancel')}</Text>
                 </Pressable>
                 <Pressable
                   onPress={handleReturn}
@@ -513,7 +505,7 @@ const [returnOpen, setReturnOpen] = useState(false);
                   ) : (
                     <AppIcon name="replay" size={18} color="#ffffff" />
                   )}
-                  <Text className="text-sm font-semibold text-white">Confirmar devolución</Text>
+                  <Text className="text-sm font-semibold text-white">{t('inspection.returnConfirm')}</Text>
                 </Pressable>
               </View>
             </>
@@ -549,6 +541,7 @@ function StepNode({ state }: { state: 'done' | 'active' | 'pending' }) {
 }
 
 export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?: string }) {
+  const { t } = useI18n();
   const [chatOpen, setChatOpen] = useState(false);
   const [chatText, setChatText] = useState('');
   const [chatChecking, setChatChecking] = useState(false);
@@ -570,7 +563,7 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
         setOrder(o);
         setProtection(p);
       } catch (err) {
-        if (!cancelled) setOrderError(err instanceof Error ? err.message : 'No se pudo cargar la orden.');
+        if (!cancelled) setOrderError(err instanceof Error ? err.message : t('inspection.notFound'));
       } finally {
         if (!cancelled) setOrderLoading(false);
       }
@@ -578,7 +571,7 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
     return () => {
       cancelled = true;
     };
-  }, [orderId]);
+  }, [orderId, t]);
 
   const handleChatCheck = async () => {
     if (!chatText.trim()) return;
@@ -637,7 +630,7 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
               className="mt-4 flex-row items-center justify-between rounded-lg border border-line/70 bg-inset/80 p-3"
             >
               <View>
-                <Text className="block text-[11px] text-slate-400">Total retenido en bóveda</Text>
+                <Text className="block text-[11px] text-slate-400">{t('inspection.heldFunds')}</Text>
                 <View className="flex-row items-baseline gap-1">
                   <Text className="text-2xl font-bold tracking-tight text-white">$310.00</Text>
                   <Text className="font-mono text-[11px] text-slate-400">USD</Text>
@@ -682,7 +675,7 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
           <View className="mb-2 flex-row items-center justify-between">
             <View className="flex-row items-center gap-1.5">
               <AppIcon name="science" size={20} color={colors.accentCyan} />
-              <Text className="text-xl font-semibold text-slate-100">Trazabilidad de Seguridad</Text>
+              <Text className="text-xl font-semibold text-slate-100">{t('inspection.trace')}</Text>
             </View>
             <View className="rounded border border-line bg-elevated px-2 py-0.5">
               <Text className="font-mono text-[11px] text-cyan-300">Fase 3 de 5</Text>
@@ -958,7 +951,7 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
                 onPress={() => setChatOpen(false)}
                 className="flex-1 items-center justify-center rounded-xl border border-line bg-panel py-3"
               >
-                <Text className="text-sm font-semibold text-text-secondary">Cerrar</Text>
+                <Text className="text-sm font-semibold text-text-secondary">{t('common.close')}</Text>
               </Pressable>
               <Pressable
                 onPress={handleChatCheck}

@@ -31,6 +31,7 @@ const tierMeta: Record<SellerTier, { label: string; cls: string; dot: string }> 
 };
 
 function CheckedBanner() {
+  const { t } = useI18n();
   return (
     <View
       className="flex-row items-center gap-2.5 rounded-xl border border-secondary/40 bg-secondary/10 p-3"
@@ -40,10 +41,9 @@ function CheckedBanner() {
         <AppIcon name="verified" size={20} color={colors.accentEmerald} />
       </View>
       <View className="flex-1">
-        <Text className="text-sm font-bold uppercase tracking-wide text-emerald-300">Chequeado para Compra</Text>
+        <Text className="text-sm font-bold uppercase tracking-wide text-emerald-300">{t('product.checkedBanner')}</Text>
         <Text className="mt-0.5 text-xs text-text-secondary">
-          Este producto pasó las revisiones y testeos del laboratorio. Podés ver los datos reales abajo y compararlos
-          con lo declarado por el vendedor.
+          {t('product.checkedDesc')}
         </Text>
       </View>
     </View>
@@ -51,6 +51,7 @@ function CheckedBanner() {
 }
 
 function VerificationData({ product }: { product: ExploreCard }) {
+  const { t } = useI18n();
   const { verified } = product;
   if (!verified) {
     return (
@@ -58,10 +59,9 @@ function VerificationData({ product }: { product: ExploreCard }) {
         <View className="flex-row items-start gap-3 rounded-xl border border-line bg-panel p-4">
           <AppIcon name="science" size={22} color={colors.diagnosticAmber} style={{ marginTop: 2 }} />
           <View className="flex-1">
-            <Text className="text-sm font-semibold text-text-primary">Producto en auditoría</Text>
+            <Text className="text-sm font-semibold text-text-primary">{t('product.pending')}</Text>
             <Text className="mt-0.5 text-xs leading-relaxed text-text-secondary">
-              Este producto aún no tiene el check del laboratorio. Sin el chequeo no se muestran los datos reales de
-              horas de uso, tipo de uso ni estrés soportado.
+              {t('product.pendingDesc')}
             </Text>
           </View>
         </View>
@@ -87,19 +87,19 @@ function VerificationData({ product }: { product: ExploreCard }) {
       <View className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4" style={shadow.panel}>
         <View className="flex-row items-center gap-2">
           <AppIcon name="hardware" size={20} color={colors.accentCyan} />
-          <Text className="text-lg font-semibold text-text-primary">Datos Reales del Producto</Text>
+          <Text className="text-lg font-semibold text-text-primary">{t('product.realData')}</Text>
         </View>
 
         {hasComparison ? (
           <View className="flex-col gap-1.5 rounded-lg border border-line/60 bg-elevated p-2.5">
             <View className="flex-row items-center justify-between">
-              <Text className="text-xs text-text-secondary">Horas de uso verificadas</Text>
+              <Text className="text-xs text-text-secondary">{t('product.hoursVerified')}</Text>
               <Text className="font-mono text-sm font-bold text-secondary">
                 {real != null ? `${real} h` : '—'}
               </Text>
             </View>
             <View className="flex-row items-center justify-between">
-              <Text className="text-xs text-text-secondary">Declarado por el vendedor</Text>
+              <Text className="text-xs text-text-secondary">{t('product.hoursReported')}</Text>
               <Text className="font-mono text-xs text-text-primary">{reported != null ? `${reported} h` : '—'}</Text>
             </View>
             <View
@@ -110,7 +110,7 @@ function VerificationData({ product }: { product: ExploreCard }) {
               }}
             >
               <Text className="font-mono text-[10px] font-bold uppercase tracking-wider" style={{ color: match ? colors.accentEmerald : colors.diagnosticAmber }}>
-                {match ? 'Coincide con lo declarado' : `Discrepancia detectada (${variancePct}%)`}
+                {match ? t('product.matches') : t('product.discrepancy', { pct: variancePct })}
               </Text>
               <AppIcon name={match ? 'check_circle' : 'notifications_active'} size={14} color={match ? colors.accentEmerald : colors.diagnosticAmber} />
             </View>
@@ -120,13 +120,13 @@ function VerificationData({ product }: { product: ExploreCard }) {
         <View className="flex-row flex-wrap gap-2">
           {product.usageType ? (
             <View className="flex-1 min-w-[45%] flex-col gap-1 rounded-lg border border-line/60 bg-surface p-2.5">
-              <Text className="font-mono text-[10px] uppercase text-text-muted">Tipo de uso</Text>
+              <Text className="font-mono text-[10px] uppercase text-text-muted">{t('product.usageType')}</Text>
               <Text className="text-xs font-semibold text-text-primary">{product.usageType}</Text>
             </View>
           ) : null}
           {product.conditionGrade ? (
             <View className="flex-1 min-w-[45%] flex-col gap-1 rounded-lg border border-line/60 bg-surface p-2.5">
-              <Text className="font-mono text-[10px] uppercase text-text-muted">Grado</Text>
+              <Text className="font-mono text-[10px] uppercase text-text-muted">{t('product.grade')}</Text>
               <Text className="text-xs font-semibold text-secondary">{product.conditionGrade}</Text>
             </View>
           ) : null}
@@ -134,7 +134,7 @@ function VerificationData({ product }: { product: ExploreCard }) {
 
         {product.stressTest ? (
           <View className="flex-col gap-1 rounded-lg border border-line/60 bg-surface p-2.5">
-            <Text className="font-mono text-[10px] uppercase text-text-muted">Estrés soportado</Text>
+            <Text className="font-mono text-[10px] uppercase text-text-muted">{t('product.stress')}</Text>
             <Text className="text-xs leading-relaxed text-text-secondary">{product.stressTest}</Text>
           </View>
         ) : null}
@@ -170,6 +170,7 @@ function SellerSecurity({
   onReport?: () => void;
   onViewReviews?: () => void;
 }) {
+  const { t } = useI18n();
   const [badge, setBadge] = useState<SecurityProfile | null>(null);
 
   useEffect(() => {
@@ -216,7 +217,7 @@ function SellerSecurity({
       <View className="flex flex-col gap-2 rounded-xl border border-line bg-card p-4" style={shadow.panel}>
         <View className="flex-row items-center gap-2">
           <AppIcon name="verified_user" size={20} color={meta.dot} />
-          <Text className="text-lg font-semibold text-text-primary">Seguridad del Vendedor</Text>
+          <Text className="text-lg font-semibold text-text-primary">{t('product.sellerSecurity')}</Text>
         </View>
         <View className="flex-row flex-wrap items-center gap-1.5">
           <View className={`flex-row items-center gap-1.5 rounded border px-2.5 py-1 ${meta.cls}`}>
@@ -277,7 +278,7 @@ function SellerSecurity({
             className="mt-1 flex-row items-center justify-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 py-2.5"
           >
             <AppIcon name="star" size={16} color={colors.diagnosticAmber} />
-            <Text className="text-xs font-semibold text-amber-400">Ver reseñas del vendedor</Text>
+            <Text className="text-xs font-semibold text-amber-400">{t('product.viewReviews')}</Text>
           </Pressable>
         ) : null}
         {onReport ? (
@@ -286,7 +287,7 @@ function SellerSecurity({
             className="mt-1 flex-row items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/10 py-2.5"
           >
             <AppIcon name="report" size={16} color={colors.diagnosticRed} />
-            <Text className="text-xs font-semibold text-red-400">Reportar a este vendedor</Text>
+            <Text className="text-xs font-semibold text-red-400">{t('product.report')}</Text>
           </Pressable>
         ) : null}
       </View>
