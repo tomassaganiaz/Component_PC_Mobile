@@ -46,7 +46,8 @@
     "build:web": "expo export -p web && node scripts/add-sri.js",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
-    "test": "jest"
+    "test": "jest",
+    "smoke": "node scripts/smoke.js"
   },
   "jest": {
     "preset": "jest-expo",

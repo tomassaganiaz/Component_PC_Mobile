@@ -121,6 +121,7 @@ export function register(input: {
   email: string;
   password: string;
   phone?: string;
+  role?: 'buyer' | 'seller';
 }): Promise<AuthUser> {
   return request<AuthUser>('/auth/register', {
     method: 'POST',

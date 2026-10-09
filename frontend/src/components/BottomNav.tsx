@@ -55,6 +55,9 @@ export default function BottomNav({
           <Pressable
             key={tab.name}
             onPress={() => onNavigate(tab.name)}
+            accessibilityRole="tab"
+            accessibilityLabel={tab.label}
+            accessibilityState={{ selected: isActive }}
             className="min-h-[48px] min-w-[48px] items-center justify-center px-2"
           >
             <View className="relative items-center">

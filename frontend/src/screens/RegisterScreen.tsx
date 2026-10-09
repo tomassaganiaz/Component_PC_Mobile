@@ -12,6 +12,7 @@ export default function RegisterScreen({ onLogin }: { onLogin: (session: LoginSu
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
+  const [wantToSell, setWantToSell] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +38,7 @@ export default function RegisterScreen({ onLogin }: { onLogin: (session: LoginSu
         email: email.trim(),
         password,
         phone: phone.trim() || undefined,
+        role: wantToSell ? 'seller' : 'buyer',
       });
       const result = await login(email.trim(), password);
       if ((result as { requiresOtp?: boolean }).requiresOtp) {
@@ -130,6 +132,47 @@ export default function RegisterScreen({ onLogin }: { onLogin: (session: LoginSu
               keyboardType="phone-pad"
               className={fieldCls}
             />
+          </View>
+
+          <View className="flex-col gap-1.5">
+            <Text className="font-mono text-[11px] uppercase text-text-secondary">Quiero</Text>
+            <View className="flex-row gap-2">
+              <Pressable
+                onPress={() => setWantToSell(false)}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: !wantToSell }}
+                className="flex-1 flex-row items-center justify-center gap-2 rounded-xl border py-2.5"
+                style={{
+                  borderColor: !wantToSell ? colors.secondary : '#233554',
+                  backgroundColor: !wantToSell ? '#06271a' : '#111a2e',
+                }}
+              >
+                <AppIcon name="shopping_cart" size={17} color={!wantToSell ? colors.accentEmerald : colors.textMuted} />
+                <Text className="text-sm font-semibold" style={{ color: !wantToSell ? colors.accentEmerald : colors.textMuted }}>
+                  Comprar
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setWantToSell(true)}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: wantToSell }}
+                className="flex-1 flex-row items-center justify-center gap-2 rounded-xl border py-2.5"
+                style={{
+                  borderColor: wantToSell ? colors.primary : '#233554',
+                  backgroundColor: wantToSell ? '#182845' : '#111a2e',
+                }}
+              >
+                <AppIcon name="storefront" size={17} color={wantToSell ? colors.primary : colors.textMuted} />
+                <Text className="text-sm font-semibold" style={{ color: wantToSell ? colors.primary : colors.textMuted }}>
+                  Vender
+                </Text>
+              </Pressable>
+            </View>
+            {wantToSell ? (
+              <Text className="mt-1 text-[11px] leading-relaxed text-text-muted">
+                Como vendedor vas a poder crear y modificar tu propio catálogo (un admin puede auditar).
+              </Text>
+            ) : null}
           </View>
 
           {error ? (
