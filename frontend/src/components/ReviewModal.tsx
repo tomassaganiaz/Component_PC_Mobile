@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import AppIcon from './AppIcon';
+import { useI18n } from '../i18n';
 import { createReview } from '../services/api';
 import type { OrderItem, ReviewType } from '../services/api';
 import { colors, glow, shadow } from '../theme';
@@ -39,6 +40,7 @@ export default function ReviewModal({
   onClose: () => void;
   onSubmitted: (orderId: string) => void;
 }) {
+  const { t } = useI18n();
   const [type, setType] = useState<ReviewType>('positive');
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
@@ -105,7 +107,7 @@ export default function ReviewModal({
               >
                 <AppIcon name="check_circle" size={34} color={colors.accentEmerald} />
               </View>
-              <Text className="text-xl font-bold text-text-primary">¡Gracias por tu reseña!</Text>
+              <Text className="text-xl font-bold text-text-primary">{t('review.thanks')}</Text>
               <Text className="text-center text-xs leading-relaxed text-text-secondary">
                 Tu opinión ayuda a la comunidad a vender y comprar con más seguridad.
               </Text>
@@ -120,7 +122,7 @@ export default function ReviewModal({
             <ScrollView showsVerticalScrollIndicator={false}>
               <View className="flex-row items-center gap-2">
                 <AppIcon name="star" size={20} color={colors.diagnosticAmber} />
-                <Text className="text-lg font-semibold text-text-primary">Reseñar compra</Text>
+                <Text className="text-lg font-semibold text-text-primary">{t('review.title')}</Text>
               </View>
               <Text className="mt-1 truncate text-xs text-text-secondary">{title}</Text>
 
@@ -153,9 +155,7 @@ export default function ReviewModal({
               </Text>
               <Stars value={rating} onChange={setRating} />
 
-              <Text className="mb-1.5 mt-4 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
-                Comentario
-              </Text>
+              <Text className="mb-1.5 mt-4 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">{t('review.comment')}</Text>
               <TextInput
                 value={comment}
                 onChangeText={setComment}
@@ -207,7 +207,7 @@ export default function ReviewModal({
                     <AppIcon name="star" size={18} color={colors.onSecondary} />
                   )}
                   <Text className="text-sm font-semibold text-on-secondary">
-                    {submitting ? 'Enviando...' : 'Publicar reseña'}
+                    {submitting ? t('review.submitting') : t('review.submit')}
                   </Text>
                 </Pressable>
               </View>

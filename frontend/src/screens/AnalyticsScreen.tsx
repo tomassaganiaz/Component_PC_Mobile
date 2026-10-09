@@ -4,6 +4,7 @@ import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native
 import AppHeader from '../components/AppHeader';
 import AppIcon from '../components/AppIcon';
 import BottomNav from '../components/BottomNav';
+import { useI18n } from '../i18n';
 import { getAnalyticsEvents } from '../services/api';
 import type { AnalyticsEventItem } from '../services/api';
 import { colors } from '../theme';
@@ -18,6 +19,7 @@ const EVENT_TONES: Record<string, { label: string; color: string; bg: string }> 
 };
 
 export default function AnalyticsScreen({ nav }: { nav: Nav }) {
+  const { t } = useI18n();
   const [events, setEvents] = useState<AnalyticsEventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -97,9 +99,9 @@ export default function AnalyticsScreen({ nav }: { nav: Nav }) {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View className="mb-4">
-            <Text className="text-2xl font-bold text-text-primary">Analytics web</Text>
+            <Text className="text-2xl font-bold text-text-primary">{t('analytics.title')}</Text>
             <Text className="mt-1 text-xs text-text-secondary">
-              Eventos registrados por el frontend (vistas, compras, filtros, login/logout).
+              {t('analytics.desc')}
             </Text>
 
             {loading ? (
@@ -123,7 +125,7 @@ export default function AnalyticsScreen({ nav }: { nav: Nav }) {
                 ))}
                 <View className="flex-1 rounded-lg border border-[#233554] bg-[#111a2e] px-2.5 py-1.5">
                   <Text className="font-mono text-sm font-bold text-text-primary">{events.length}</Text>
-                  <Text className="font-mono text-[10px] text-text-secondary">TOTAL</Text>
+                  <Text className="font-mono text-[10px] text-text-secondary">{t('analytics.total')}</Text>
                 </View>
               </View>
             )}
@@ -133,9 +135,9 @@ export default function AnalyticsScreen({ nav }: { nav: Nav }) {
           !loading && !error ? (
             <View className="items-center justify-center gap-2 py-16">
               <AppIcon name="equalizer" size={30} color={colors.textMuted} />
-              <Text className="text-sm font-semibold text-text-primary">Sin eventos aún</Text>
+              <Text className="text-sm font-semibold text-text-primary">{t('analytics.empty')}</Text>
               <Text className="text-center text-xs text-text-secondary">
-                Navegá la app (abrí productos, comprá, aplicá filtros) para empezar a registrar.
+                {t('analytics.emptyDesc')}
               </Text>
             </View>
           ) : null
@@ -147,7 +149,7 @@ export default function AnalyticsScreen({ nav }: { nav: Nav }) {
             className="mt-4 flex-row items-center justify-center gap-2 rounded-xl border border-[#233554] bg-[#111a2e] py-3"
           >
             <AppIcon name="refresh" size={18} color={colors.textSecondary} />
-            <Text className="text-sm font-semibold text-text-secondary">Actualizar</Text>
+            <Text className="text-sm font-semibold text-text-secondary">{t('analytics.refresh')}</Text>
           </Pressable>
         }
       />

@@ -1,16 +1,9 @@
 import { Pressable, Text, View } from 'react-native';
 
 import AppIcon from './AppIcon';
+import { useI18n } from '../i18n';
 import { colors, shadow } from '../theme';
 import type { ScreenName } from '../types';
-
-const TABS: { name: ScreenName; icon: string; label: string }[] = [
-  { name: 'explore', icon: 'grid_view', label: 'Explorar' },
-  { name: 'filters', icon: 'manage_search', label: 'Filtros' },
-  { name: 'publish', icon: 'add', label: 'Publicar' },
-  { name: 'inspection', icon: 'verified_user', label: 'Auditoría' },
-  { name: 'profile', icon: 'person', label: 'Perfil' },
-];
 
 export default function BottomNav({
   active,
@@ -19,9 +12,19 @@ export default function BottomNav({
   active: ScreenName;
   onNavigate: (tab: ScreenName) => void;
 }) {
+  const { t } = useI18n();
+
+  const TABS: { name: ScreenName; icon: string; label: string }[] = [
+    { name: 'explore', icon: 'grid_view', label: t('nav.explore') },
+    { name: 'filters', icon: 'manage_search', label: t('nav.filters') },
+    { name: 'publish', icon: 'add', label: t('nav.publish') },
+    { name: 'inspection', icon: 'verified_user', label: t('nav.inspection') },
+    { name: 'profile', icon: 'person', label: t('nav.profile') },
+  ];
+
   return (
     <View
-      className="w-full flex-row items-center justify-around bg-surface/95 px-1"
+      className="w-full flex-row items-center justify-around bg-[#090e1a]/95 px-1"
       style={{
         borderTopWidth: 1,
         borderTopColor: '#1d2b45',
@@ -36,12 +39,14 @@ export default function BottomNav({
             <Pressable
               key={tab.name}
               onPress={() => onNavigate(tab.name)}
+              accessibilityRole="button"
+              accessibilityLabel={tab.label}
               className="min-h-[48px] min-w-[48px] items-center justify-center"
             >
               <View
                 className="h-9 w-9 items-center justify-center rounded-xl"
                 style={{
-                  backgroundColor: colors.primaryMid,
+                  backgroundColor: '#1e3a73',
                   borderWidth: 1,
                   borderColor: colors.primary + '66',
                 }}

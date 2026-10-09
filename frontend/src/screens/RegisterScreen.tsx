@@ -3,11 +3,13 @@ import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { Link } from 'expo-router';
 
 import AppIcon from './../components/AppIcon';
+import { useI18n } from '../i18n';
 import { login, register } from './../services/api';
 import { colors, shadow } from '../theme';
 import type { LoginSuccess } from '../types';
 
 export default function RegisterScreen({ onLogin }: { onLogin: (session: LoginSuccess) => void }) {
+  const { t } = useI18n();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,15 +21,15 @@ export default function RegisterScreen({ onLogin }: { onLogin: (session: LoginSu
 
   const handleRegister = async () => {
     if (name.trim().length < 2) {
-      setError('Ingresá tu nombre (mínimo 2 caracteres).');
+      setError(t('register.errName'));
       return;
     }
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) {
-      setError('Ingresá un correo electrónico válido.');
+      setError(t('register.errEmail'));
       return;
     }
     if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres.');
+      setError(t('register.errPass'));
       return;
     }
     setSubmitting(true);
@@ -47,7 +49,7 @@ export default function RegisterScreen({ onLogin }: { onLogin: (session: LoginSu
       }
       onLogin(result as LoginSuccess);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo crear la cuenta.');
+      setError(err instanceof Error ? err.message : t('register.errGeneric'));
     } finally {
       setSubmitting(false);
     }
@@ -69,7 +71,7 @@ export default function RegisterScreen({ onLogin }: { onLogin: (session: LoginSu
               <AppIcon name="shield_locked" size={28} color={colors.primary} />
             </View>
             <View className="min-w-0 flex-1">
-              <Text className="text-[28px] font-bold tracking-tight text-text-primary">Crear cuenta</Text>
+              <Text className="text-[28px] font-bold tracking-tight text-text-primary">{t('register.title')}</Text>
               <Text className="mt-1 text-xs leading-relaxed text-text-secondary">
                 Unite al marketplace verificado de hardware con custodia y auditoría técnica.
               </Text>
@@ -79,22 +81,22 @@ export default function RegisterScreen({ onLogin }: { onLogin: (session: LoginSu
 
         <View className="mt-1 flex flex-col gap-4 px-4">
           <View className="flex flex-col gap-1.5">
-            <Text className="font-mono text-[11px] uppercase text-text-secondary">Nombre / Alias</Text>
+            <Text className="font-mono text-[11px] uppercase text-text-secondary">{t('register.nameLabel')}</Text>
             <TextInput
               value={name}
               onChangeText={setName}
-              placeholder="Juan Pérez"
+              placeholder={t('register.namePh')}
               placeholderTextColor={colors.textMuted}
               className={fieldCls}
             />
           </View>
 
           <View className="flex flex-col gap-1.5">
-            <Text className="font-mono text-[11px] uppercase text-text-secondary">Correo electrónico</Text>
+            <Text className="font-mono text-[11px] uppercase text-text-secondary">{t('register.emailLabel')}</Text>
             <TextInput
               value={email}
               onChangeText={setEmail}
-              placeholder="tu@email.com"
+              placeholder={t('register.emailPh')}
               placeholderTextColor={colors.textMuted}
               autoCapitalize="none"
               keyboardType="email-address"
@@ -103,7 +105,7 @@ export default function RegisterScreen({ onLogin }: { onLogin: (session: LoginSu
           </View>
 
           <View className="flex flex-col gap-1.5">
-            <Text className="font-mono text-[11px] uppercase text-text-secondary">Contraseña</Text>
+            <Text className="font-mono text-[11px] uppercase text-text-secondary">{t('register.passLabel')}</Text>
             <View className="relative flex-row items-center rounded-lg border border-[#233554] bg-[#111a2e]">
               <TextInput
                 value={password}
@@ -123,7 +125,7 @@ export default function RegisterScreen({ onLogin }: { onLogin: (session: LoginSu
           </View>
 
           <View className="flex flex-col gap-1.5">
-            <Text className="font-mono text-[11px] uppercase text-text-secondary">Teléfono (opcional)</Text>
+            <Text className="font-mono text-[11px] uppercase text-text-secondary">{t('register.phoneLabel')}</Text>
             <TextInput
               value={phone}
               onChangeText={setPhone}
@@ -135,7 +137,7 @@ export default function RegisterScreen({ onLogin }: { onLogin: (session: LoginSu
           </View>
 
           <View className="flex-col gap-1.5">
-            <Text className="font-mono text-[11px] uppercase text-text-secondary">Quiero</Text>
+            <Text className="font-mono text-[11px] uppercase text-text-secondary">{t('register.roleLabel')}</Text>
             <View className="flex-row gap-2">
               <Pressable
                 onPress={() => setWantToSell(false)}
@@ -148,9 +150,7 @@ export default function RegisterScreen({ onLogin }: { onLogin: (session: LoginSu
                 }}
               >
                 <AppIcon name="shopping_cart" size={17} color={!wantToSell ? colors.accentEmerald : colors.textMuted} />
-                <Text className="text-sm font-semibold" style={{ color: !wantToSell ? colors.accentEmerald : colors.textMuted }}>
-                  Comprar
-                </Text>
+                <Text className="text-sm font-semibold" style={{ color: !wantToSell ? colors.accentEmerald : colors.textMuted }}>{t('register.buy')}</Text>
               </Pressable>
               <Pressable
                 onPress={() => setWantToSell(true)}
@@ -163,9 +163,7 @@ export default function RegisterScreen({ onLogin }: { onLogin: (session: LoginSu
                 }}
               >
                 <AppIcon name="storefront" size={17} color={wantToSell ? colors.primary : colors.textMuted} />
-                <Text className="text-sm font-semibold" style={{ color: wantToSell ? colors.primary : colors.textMuted }}>
-                  Vender
-                </Text>
+                <Text className="text-sm font-semibold" style={{ color: wantToSell ? colors.primary : colors.textMuted }}>{t('register.sell')}</Text>
               </Pressable>
             </View>
             {wantToSell ? (
@@ -194,14 +192,12 @@ export default function RegisterScreen({ onLogin }: { onLogin: (session: LoginSu
               <AppIcon name="verified_user" size={20} color={colors.onPrimary} />
             )}
             <Text className="text-base font-semibold text-on-primary">
-              {submitting ? 'Creando cuenta...' : 'Crear cuenta'}
+              {submitting ? t('register.submitting') : t('register.submit')}
             </Text>
           </Pressable>
 
           <View className="items-center py-2">
-            <Link href="/login" className="text-xs font-semibold text-primary">
-              ¿Ya tenés cuenta? Iniciar sesión
-            </Link>
+            <Link href="/login" className="text-xs font-semibold text-primary">{t('register.haveAccount')}</Link>
           </View>
         </View>
       </ScrollView>

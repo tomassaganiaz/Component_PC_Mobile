@@ -5,6 +5,7 @@ import AppHeader from '../components/AppHeader';
 import AppIcon from '../components/AppIcon';
 import BottomNav from '../components/BottomNav';
 import { Segmented } from '../components/ui';
+import { useI18n } from '../i18n';
 import { createProduct } from '../services/api';
 import { colors, glow, shadow } from '../theme';
 import type { Nav } from '../types';
@@ -57,6 +58,7 @@ function Input({
 }
 
 export default function PublishScreen({ nav }: { nav: Nav }) {
+  const { t } = useI18n();
   const [title, setTitle] = useState('');
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
@@ -76,16 +78,16 @@ export default function PublishScreen({ nav }: { nav: Nav }) {
   const handlePublish = async () => {
     setError(null);
     if (title.trim().length < 5) {
-      setError('El título debe tener al menos 5 caracteres.');
+      setError(t('publish.errTitle'));
       return;
     }
     const parsedPrice = Number(price);
     if (!price.trim() || Number.isNaN(parsedPrice) || parsedPrice <= 0) {
-      setError('Ingresá un precio válido mayor a 0.');
+      setError(t('publish.errPrice'));
       return;
     }
     if (description.trim().length < 10) {
-      setError('La descripción debe tener al menos 10 caracteres.');
+      setError(t('publish.errDesc'));
       return;
     }
 
@@ -106,7 +108,7 @@ export default function PublishScreen({ nav }: { nav: Nav }) {
       });
       setPublishedId(created.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo publicar el producto.');
+      setError(err instanceof Error ? err.message : t('publish.errGeneric'));
     } finally {
       setSubmitting(false);
     }
@@ -123,10 +125,9 @@ export default function PublishScreen({ nav }: { nav: Nav }) {
           >
             <AppIcon name="check_circle" size={34} color={colors.accentEmerald} />
           </View>
-          <Text className="text-2xl font-bold text-text-primary">¡Publicación enviada!</Text>
+          <Text className="text-2xl font-bold text-text-primary">{t('publish.successTitle')}</Text>
           <Text className="text-center text-sm leading-relaxed text-text-secondary">
-            Tu producto entró a la cola de auditoría TechShield. Cuando el laboratorio lo chequee, aparecerá con el
-            check verde en el marketplace.
+            {t('publish.successDesc')}
           </Text>
           <View className="mt-1 rounded-lg border border-line bg-panel px-4 py-2">
             <Text className="font-mono text-[11px] text-text-secondary">ID: #{publishedId.slice(0, 8).toUpperCase()}</Text>
@@ -151,7 +152,7 @@ export default function PublishScreen({ nav }: { nav: Nav }) {
 
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
         <View className="px-4 pb-2 pt-3">
-          <Text className="text-2xl font-bold text-text-primary">Publicar Componente</Text>
+          <Text className="text-2xl font-bold text-text-primary">{t('publish.title')}</Text>
           <Text className="mt-1 text-xs leading-relaxed text-text-secondary">
             Envía tu hardware al kit de auditoría gratuito. Hasta que pase por los filtros de seguridad y verificación
             no aparecerá con el check en el marketplace.
@@ -160,23 +161,23 @@ export default function PublishScreen({ nav }: { nav: Nav }) {
 
         <View className="flex flex-col gap-4 px-4 pt-3">
           <View>
-            <FieldLabel>Título *</FieldLabel>
+            <FieldLabel>{t('publish.fTitle')}</FieldLabel>
             <Input value={title} onChangeText={setTitle} placeholder="Ej: AMD Ryzen 7 7800X3D" />
           </View>
 
           <View className="flex-row gap-3">
             <View className="flex-1">
-              <FieldLabel>Marca</FieldLabel>
+              <FieldLabel>{t('publish.fBrand')}</FieldLabel>
               <Input value={brand} onChangeText={setBrand} placeholder="Ej: AMD / NVIDIA" />
             </View>
             <View className="flex-1">
-              <FieldLabel>Modelo</FieldLabel>
+              <FieldLabel>{t('publish.fModel')}</FieldLabel>
               <Input value={model} onChangeText={setModel} placeholder="Ej: 7800X3D" />
             </View>
           </View>
 
           <View>
-            <FieldLabel>Categoría *</FieldLabel>
+            <FieldLabel>{t('publish.fCategory')}</FieldLabel>
             <View className="flex-row flex-wrap gap-2">
               {CATEGORIES.map((cat) => {
                 const active = category === cat.value;
@@ -202,17 +203,17 @@ export default function PublishScreen({ nav }: { nav: Nav }) {
           </View>
 
           <View>
-            <FieldLabel>Estado *</FieldLabel>
-            <Segmented options={['Nuevo / Sellado', 'Usado']} value={condition} onChange={setCondition} />
+            <FieldLabel>{t('publish.fCondition')}</FieldLabel>
+            <Segmented options={[t('publish.newSealed'), t('publish.used')]} value={condition} onChange={setCondition} />
           </View>
 
           <View>
-            <FieldLabel>Precio (USD) *</FieldLabel>
+            <FieldLabel>{t('publish.fPrice')}</FieldLabel>
             <Input value={price} onChangeText={setPrice} placeholder="Ej: 340" numeric />
           </View>
 
           <View>
-            <FieldLabel>Descripción *</FieldLabel>
+            <FieldLabel>{t('publish.fDescription')}</FieldLabel>
             <Input
               value={description}
               onChangeText={setDescription}
@@ -223,22 +224,22 @@ export default function PublishScreen({ nav }: { nav: Nav }) {
 
           <View className="flex-row gap-3">
             <View className="flex-1">
-              <FieldLabel>Horas de uso verificadas</FieldLabel>
+              <FieldLabel>{t('publish.fHoursVerified')}</FieldLabel>
               <Input value={hours} onChangeText={setHours} placeholder="Ej: 320" numeric />
             </View>
             <View className="flex-1">
-              <FieldLabel>Horas declaradas</FieldLabel>
+              <FieldLabel>{t('publish.fHoursReported')}</FieldLabel>
               <Input value={reportedHours} onChangeText={setReportedHours} placeholder="Ej: 350" numeric />
             </View>
           </View>
 
           <View>
-            <FieldLabel>Tipo de uso</FieldLabel>
+            <FieldLabel>{t('publish.fUsage')}</FieldLabel>
             <Input value={usageType} onChangeText={setUsageType} placeholder="Ej: Gaming / Oficina / Minería" />
           </View>
 
           <View>
-            <FieldLabel>Estado físico</FieldLabel>
+            <FieldLabel>{t('publish.fPhysical')}</FieldLabel>
             <Input
               value={physicalState}
               onChangeText={setPhysicalState}
@@ -266,15 +267,14 @@ export default function PublishScreen({ nav }: { nav: Nav }) {
               <AppIcon name="verified" size={20} color={colors.onSecondary} />
             )}
             <Text className="text-base font-semibold text-on-secondary">
-              {submitting ? 'Publicando...' : 'Publicar y Enviar a Auditoría'}
+              {submitting ? t('publish.submitting') : t('publish.submit')}
             </Text>
           </Pressable>
 
           <View className="flex-row items-start gap-2.5 rounded-lg border border-line bg-panel p-3">
             <AppIcon name="security" size={18} color={colors.accentEmerald} style={{ marginTop: 1 }} />
             <Text className="flex-1 text-xs leading-relaxed text-text-secondary">
-              Al publicar aceptás el envío del componente al centro técnico TechShield para auditoría de pines,
-              telemetría térmica y estrés de silicio.
+              {t('publish.terms')}
             </Text>
           </View>
         </View>

@@ -5,6 +5,7 @@ import AppHeader from '../components/AppHeader';
 import AppIcon from '../components/AppIcon';
 import BottomNav from '../components/BottomNav';
 import { useMarketplace } from '../context/MarketplaceContext';
+import { useI18n } from '../i18n';
 import { useTrack } from '../hooks/useTrack';
 import { colors, glow, shadow } from '../theme';
 import type { Nav, SellerTier } from '../types';
@@ -120,6 +121,7 @@ function ToggleRow({
 }
 
 export default function FiltersScreen({ nav }: { nav: Nav }) {
+  const { t } = useI18n();
   const { state, setFilters } = useMarketplace();
   const trackEvent = useTrack();
   const filters = state.filters;
@@ -173,7 +175,7 @@ export default function FiltersScreen({ nav }: { nav: Nav }) {
 
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
         <View className="px-4 pb-2 pt-3">
-          <Text className="text-2xl font-bold text-text-primary">Filtros de Seguridad</Text>
+          <Text className="text-2xl font-bold text-text-primary">{t('filters.title')}</Text>
           <Text className="mt-1 text-xs text-text-secondary">
             Clasificamos a los vendedores según su positividad, quejas y aceptación de revisiones.
           </Text>
@@ -181,7 +183,7 @@ export default function FiltersScreen({ nav }: { nav: Nav }) {
 
         {/* Tier selector */}
         <View className="px-4 pt-3">
-          <SectionTitle>1. Seguridad del Vendedor</SectionTitle>
+          <SectionTitle>{t('filters.s1')}</SectionTitle>
           <View className="mt-2 flex flex-col gap-2">
             <Pressable
               onPress={() => setTier('all')}
@@ -194,7 +196,7 @@ export default function FiltersScreen({ nav }: { nav: Nav }) {
               >
                 {tier === 'all' ? <View className="h-2 w-2 rounded-full bg-primary" /> : null}
               </View>
-              <Text className="text-sm font-semibold text-text-primary">Todos los vendedores</Text>
+              <Text className="text-sm font-semibold text-text-primary">{t('filters.allSellers')}</Text>
             </Pressable>
 
             {TIER_OPTIONS.map((opt) => {
@@ -234,7 +236,7 @@ export default function FiltersScreen({ nav }: { nav: Nav }) {
 
         {/* Verified toggle */}
         <View className="px-4 pt-4">
-          <SectionTitle>2. Chequeo del Producto</SectionTitle>
+          <SectionTitle>{t('filters.s2')}</SectionTitle>
           <View className="mt-2">
             <ToggleRow
               icon="verified"
@@ -248,7 +250,7 @@ export default function FiltersScreen({ nav }: { nav: Nav }) {
 
         {/* New products */}
         <View className="px-4 pt-4">
-          <SectionTitle>3. Estado del Producto</SectionTitle>
+          <SectionTitle>{t('filters.s3')}</SectionTitle>
           <View className="mt-2">
             <ToggleRow
               icon="inventory_2"
@@ -263,7 +265,7 @@ export default function FiltersScreen({ nav }: { nav: Nav }) {
 
         {/* Warranty */}
         <View className="px-4 pt-4">
-          <SectionTitle>4. Garantía / Cobertura</SectionTitle>
+          <SectionTitle>{t('filters.s4')}</SectionTitle>
           <View className="mt-2 flex-row flex-wrap gap-2">
             <Chip active={warranty === 'all'} label="Todas" onPress={() => setWarranty('all')} color={colors.primary} />
             <Chip active={warranty === 'techshield'} label="Garantía TechShield 90 días" onPress={() => setWarranty('techshield')} color={colors.accentEmerald} />
@@ -273,7 +275,7 @@ export default function FiltersScreen({ nav }: { nav: Nav }) {
 
         {/* Min positivity */}
         <View className="px-4 pt-4">
-          <SectionTitle>5. Positividad mínima del vendedor</SectionTitle>
+          <SectionTitle>{t('filters.s5')}</SectionTitle>
           <View className="mt-2 flex-row flex-wrap gap-2">
             {POSITIVITY_OPTIONS.map((p) => (
               <Chip
@@ -289,7 +291,7 @@ export default function FiltersScreen({ nav }: { nav: Nav }) {
 
         {/* Usage */}
         <View className="px-4 pt-4">
-          <SectionTitle>6. Uso del producto</SectionTitle>
+          <SectionTitle>{t('filters.s6')}</SectionTitle>
           <View className="mt-2 flex flex-col gap-2">
             <ToggleRow
               icon="hourglass_empty"
@@ -310,7 +312,7 @@ export default function FiltersScreen({ nav }: { nav: Nav }) {
 
         {/* Extra security */}
         <View className="px-4 pt-4">
-          <SectionTitle>7. Seguridad extra</SectionTitle>
+          <SectionTitle>{t('filters.s7')}</SectionTitle>
           <View className="mt-2 flex flex-col gap-2">
             <ToggleRow
               icon="verified_user"
@@ -345,14 +347,14 @@ export default function FiltersScreen({ nav }: { nav: Nav }) {
             style={shadow.panel}
           >
             <AppIcon name="verified_user" size={20} color={colors.onSecondary} />
-            <Text className="text-base font-semibold text-on-secondary">Aplicar Filtros</Text>
+            <Text className="text-base font-semibold text-on-secondary">{t('filters.apply')}</Text>
           </Pressable>
           <Pressable
             onPress={reset}
             className="flex-row items-center justify-center gap-2 rounded-xl border border-line bg-panel py-3"
           >
             <AppIcon name="replay" size={20} color={colors.textSecondary} />
-            <Text className="text-sm font-semibold text-text-secondary">Restablecer filtros</Text>
+            <Text className="text-sm font-semibold text-text-secondary">{t('filters.reset')}</Text>
           </Pressable>
         </View>
       </ScrollView>

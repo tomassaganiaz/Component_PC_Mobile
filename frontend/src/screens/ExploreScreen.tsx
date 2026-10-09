@@ -8,6 +8,7 @@ import BottomNav from '../components/BottomNav';
 import ProductCard from '../components/ProductCard';
 import { PulseDot, Segmented } from '../components/ui';
 import { useMarketplace } from '../context/MarketplaceContext';
+import { useI18n } from '../i18n';
 import { CATEGORIES, PRODUCTS } from '../data/mock';
 import { getProducts } from '../services/api';
 import { colors, glow, shadow } from '../theme';
@@ -57,6 +58,7 @@ function filterMock(filters: ProductFilters): ExploreCard[] {
 const PAGE_SIZE = 20;
 
 export default function ExploreScreen({ nav }: { nav: Nav }) {
+  const { t } = useI18n();
   const { state, setFilters, setSearch, setCondition, setTier, setResults, appendResults } = useMarketplace();
   const { filters, search, condition, tierFilter, cards, offline, loadedQueryKey, page, hasMore, total } = state;
   const [debouncedSearch, setDebouncedSearch] = useState(search);
@@ -218,12 +220,10 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
           <View className="mb-2 flex-row items-center justify-between">
             <View className="flex-row items-center gap-1.5">
               <AppIcon name="verified_user" size={15} color={colors.primary} />
-              <Text className="font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
-                Seguridad del vendedor
-              </Text>
+              <Text className="font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">{t('explore.sellerSecurity')}</Text>
             </View>
             <Pressable onPress={() => nav.go({ name: 'filters' })} className="flex-row items-center gap-1">
-              <Text className="font-mono text-[11px] font-medium text-primary">Filtros avanzados</Text>
+              <Text className="font-mono text-[11px] font-medium text-primary">{t('explore.advancedFilters')}</Text>
               <AppIcon name="arrow_forward" size={14} color={colors.primary} />
             </Pressable>
           </View>
@@ -389,7 +389,7 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
         <View className="py-1">
           <View className="mb-2 flex-row items-center justify-between px-4">
             <Text className="font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
-              Categorías de Silicio
+              {t('explore.categories')}
             </Text>
             <Text className="font-mono text-[11px] font-medium text-primary">Ver todas</Text>
           </View>
@@ -429,18 +429,16 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
         {/* Feed header */}
         <View className="flex-row items-center justify-between px-4 pb-1 pt-3">
           <View className="flex-row items-center gap-2">
-            <Text className="text-xl text-text-primary">Auditoría Reciente</Text>
+            <Text className="text-xl text-text-primary">{t('explore.recentAudit')}</Text>
             {searching ? (
               <View className="flex-row items-center gap-1 rounded-full border border-primary/40 bg-primary-soft px-2 py-0.5">
                 <ActivityIndicator size={10} color={colors.primary} />
-                <Text className="font-mono text-[10px] font-semibold uppercase tracking-wider text-primary">
-                  Buscando
-                </Text>
+                <Text className="font-mono text-[10px] font-semibold uppercase tracking-wider text-primary">{t('explore.searching')}</Text>
               </View>
             ) : (
               <View className="flex-row items-center gap-1 rounded-full border border-secondary/40 bg-secondary/15 px-2 py-0.5">
                 <PulseDot size={6} />
-                <Text className="font-mono text-[10px] font-bold uppercase tracking-wider text-secondary">En Vivo</Text>
+                <Text className="font-mono text-[10px] font-bold uppercase tracking-wider text-secondary">{t('explore.live')}</Text>
               </View>
             )}
           </View>
@@ -479,7 +477,7 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
             ) : (
               <View className="items-center justify-center gap-3 rounded-xl border border-line bg-panel px-6 py-10">
                 <AppIcon name="search" size={32} color={colors.textMuted} />
-                <Text className="text-base font-semibold text-text-primary">Sin resultados</Text>
+                <Text className="text-base font-semibold text-text-primary">{t('explore.noResults')}</Text>
                 <Text className="max-w-[280px] text-center text-xs leading-relaxed text-text-secondary">
                   No hay productos que cumplan los filtros de seguridad y chequeo actuales.
                 </Text>
@@ -502,7 +500,7 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
                       ))}
                     </View>
                     <Pressable onPress={clearAllFilters} className="items-center py-1">
-                      <Text className="text-xs font-semibold text-primary">Quitar todos los filtros</Text>
+                      <Text className="text-xs font-semibold text-primary">{t('explore.clearAll')}</Text>
                     </Pressable>
                   </View>
                 ) : null}
@@ -525,9 +523,7 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
             {appending ? (
               <View className="flex-row items-center justify-center gap-2 py-4">
                 <ActivityIndicator size="small" color={colors.secondary} />
-                <Text className="font-mono text-[11px] uppercase tracking-wider text-text-secondary">
-                  Cargando más...
-                </Text>
+                <Text className="font-mono text-[11px] uppercase tracking-wider text-text-secondary">{t('explore.loadingMore')}</Text>
               </View>
             ) : null}
             <View className="px-4 pb-6 pt-4">
@@ -544,7 +540,7 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
                     <AppIcon name="verified" size={24} color={colors.primary} />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-base font-semibold text-text-primary">¿Vendes hardware o móviles?</Text>
+                    <Text className="text-base font-semibold text-text-primary">{t('explore.sellerCalloutTitle')}</Text>
                     <Text className="text-xs text-text-secondary">
                       Certificamos tus componentes gratis y vendes hasta 3x más rápido.
                     </Text>
@@ -554,7 +550,7 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
                   className="flex-row items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary-mid py-2.5"
                   style={glow(colors.primaryMid, 15, 0.5)}
                 >
-                  <Text className="text-xs font-semibold text-text-primary">Solicitar Kit de Auditoría Gratuito</Text>
+                  <Text className="text-xs font-semibold text-text-primary">{t('explore.requestKit')}</Text>
                   <AppIcon name="arrow_forward" size={18} color={colors.primary} />
                 </Pressable>
               </LinearGradient>

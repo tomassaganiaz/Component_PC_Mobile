@@ -4,6 +4,7 @@ import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View 
 import AppIcon from '../components/AppIcon';
 import ProductImage from '../components/ProductImage';
 import { Avatar, ProgressBar } from '../components/ui';
+import { useI18n } from '../i18n';
 import { createOrder, createReport, getSellerReviews, getTrustBadge } from '../services/api';
 import type { OrderItem, ReviewItem, SecurityProfile } from '../services/api';
 import { useTrack } from '../hooks/useTrack';
@@ -295,6 +296,7 @@ function SellerSecurity({
 
 export default function ProductDetailScreen({ nav, product }: { nav: Nav; product: ExploreCard }) {
   const trackEvent = useTrack();
+  const { t } = useI18n();
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
@@ -339,7 +341,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
 
   const handlePlaceOrder = async () => {
     if (!shippingAddress.trim()) {
-      setOrderError('Ingresá la dirección de envío.');
+      setOrderError(t('product.checkout.errAddress'));
       return;
     }
     setPlacing(true);
@@ -357,7 +359,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
         metadata: { total: Number(order.total), paymentMethod },
       });
     } catch (err) {
-      setOrderError(err instanceof Error ? err.message : 'No se pudo crear la orden.');
+      setOrderError(err instanceof Error ? err.message : t('product.checkout.errOrder'));
     } finally {
       setPlacing(false);
     }
@@ -823,7 +825,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
         style={{ borderTopWidth: 1, borderTopColor: colors.line, ...shadow.bottom }}
       >
         <View>
-          <Text className="font-mono text-[11px] text-text-secondary">PRECIO FINAL</Text>
+          <Text className="font-mono text-[11px] text-text-secondary">{t('product.finalPrice')}</Text>
           <View className="flex-row items-baseline gap-1">
             <Text className="text-2xl font-bold text-text-primary">${product.price}</Text>
             <Text className="font-mono text-[11px] text-text-secondary">{product.currency}</Text>
@@ -835,7 +837,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
           style={shadow.panel}
         >
           <AppIcon name="lock" size={20} color={colors.onSecondary} />
-          <Text className="text-[15px] font-semibold text-on-secondary">Comprar con TechShield</Text>
+          <Text className="text-[15px] font-semibold text-on-secondary">{t('product.buy')}</Text>
         </Pressable>
       </View>
 
@@ -964,7 +966,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
                 >
                   <AppIcon name="check_circle" size={34} color={colors.accentEmerald} />
                 </View>
-                <Text className="text-xl font-bold text-text-primary">Orden creada con Custodia</Text>
+                <Text className="text-xl font-bold text-text-primary">{t('product.checkout.success')}</Text>
                 <Text className="text-center text-xs leading-relaxed text-text-secondary">
                   Tus {product.currency} ${Number(createdOrder.total).toFixed(2)} quedaron retenidos en la bóveda
                   TechShield. El vendedor no cobra hasta que recibas y verifiques el producto.
@@ -992,14 +994,14 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
                   onPress={() => setCheckoutOpen(false)}
                   className="w-full items-center justify-center rounded-xl border border-line bg-panel py-3"
                 >
-                  <Text className="text-sm font-semibold text-text-secondary">Seguir explorando</Text>
+                  <Text className="text-sm font-semibold text-text-secondary">{t('product.checkout.keepExploring')}</Text>
                 </Pressable>
               </View>
             ) : (
               <>
                 <View className="flex-row items-center gap-2">
                   <AppIcon name="account_balance_wallet" size={20} color={colors.accentCyan} />
-                  <Text className="text-lg font-semibold text-text-primary">Checkout TechShield</Text>
+                  <Text className="text-lg font-semibold text-text-primary">{t('product.checkout.title')}</Text>
                 </View>
 
                 <View className="mt-3 flex-row items-center gap-3 rounded-xl border border-line bg-panel p-3">
@@ -1083,7 +1085,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
                       <AppIcon name="lock" size={18} color={colors.onSecondary} />
                     )}
                     <Text className="text-sm font-semibold text-on-secondary">
-                      {placing ? 'Creando escrow...' : 'Confirmar compra'}
+                      {placing ? t('product.checkout.placing') : t('product.checkout.place')}
                     </Text>
                   </Pressable>
                 </View>

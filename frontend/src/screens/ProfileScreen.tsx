@@ -7,6 +7,7 @@ import BottomNav from '../components/BottomNav';
 import ReviewModal from '../components/ReviewModal';
 import { Avatar } from '../components/ui';
 import { useThemeCtx } from '../context/ThemeContext';
+import { useI18n } from '../i18n';
 import { getMyOrders, getProfile, verifyIdentity, verifyPhone } from '../services/api';
 import type { OrderItem } from '../services/api';
 import { colors, glow, shadow } from '../theme';
@@ -47,6 +48,7 @@ export default function ProfileScreen({
   session: LoginSuccess;
   onLogout: () => void;
 }) {
+  const { t, locale, setLocale } = useI18n();
   const [profile, setProfile] = useState<UserProfile>(session.user);
   const { theme, toggle } = useThemeCtx();
   const [orders, setOrders] = useState<OrderItem[]>([]);
@@ -188,7 +190,7 @@ export default function ProfileScreen({
               <AppIcon name="verified_user" size={22} color={tierTone} />
             </View>
             <View className="flex-1">
-              <Text className="text-lg font-semibold text-text-primary">Tu nivel de seguridad</Text>
+              <Text className="text-lg font-semibold text-text-primary">{t('profile.securityTitle')}</Text>
               <View className="mt-1 self-start rounded border px-2 py-0.5" style={{ borderColor: tierTone + '66', backgroundColor: tierTone + '1a' }}>
                 <Text className="font-mono text-[11px] font-bold tracking-wider" style={{ color: tierTone }}>
                   VENDEDOR {tierLabel}
@@ -205,25 +207,23 @@ export default function ProfileScreen({
 
         {/* KYC checklist */}
         <View className="px-4 pt-4">
-          <Text className="mb-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
-            Verificación (KYC)
-          </Text>
+          <Text className="mb-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">{t('profile.sectionKyc')}</Text>
           <View className="flex flex-col gap-2">
             <Row
               icon="phone_android"
-              label="Teléfono verificado"
+              label={t('profile.phoneRow')}
               value={phoneVerified ? 'SÍ' : 'NO'}
               tone={phoneVerified ? colors.accentEmerald : colors.textMuted}
             />
             <Row
               icon="badge"
-              label="Documento verificado"
+              label={t('profile.docRow')}
               value={idVerified ? 'SÍ' : 'NO'}
               tone={idVerified ? colors.accentEmerald : colors.textMuted}
             />
             <Row
               icon="science"
-              label="Acepta testeo previo"
+              label={t('profile.testingRow')}
               value={acceptsTesting ? 'SÍ' : 'NO'}
               tone={acceptsTesting ? colors.accentEmerald : colors.textMuted}
             />
@@ -241,7 +241,7 @@ export default function ProfileScreen({
                   ) : (
                     <AppIcon name="phone_android" size={16} color="#7dd3fc" />
                   )}
-                  <Text className="text-xs font-semibold text-sky-300">Verificar teléfono</Text>
+                  <Text className="text-xs font-semibold text-sky-300">{t('profile.verifyPhone')}</Text>
                 </Pressable>
               ) : null}
               {!idVerified ? (
@@ -256,7 +256,7 @@ export default function ProfileScreen({
                   ) : (
                     <AppIcon name="badge" size={16} color="#7dd3fc" />
                   )}
-                  <Text className="text-xs font-semibold text-sky-300">Verificar documento (ID)</Text>
+                  <Text className="text-xs font-semibold text-sky-300">{t('profile.verifyDoc')}</Text>
                 </Pressable>
               ) : null}
               {verifyError ? <Text className="text-xs text-diagnostic-red">{verifyError}</Text> : null}
@@ -359,7 +359,7 @@ export default function ProfileScreen({
               <View className="h-8 w-8 items-center justify-center rounded-lg bg-elevated">
                 <AppIcon name="add" size={17} color={colors.primary} />
               </View>
-              <Text className="flex-1 text-sm text-text-primary">Publicar un producto</Text>
+              <Text className="flex-1 text-sm text-text-primary">{t('profile.publishProduct')}</Text>
               <AppIcon name="arrow_forward" size={18} color={colors.textMuted} />
             </Pressable>
             <Pressable
@@ -369,7 +369,7 @@ export default function ProfileScreen({
               <View className="h-8 w-8 items-center justify-center rounded-lg bg-elevated">
                 <AppIcon name="verified_user" size={17} color={colors.accentCyan} />
               </View>
-              <Text className="flex-1 text-sm text-text-primary">Seguimiento de auditoría</Text>
+              <Text className="flex-1 text-sm text-text-primary">{t('profile.auditTracking')}</Text>
               <AppIcon name="arrow_forward" size={18} color={colors.textMuted} />
             </Pressable>
             <Pressable
@@ -379,7 +379,7 @@ export default function ProfileScreen({
               <View className="h-8 w-8 items-center justify-center rounded-lg bg-elevated">
                 <AppIcon name="manage_search" size={17} color={colors.accentEmerald} />
               </View>
-              <Text className="flex-1 text-sm text-text-primary">Filtros de seguridad</Text>
+              <Text className="flex-1 text-sm text-text-primary">{t('profile.securityFilters')}</Text>
               <AppIcon name="arrow_forward" size={18} color={colors.textMuted} />
             </Pressable>
             <Pressable
@@ -389,7 +389,7 @@ onPress={() => nav.go({ name: 'analytics' })}
               <View className="h-8 w-8 items-center justify-center rounded-lg bg-elevated">
                 <AppIcon name="equalizer" size={17} color={colors.primary} />
               </View>
-              <Text className="flex-1 text-sm text-text-primary">Dashboard de analytics</Text>
+              <Text className="flex-1 text-sm text-text-primary">{t('profile.analytics')}</Text>
               <AppIcon name="arrow_forward" size={18} color={colors.textMuted} />
             </Pressable>
             <Pressable
@@ -400,9 +400,23 @@ onPress={() => nav.go({ name: 'analytics' })}
                 <AppIcon name={theme === 'dark' ? 'light_mode' : 'nightlight'} size={17} color={colors.primary} />
               </View>
               <Text className="flex-1 text-sm text-text-primary">
-                {theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+                {theme === 'dark' ? t('profile.lightMode') : t('profile.darkMode')}
               </Text>
               <AppIcon name="arrow_forward" size={18} color={colors.textMuted} />
+            </Pressable>
+            <Pressable
+              onPress={() => setLocale(locale === 'es' ? 'en' : 'es')}
+              className="flex-row items-center gap-3 rounded-xl border border-line bg-panel p-3"
+              accessibilityRole="button"
+              accessibilityLabel={t('profile.language')}
+            >
+              <View className="h-8 w-8 items-center justify-center rounded-lg bg-elevated">
+                <AppIcon name="languages" size={17} color={colors.primary} />
+              </View>
+              <Text className="flex-1 text-sm text-text-primary">{t('profile.language')}</Text>
+              <Text className="font-mono text-xs font-semibold text-text-secondary">
+                {locale.toUpperCase()}
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -414,7 +428,7 @@ onPress={() => nav.go({ name: 'analytics' })}
             className="flex-row items-center justify-center gap-2 rounded-xl border border-red-500/40 bg-red-500/10 py-3"
           >
             <AppIcon name="logout" size={18} color={colors.diagnosticRed} />
-            <Text className="text-sm font-semibold text-red-400">Cerrar sesión</Text>
+            <Text className="text-sm font-semibold text-red-400">{t('profile.logout')}</Text>
           </Pressable>
           <Text className="mt-3 text-center font-mono text-[10px] text-text-muted">
             TechShield · Marketplace Verificado · v1.0.0

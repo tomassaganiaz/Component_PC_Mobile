@@ -9,6 +9,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { MarketplaceProvider } from '../context/MarketplaceContext';
 import { ThemeProvider } from '../context/ThemeContext';
+import { I18nProvider, useI18n } from '../i18n';
 import { colors } from '../theme';
 
 if (Platform.OS === 'web') {
@@ -22,6 +23,7 @@ if (Platform.OS === 'web') {
 
 function ProtectedRouter() {
   const { session, restoring } = useAuth();
+  const { t } = useI18n();
   const segments = useSegments();
   const router = useRouter();
 
@@ -40,7 +42,7 @@ function ProtectedRouter() {
       <View className="flex-1 items-center justify-center gap-3">
         <ActivityIndicator color={colors.secondary} size="large" />
         <Text className="font-mono text-[11px] uppercase tracking-wider text-text-secondary">
-          Restaurando sesión...
+          {t('common.loading')}
         </Text>
       </View>
     );
@@ -64,18 +66,20 @@ function ProtectedRouter() {
 export default function RootLayout() {
   return (
     <ThemeProvider>
-      <Head.Provider>
-        <AuthProvider>
-          <MarketplaceProvider>
-            <SafeAreaProvider>
-              <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface }} edges={['top', 'bottom']}>
-                <StatusBar style="auto" />
-                <ProtectedRouter />
-              </SafeAreaView>
-            </SafeAreaProvider>
-          </MarketplaceProvider>
-        </AuthProvider>
-      </Head.Provider>
+      <I18nProvider>
+        <Head.Provider>
+          <AuthProvider>
+            <MarketplaceProvider>
+              <SafeAreaProvider>
+                <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface }} edges={['top', 'bottom']}>
+                  <StatusBar style="auto" />
+                  <ProtectedRouter />
+                </SafeAreaView>
+              </SafeAreaProvider>
+            </MarketplaceProvider>
+          </AuthProvider>
+        </Head.Provider>
+      </I18nProvider>
     </ThemeProvider>
   );
 }

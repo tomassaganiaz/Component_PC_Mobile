@@ -4,11 +4,13 @@ import { Link } from 'expo-router';
 
 import AppIcon from './../components/AppIcon';
 import { DividerLabel, PulseDot } from './../components/ui';
+import { useI18n } from '../i18n';
 import { isOtpChallenge, login, requestOtp, verifyOtp } from './../services/api';
 import { colors, shadow } from '../theme';
 import type { LoginSuccess } from '../types';
 
 export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSuccess) => void }) {
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -30,7 +32,7 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
 
   const handleSubmit = async () => {
     if (!email.trim() || !password) {
-      setError('Ingresá tu correo TechShield y tu clave para continuar.');
+      setError(t('login.errorRequired'));
       return;
     }
     setError(null);
@@ -46,7 +48,7 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
         onLogin(result);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo conectar con el servidor.');
+      setError(err instanceof Error ? err.message : t('login.errorServer'));
     } finally {
       setSubmitting(false);
     }
@@ -54,7 +56,7 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
 
   const handleVerifyOtp = async () => {
     if (!otpToken || !/^\d{6}$/.test(otpCode)) {
-      setOtpError('Ingresá el código de 6 dígitos.');
+      setOtpError(t('login.errorRequired'));
       return;
     }
     setOtpVerifying(true);
@@ -63,7 +65,7 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
       const session = await verifyOtp(otpToken, otpCode);
       onLogin(session);
     } catch (err) {
-      setOtpError(err instanceof Error ? err.message : 'No se pudo verificar el código.');
+      setOtpError(err instanceof Error ? err.message : t('login.errorOtp'));
     } finally {
       setOtpVerifying(false);
     }
@@ -110,7 +112,7 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
                 <AppIcon name="shield_locked" size={28} color={colors.primary} />
               </View>
               <View className="min-w-0 flex-1">
-                <Text className="text-[28px] font-bold tracking-tight text-text-primary">Acceso Seguro</Text>
+                <Text className="text-[28px] font-bold tracking-tight text-text-primary">{t('login.title')}</Text>
                 <Text className="mt-1 text-xs leading-relaxed text-text-secondary">
                   Mercado auditado de componentes y móviles certificados con telemetría de silicio y garantía técnica.
                 </Text>
@@ -136,19 +138,17 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
                   {biometricLoading ? (
                     <View className="flex-row items-center gap-2 py-1">
                       <AppIcon name="sync" size={22} color={colors.accentCyan} />
-                      <Text className="font-mono text-xs text-text-primary">Validando sensor biométrico...</Text>
+                      <Text className="font-mono text-xs text-text-primary">{t('login.biometricValidating')}</Text>
                     </View>
                   ) : (
                     <>
                       <View className="flex-row items-center gap-1">
-                        <Text className="text-lg font-semibold text-text-primary">Face ID / Biometría</Text>
+                        <Text className="text-lg font-semibold text-text-primary">{t('login.biometric')}</Text>
                         <View className="rounded bg-secondary/20 px-1.5 py-0.5">
-                          <Text className="font-mono text-[11px] text-accent-emerald">RÁPIDO</Text>
+                          <Text className="font-mono text-[11px] text-accent-emerald">{t('login.biometricFast')}</Text>
                         </View>
                       </View>
-                      <Text className="truncate text-xs text-text-muted">
-                        Autenticación local mediante enclave FIDO
-                      </Text>
+                      <Text className="truncate text-xs text-text-muted">{t('login.biometricDesc')}</Text>
                     </>
                   )}
                 </View>
@@ -159,13 +159,13 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
             </View>
           </Pressable>
 
-          <DividerLabel>o usa credenciales</DividerLabel>
+          <DividerLabel>{t('login.orCredentials')}</DividerLabel>
 
           {/* Email field */}
           <View className="flex flex-col gap-1.5">
             <View className="flex-row items-center justify-between">
               <Text className="font-mono text-[11px] uppercase text-text-secondary">
-                Identificador / Correo TechShield
+                {t('login.emailLabel')}
               </Text>
               <Text className="font-mono text-[11px] text-text-muted">AUTH_UID</Text>
             </View>
@@ -176,7 +176,7 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
               <TextInput
                 value={email}
                 onChangeText={setEmail}
-                placeholder="operador@red-techshield.net"
+                placeholder={t('login.emailPh')}
                 placeholderTextColor={colors.textMuted}
                 autoCapitalize="none"
                 keyboardType="email-address"
@@ -189,7 +189,7 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
           <View className="flex flex-col gap-1.5">
             <View className="flex-row items-center justify-between">
               <Text className="font-mono text-[11px] uppercase text-text-secondary">
-                Clave Criptográfica Maestra
+                {t('login.passLabel')}
               </Text>
               <Text className="font-mono text-[11px] text-text-muted">SHA-256</Text>
             </View>
@@ -229,9 +229,9 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
                   <AppIcon name="check" size={15} color={colors.onSecondary} />
                 ) : null}
               </View>
-              <Text className="text-xs text-text-secondary">Enlazar terminal (30d)</Text>
+              <Text className="text-xs text-text-secondary">{t('login.remember')}</Text>
             </Pressable>
-            <Text className="text-xs text-accent-blue">¿Olvidaste tu clave?</Text>
+            <Text className="text-xs text-accent-blue">{t('login.forgot')}</Text>
           </View>
 
           {/* OTP two-step */}
@@ -239,7 +239,7 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
             <View className="flex flex-col gap-3 rounded-xl border border-accent-cyan/40 bg-brand-soft p-4">
               <View className="flex-row items-center gap-2">
                 <AppIcon name="verified_user" size={20} color={colors.accentCyan} />
-                <Text className="text-base font-semibold text-text-primary">Verificación en dos pasos</Text>
+                <Text className="text-base font-semibold text-text-primary">{t('login.otp.title')}</Text>
               </View>
               <Text className="text-xs leading-relaxed text-text-secondary">
                 Ingresá el código de 6 dígitos enviado a tu dispositivo para completar el acceso.
@@ -272,10 +272,10 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
                 ) : (
                   <AppIcon name="verified" size={18} color="#06222e" />
                 )}
-                <Text className="text-sm font-semibold text-on-tertiary">Verificar Código</Text>
+                <Text className="text-sm font-semibold text-on-tertiary">{t('login.otp.verify')}</Text>
               </Pressable>
               <Pressable onPress={handleCancelOtp} className="items-center py-1">
-                <Text className="text-xs text-text-secondary">Volver al inicio de sesión</Text>
+                <Text className="text-xs text-text-secondary">{t('login.otp.back')}</Text>
               </Pressable>
             </View>
           ) : null}
@@ -298,12 +298,12 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
             {submitting ? (
               <>
                 <AppIcon name="sync" size={20} color={colors.onPrimary} />
-                <Text className="text-base font-semibold text-on-primary">Descifrando Enclave...</Text>
+                <Text className="text-base font-semibold text-on-primary">{t('login.submitting')}</Text>
               </>
             ) : (
               <>
                 <AppIcon name="verified_user" size={20} color={colors.onPrimary} />
-                <Text className="text-base font-semibold text-on-primary">Iniciar Sesión Auditada</Text>
+                <Text className="text-base font-semibold text-on-primary">{t('login.submit')}</Text>
               </>
             )}
           </Pressable>
@@ -346,10 +346,8 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
         {/* Footer */}
         <View className="flex flex-col items-center gap-1 py-4 text-center">
           <Text className="text-xs text-text-secondary">
-            ¿Aún no tienes registro técnico?{' '}
-            <Link href="/register" className="font-semibold text-accent-emerald">
-              Crear cuenta verificada
-            </Link>
+            {t('login.noAccount')}{' '}
+            <Link href="/register" className="font-semibold text-accent-emerald">{t('login.createAccount')}</Link>
           </Text>
           <View className="mt-1 flex-row items-center gap-2">
             <PulseDot size={6} />
