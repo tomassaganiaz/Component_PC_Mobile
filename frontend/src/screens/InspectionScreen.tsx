@@ -194,7 +194,7 @@ function OrderTracking({
           </View>
           <View className="mt-3 flex-row items-start gap-3">
             <View className="h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-700/60 bg-inset p-1">
-              <ProductImage uri={product?.images?.[0]} style={{ width: '100%', height: '100%' }} iconSize={26} />
+              <ProductImage uri={product?.images?.[0]} style={{ width: '100%', height: '100%' }} iconSize={26} width={128} />
             </View>
             <View className="min-w-0 flex-1">
               <View className="flex-row items-center gap-1">

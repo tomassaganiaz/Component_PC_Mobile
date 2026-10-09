@@ -439,6 +439,8 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
                 style={{ width: '100%', height: '100%' }}
                 iconSize={56}
                 contentFit="cover"
+                width={800}
+                priority
               />
               <View className="absolute left-3 top-3 flex-row items-center gap-1.5 rounded-full border border-secondary/40 bg-surface/90 px-2.5 py-1">
                 <AppIcon name="verified_user" size={15} color={colors.secondary} />
@@ -460,7 +462,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
                     className="relative h-16 w-16 overflow-hidden rounded-lg bg-card"
                     style={i === galleryIndex ? { borderWidth: 2, borderColor: colors.secondary } : undefined}
                   >
-                    <ProductImage uri={g.uri} style={{ width: '100%', height: '100%' }} iconSize={22} />
+                    <ProductImage uri={g.uri} style={{ width: '100%', height: '100%' }} iconSize={22} width={128} />
                     <View
                       className="absolute inset-x-0 bottom-0 items-center py-0.5"
                       style={{ backgroundColor: colors.surface + 'e6' }}

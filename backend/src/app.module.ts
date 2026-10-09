@@ -13,6 +13,7 @@ import { AuthModule } from "./auth/auth.module";
 import { ReportsModule } from "./reports/reports.module";
 import { ChatModule } from "./chat/chat.module";
 import { AnalyticsModule } from "./analytics/analytics.module";
+import { MediaModule } from "./media/media.module";
 import { ThrottlerUserGuard } from "./common/throttler-user.guard";
 
 @Module({
@@ -86,6 +87,7 @@ import { ThrottlerUserGuard } from "./common/throttler-user.guard";
     ReportsModule,
     ChatModule,
     AnalyticsModule,
+    MediaModule,
   ],
   controllers: [AppController],
   providers: [

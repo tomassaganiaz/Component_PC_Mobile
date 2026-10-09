@@ -203,7 +203,7 @@ export default function ProductCard({
       {checked ? <PassedCheckBanner /> : null}
       <View className="flex-row gap-3">
         <View className="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl border border-line bg-inset">
-          <ProductImage uri={card.image} style={{ width: '100%', height: '100%' }} iconSize={32} />
+          <ProductImage uri={card.image} style={{ width: '100%', height: '100%' }} iconSize={32} width={256} />
           {card.verified ? <VerifiedBadge /> : null}
           <View
             className={`absolute left-1.5 top-1.5 rounded border px-2 py-0.5 bg-inset/90 ${tagTones[card.tagTone]}`}
