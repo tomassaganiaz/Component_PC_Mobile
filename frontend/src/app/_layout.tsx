@@ -9,6 +9,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { MarketplaceProvider } from '../context/MarketplaceContext';
 import { ThemeProvider } from '../context/ThemeContext';
+import { initWebVitals } from '../services/webVitals';
 import { colors } from '../theme';
 
 if (Platform.OS === 'web') {
@@ -62,6 +63,10 @@ function ProtectedRouter() {
 }
 
 export default function RootLayout() {
+  useEffect(() => {
+    initWebVitals();
+  }, []);
+
   return (
     <ThemeProvider>
       <Head.Provider>
