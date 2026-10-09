@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from '../context/AuthContext';
 import { MarketplaceProvider } from '../context/MarketplaceContext';
 import { ThemeProvider } from '../context/ThemeContext';
 import { I18nProvider, useI18n } from '../i18n';
+import { initWebVitals } from '../services/webVitals';
 import { colors } from '../theme';
 
 if (Platform.OS === 'web') {
@@ -64,6 +65,10 @@ function ProtectedRouter() {
 }
 
 export default function RootLayout() {
+  useEffect(() => {
+    initWebVitals();
+  }, []);
+
   return (
     <ThemeProvider>
       <I18nProvider>
