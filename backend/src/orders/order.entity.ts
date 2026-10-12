@@ -84,7 +84,7 @@ export class Order {
   @JoinColumn({ name: "product_id" })
   product: Product | null;
 
-  @Column({ name: "product_id", nullable: true })
+  @Column({ name: "product_id", type: "uuid", nullable: true })
   productId: string | null;
 
   /** Ítems de la orden (carrito / compra directa). */

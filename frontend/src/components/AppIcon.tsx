@@ -79,6 +79,8 @@ const MAP: Record<string, MIconName> = {
   delete: 'delete',
   block: 'block',
   remove: 'remove',
+  south_west: 'south-west',
+  north_east: 'north-east',
 };
 
 interface Props {

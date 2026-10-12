@@ -7,7 +7,7 @@ import BottomNav from '../components/BottomNav';
 import ProductImage from '../components/ProductImage';
 import { useCart } from '../context/CartContext';
 import { useI18n } from '../i18n';
-import { checkoutCart } from '../services/api';
+import { checkoutCart, confirmPayment, createPaymentIntent } from '../services/api';
 import type { OrderItem } from '../services/api';
 import { colors, glow, shadow } from '../theme';
 import type { Nav } from '../types';
@@ -38,6 +38,13 @@ export default function CartScreen({ nav }: { nav: Nav }) {
         shippingAddress: address.trim(),
         paymentMethod: 'credit_card',
       });
+      // Pago: intención + confirmación (mock).
+      try {
+        await createPaymentIntent(order.id);
+        await confirmPayment(order.id);
+      } catch {
+        /* queda pendiente */
+      }
       setDoneOrder(order);
       await refresh();
     } catch (err) {

@@ -7,6 +7,7 @@ import { ProductStatus } from "../products/product.entity";
 import { NotificationsService } from "../notifications/notifications.service";
 import { CouponsService } from "../coupons/coupons.service";
 import { CartService } from "../cart/cart.service";
+import { WalletService } from "../wallets/wallet.service";
 import {
   NotFoundException,
   BadRequestException,
@@ -46,6 +47,11 @@ describe("OrdersService", () => {
     clear: jest.fn().mockResolvedValue(undefined),
   };
 
+  const mockWalletService = {
+    credit: jest.fn().mockResolvedValue(undefined),
+    debit: jest.fn().mockResolvedValue(undefined),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -55,6 +61,7 @@ describe("OrdersService", () => {
         { provide: NotificationsService, useValue: mockNotifications },
         { provide: CouponsService, useValue: mockCouponsService },
         { provide: CartService, useValue: mockCartService },
+        { provide: WalletService, useValue: mockWalletService },
       ],
     }).compile();
 

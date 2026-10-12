@@ -170,8 +170,8 @@ Prioridad **MoSCoW**. Esfuerzo en puntos (≈1 pto ≈ 2–3 h).
 | 0 | Notificaciones in-app | ✅ |
 | 0 | Cupones | ✅ |
 | 1 | Carrito multi-producto + order_items | ✅ |
-| 2 | Pago simulado + reembolso efectivo | ⬜ |
-| 2 | Wallet/payouts | ⬜ |
+| 2 | Pago simulado + reembolso efectivo | ✅ |
+| 2 | Wallet/payouts | ✅ |
 | 3 | Variaciones/SKU | ⬜ |
 | 3 | Panel admin | ⬜ |
 | 4 | Pasarela real + envíos | ⬜ |

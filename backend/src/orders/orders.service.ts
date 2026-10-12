@@ -14,6 +14,7 @@ import { NotificationsService } from "../notifications/notifications.service";
 import { NotificationType } from "../notifications/notification.entity";
 import { CouponsService } from "../coupons/coupons.service";
 import { CartService } from "../cart/cart.service";
+import { WalletService } from "../wallets/wallet.service";
 
 const RETURN_WINDOW_DAYS = 10;
 const COVERAGE_DAYS = 45;
@@ -28,6 +29,7 @@ export class OrdersService {
     private readonly notifications: NotificationsService,
     private readonly coupons: CouponsService,
     private readonly cartService: CartService,
+    private readonly walletService: WalletService,
   ) {}
 
   async create(
@@ -269,6 +271,23 @@ export class OrdersService {
     return first ?? 'tu pedido';
   }
 
+  /** Monto de la orden por vendedor (para acreditar/debitar en la wallet). */
+  private sellerShares(order: Order): Map<string, number> {
+    const shares = new Map<string, number>();
+    order.items?.forEach((i) => {
+      const sellerId = i.product?.sellerId;
+      if (!sellerId) return;
+      shares.set(
+        sellerId,
+        (shares.get(sellerId) ?? 0) + Number(i.unitPrice) * i.quantity,
+      );
+    });
+    if (shares.size === 0 && order.product?.sellerId) {
+      shares.set(order.product.sellerId, Number(order.total));
+    }
+    return shares;
+  }
+
   /** Confirma el pago del comprador y deja los fondos en custodia. */
   async pay(orderId: string, buyerId: string): Promise<Order> {
     const order = await this.findOne(orderId);
@@ -348,6 +367,16 @@ export class OrdersService {
         "Producto entregado",
         `El comprador confirmó la entrega de "${this.orderTitle(order)}".`,
         { orderId: order.id },
+      );
+    }
+
+    // Libera los fondos: acredita a cada vendedor su parte.
+    for (const [sellerId, amount] of this.sellerShares(order)) {
+      await this.walletService.credit(
+        sellerId,
+        amount,
+        `Venta entregada · orden #${order.id.slice(0, 8).toUpperCase()}`,
+        order.id,
       );
     }
 
@@ -438,6 +467,22 @@ export class OrdersService {
         verified: false,
       } as any);
     }
+
+    // Reembolso efectivo: debita al vendedor y acredita al comprador.
+    for (const [sellerId, amount] of this.sellerShares(order)) {
+      await this.walletService.debit(
+        sellerId,
+        amount,
+        `Reembolso · orden #${order.id.slice(0, 8).toUpperCase()}`,
+        order.id,
+      );
+    }
+    await this.walletService.credit(
+      order.buyerId,
+      Number(order.total),
+      `Reembolso de compra · orden #${order.id.slice(0, 8).toUpperCase()}`,
+      order.id,
+    );
 
     return saved;
   }

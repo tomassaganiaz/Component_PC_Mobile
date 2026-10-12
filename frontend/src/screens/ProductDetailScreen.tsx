@@ -6,7 +6,7 @@ import ProductImage from '../components/ProductImage';
 import { Avatar, ProgressBar } from '../components/ui';
 import { useI18n } from '../i18n';
 import { useCart } from '../context/CartContext';
-import { createOrder, createReport, getSellerReputation, getSellerReviews, getTrustBadge, payOrder, validateCoupon } from '../services/api';
+import { confirmPayment, createOrder, createPaymentIntent, createReport, getSellerReputation, getSellerReviews, getTrustBadge, validateCoupon } from '../services/api';
 import type { CouponValidation, OrderItem, ReviewItem, SecurityProfile, SellerReputation } from '../services/api';
 import ReputationMeter from '../components/ReputationMeter';
 import { useTrack } from '../hooks/useTrack';
@@ -401,11 +401,12 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
         paymentMethod,
         couponCode: couponApplied?.code,
       });
-      // El pago se confirma de inmediato (mock): fondos en custodia. Si falla,
-      // la orden queda pendiente y se puede pagar desde el seguimiento.
+      // Pago: intención + confirmación (mock). Si falla, la orden queda pendiente.
       let paid = order;
       try {
-        paid = await payOrder(order.id);
+        await createPaymentIntent(order.id);
+        await confirmPayment(order.id);
+        paid = { ...order, status: 'paid' };
       } catch {
         /* queda pendiente */
       }

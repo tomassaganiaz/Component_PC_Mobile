@@ -615,3 +615,60 @@ export function checkoutCart(input: {
     body: JSON.stringify(input),
   });
 }
+
+/* ------------------------------- Payments ------------------------------- */
+
+export interface PaymentIntent {
+  paymentId: string;
+  provider: string;
+  status: string;
+  amount: number;
+  clientSecret: string;
+}
+
+export function createPaymentIntent(orderId: string): Promise<PaymentIntent> {
+  return request<PaymentIntent>(`/payments/${orderId}/intent`, { method: 'POST' });
+}
+
+/** Confirma el pago (simula el webhook de la pasarela). */
+export function confirmPayment(orderId: string): Promise<{ orderId: string; status: string }> {
+  return request<{ orderId: string; status: string }>('/payments/webhook', {
+    method: 'POST',
+    body: JSON.stringify({ orderId, event: 'payment.succeeded' }),
+  });
+}
+
+/* -------------------------------- Wallet -------------------------------- */
+
+export interface WalletEntryItem {
+  id: string;
+  type: 'credit' | 'debit' | 'payout';
+  amount: number;
+  description: string;
+  orderId?: string | null;
+  createdAt: string;
+}
+
+export interface PayoutItem {
+  id: string;
+  amount: number;
+  status: string;
+  createdAt: string;
+}
+
+export interface WalletData {
+  balance: number;
+  entries: WalletEntryItem[];
+  payouts: PayoutItem[];
+}
+
+export function getWallet(): Promise<WalletData> {
+  return request<WalletData>('/wallet');
+}
+
+export function requestPayout(amount: number): Promise<PayoutItem> {
+  return request<PayoutItem>('/wallet/payouts', {
+    method: 'POST',
+    body: JSON.stringify({ amount }),
+  });
+}

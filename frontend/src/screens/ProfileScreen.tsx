@@ -547,16 +547,28 @@ export default function ProfileScreen({
               <AppIcon name="arrow_forward" size={18} color={colors.textMuted} />
             </Pressable>
             {profile.role === 'seller' || profile.role === 'admin' ? (
-              <Pressable
-                onPress={() => nav.go({ name: 'sales' })}
-                className="flex-row items-center gap-3 rounded-xl border border-line bg-panel p-3"
-              >
-                <View className="h-8 w-8 items-center justify-center rounded-lg bg-elevated">
-                  <AppIcon name="sell" size={17} color={colors.accentCyan} />
-                </View>
-                <Text className="flex-1 text-sm text-text-primary">{t('profile.mySales')}</Text>
-                <AppIcon name="arrow_forward" size={18} color={colors.textMuted} />
-              </Pressable>
+              <>
+                <Pressable
+                  onPress={() => nav.go({ name: 'sales' })}
+                  className="flex-row items-center gap-3 rounded-xl border border-line bg-panel p-3"
+                >
+                  <View className="h-8 w-8 items-center justify-center rounded-lg bg-elevated">
+                    <AppIcon name="sell" size={17} color={colors.accentCyan} />
+                  </View>
+                  <Text className="flex-1 text-sm text-text-primary">{t('profile.mySales')}</Text>
+                  <AppIcon name="arrow_forward" size={18} color={colors.textMuted} />
+                </Pressable>
+                <Pressable
+                  onPress={() => nav.go({ name: 'wallet' })}
+                  className="flex-row items-center gap-3 rounded-xl border border-line bg-panel p-3"
+                >
+                  <View className="h-8 w-8 items-center justify-center rounded-lg bg-elevated">
+                    <AppIcon name="account_balance_wallet" size={17} color={colors.accentEmerald} />
+                  </View>
+                  <Text className="flex-1 text-sm text-text-primary">{t('profile.income')}</Text>
+                  <AppIcon name="arrow_forward" size={18} color={colors.textMuted} />
+                </Pressable>
+              </>
             ) : null}
             <Pressable
               onPress={() => nav.go({ name: 'inspection' })}
