@@ -117,7 +117,10 @@ describe("ProductsController", () => {
         title: "Updated Title",
       };
 
-      mockProductsService.findOne.mockResolvedValue({ id: "uuid-123", sellerId: "seller-1" });
+      mockProductsService.findOne.mockResolvedValue({
+        id: "uuid-123",
+        sellerId: "seller-1",
+      });
       mockProductsService.update.mockResolvedValue(expectedProduct);
 
       const req = { user: { id: "seller-1", role: "seller" } } as any;
@@ -127,23 +130,45 @@ describe("ProductsController", () => {
     });
 
     it("should forbid updating another seller's product", async () => {
-      mockProductsService.findOne.mockResolvedValue({ id: "uuid-123", sellerId: "owner-x" });
+      mockProductsService.findOne.mockResolvedValue({
+        id: "uuid-123",
+        sellerId: "owner-x",
+      });
       const req = { user: { id: "seller-1", role: "seller" } } as any;
 
-      await expect(controller.update("uuid-123", { title: "hack" }, req)).rejects.toThrow();
+      await expect(
+        controller.update("uuid-123", { title: "hack" }, req),
+      ).rejects.toThrow();
       expect(mockProductsService.update).not.toHaveBeenCalled();
     });
   });
 
   describe("remove", () => {
-    it("should remove a product", async () => {
-      mockProductsService.findOne.mockResolvedValue({ id: "uuid-123", sellerId: "seller-1" });
+    it("should remove a sold product", async () => {
+      mockProductsService.findOne.mockResolvedValue({
+        id: "uuid-123",
+        sellerId: "seller-1",
+        status: ProductStatus.SOLD,
+      });
       mockProductsService.remove.mockResolvedValue(undefined);
 
       const req = { user: { id: "seller-1", role: "seller" } } as any;
       await controller.remove("uuid-123", req);
 
       expect(mockProductsService.remove).toHaveBeenCalledWith("uuid-123");
+    });
+
+    it("should forbid removing a product that is not sold", async () => {
+      mockProductsService.findOne.mockResolvedValue({
+        id: "uuid-123",
+        sellerId: "seller-1",
+        status: ProductStatus.PUBLISHED,
+      });
+
+      const req = { user: { id: "seller-1", role: "seller" } } as any;
+
+      await expect(controller.remove("uuid-123", req)).rejects.toThrow();
+      expect(mockProductsService.remove).not.toHaveBeenCalled();
     });
   });
 });

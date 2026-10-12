@@ -1,7 +1,7 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from "typeorm";
 
 export class InitialSchema1720000000000 implements MigrationInterface {
-  name = 'InitialSchema1720000000000';
+  name = "InitialSchema1720000000000";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Extension UUID
@@ -55,9 +55,15 @@ export class InitialSchema1720000000000 implements MigrationInterface {
         CONSTRAINT "UQ_users_email" UNIQUE ("email")
       )
     `);
-    await queryRunner.query(`CREATE INDEX "idx_users_email" ON "users" ("email")`);
-    await queryRunner.query(`CREATE INDEX "idx_users_role" ON "users" ("role")`);
-    await queryRunner.query(`CREATE INDEX "idx_users_deleted_at" ON "users" ("deleted_at")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_users_email" ON "users" ("email")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_users_role" ON "users" ("role")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_users_deleted_at" ON "users" ("deleted_at")`,
+    );
 
     // Tabla products
     await queryRunner.query(`
@@ -85,10 +91,18 @@ export class InitialSchema1720000000000 implements MigrationInterface {
         CONSTRAINT "FK_products_seller_id" FOREIGN KEY ("seller_id") REFERENCES "users"("id") ON DELETE CASCADE
       )
     `);
-    await queryRunner.query(`CREATE INDEX "idx_products_status_category" ON "products" ("status", "category")`);
-    await queryRunner.query(`CREATE INDEX "idx_products_seller_status" ON "products" ("seller_id", "status")`);
-    await queryRunner.query(`CREATE INDEX "idx_products_condition_status" ON "products" ("condition", "status")`);
-    await queryRunner.query(`CREATE INDEX "idx_products_price" ON "products" ("price")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_products_status_category" ON "products" ("status", "category")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_products_seller_status" ON "products" ("seller_id", "status")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_products_condition_status" ON "products" ("condition", "status")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_products_price" ON "products" ("price")`,
+    );
 
     // Tabla orders
     await queryRunner.query(`
@@ -111,8 +125,12 @@ export class InitialSchema1720000000000 implements MigrationInterface {
         CONSTRAINT "FK_orders_product_id" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE CASCADE
       )
     `);
-    await queryRunner.query(`CREATE INDEX "idx_orders_buyer_status" ON "orders" ("buyer_id", "status")`);
-    await queryRunner.query(`CREATE INDEX "idx_orders_status_created" ON "orders" ("status", "created_at")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_orders_buyer_status" ON "orders" ("buyer_id", "status")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_orders_status_created" ON "orders" ("status", "created_at")`,
+    );
 
     // Tabla verifications
     await queryRunner.query(`
@@ -134,8 +152,12 @@ export class InitialSchema1720000000000 implements MigrationInterface {
         CONSTRAINT "FK_verifications_verified_by" FOREIGN KEY ("verified_by") REFERENCES "users"("id") ON DELETE SET NULL
       )
     `);
-    await queryRunner.query(`CREATE INDEX "idx_verifications_product_result" ON "verifications" ("product_id", "result")`);
-    await queryRunner.query(`CREATE INDEX "idx_verifications_verified_by" ON "verifications" ("verified_by")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_verifications_product_result" ON "verifications" ("product_id", "result")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_verifications_verified_by" ON "verifications" ("verified_by")`,
+    );
 
     // Tabla reviews
     await queryRunner.query(`
@@ -168,8 +190,12 @@ export class InitialSchema1720000000000 implements MigrationInterface {
         CONSTRAINT "UQ_reviews_buyer_product" UNIQUE ("buyer_id", "product_id")
       )
     `);
-    await queryRunner.query(`CREATE INDEX "idx_reviews_seller_status" ON "reviews" ("seller_id", "status")`);
-    await queryRunner.query(`CREATE INDEX "idx_reviews_product_status" ON "reviews" ("product_id", "status")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_reviews_seller_status" ON "reviews" ("seller_id", "status")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_reviews_product_status" ON "reviews" ("product_id", "status")`,
+    );
 
     // Trigger para updated_at
     await queryRunner.query(`
@@ -196,11 +222,21 @@ export class InitialSchema1720000000000 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP TRIGGER IF EXISTS "update_reviews_updated_at" ON "reviews"`);
-    await queryRunner.query(`DROP TRIGGER IF EXISTS "update_orders_updated_at" ON "orders"`);
-    await queryRunner.query(`DROP TRIGGER IF EXISTS "update_products_updated_at" ON "products"`);
-    await queryRunner.query(`DROP TRIGGER IF EXISTS "update_users_updated_at" ON "users"`);
-    await queryRunner.query(`DROP FUNCTION IF EXISTS update_updated_at_column()`);
+    await queryRunner.query(
+      `DROP TRIGGER IF EXISTS "update_reviews_updated_at" ON "reviews"`,
+    );
+    await queryRunner.query(
+      `DROP TRIGGER IF EXISTS "update_orders_updated_at" ON "orders"`,
+    );
+    await queryRunner.query(
+      `DROP TRIGGER IF EXISTS "update_products_updated_at" ON "products"`,
+    );
+    await queryRunner.query(
+      `DROP TRIGGER IF EXISTS "update_users_updated_at" ON "users"`,
+    );
+    await queryRunner.query(
+      `DROP FUNCTION IF EXISTS update_updated_at_column()`,
+    );
     await queryRunner.query(`DROP TABLE IF EXISTS "reviews"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "verifications"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "orders"`);

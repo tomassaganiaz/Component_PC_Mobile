@@ -74,6 +74,10 @@ const MAP: Record<string, MIconName> = {
   nightlight: 'nightlight',
   shopping_cart: 'shopping-cart',
   storefront: 'storefront',
+  sell: 'sell',
+  event: 'event',
+  delete: 'delete',
+  block: 'block',
 };
 
 interface Props {

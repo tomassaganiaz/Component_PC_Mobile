@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import AppHeader from '../components/AppHeader';
 import AppIcon from '../components/AppIcon';
@@ -11,7 +10,7 @@ import { useMarketplace } from '../context/MarketplaceContext';
 import { useI18n } from '../i18n';
 import { CATEGORIES, PRODUCTS } from '../data/mock';
 import { getProducts } from '../services/api';
-import { colors, glow, shadow } from '../theme';
+import { colors, glow } from '../theme';
 import type { ExploreCard, Nav, ProductFilters, SellerTier } from '../types';
 import { toExploreCard } from '../utils/product';
 
@@ -333,58 +332,6 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
           </View>
         ) : null}
 
-        {/* Trust hero */}
-        <View className="px-4 py-2">
-          <LinearGradient
-            colors={[colors.primarySoft, colors.brandSoft, colors.elevated]}
-            className="overflow-hidden rounded-xl border border-line p-4"
-            style={shadow.card}
-          >
-            <View className="pointer-events-none absolute -bottom-6 -right-6 h-36 w-36 rounded-full bg-secondary/15" />
-            <View className="pointer-events-none absolute -left-6 -top-6 h-28 w-28 rounded-full bg-primary/10" />
-            <View className="relative z-10 flex-row items-start justify-between gap-3">
-              <View className="flex-1">
-                <View
-                  className="self-start flex-row items-center gap-1.5 rounded-full border border-secondary/40 bg-secondary/15 px-2.5 py-0.5"
-                  style={glow(colors.secondary, 8, 0.15)}
-                >
-                  <AppIcon name="shield_with_heart" size={14} color={colors.secondary} />
-                  <Text className="font-mono text-[10px] font-semibold uppercase tracking-wider text-secondary">
-                    100% Protegido con Custodia
-                  </Text>
-                </View>
-                <Text className="mt-0.5 text-xl font-semibold leading-tight text-text-primary">
-                  Garantía Técnica Blindada
-                </Text>
-                <Text className="text-xs leading-relaxed text-text-secondary">
-                  El pago permanece en custodia hasta que nuestro laboratorio audita pines, curvas térmicas y estrés de
-                  silicio.
-                </Text>
-              </View>
-              <View
-                className="h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-line bg-primary-soft"
-                style={glow(colors.accentCyan, 15, 0.25)}
-              >
-                <AppIcon name="hardware" size={28} color={colors.accentCyan} />
-              </View>
-            </View>
-            <View className="mt-3 flex-row gap-2 rounded-lg border border-line/80 bg-inset/75 p-2.5">
-              <View className="flex-1 flex-row items-center gap-1.5">
-                <AppIcon name="check_circle" size={16} color={colors.secondary} />
-                <Text className="font-mono text-[10.5px] font-medium text-on-surface">Pines & Socket</Text>
-              </View>
-              <View className="flex-1 flex-row items-center gap-1.5">
-                <AppIcon name="thermostat" size={16} color={colors.tertiary} />
-                <Text className="font-mono text-[10.5px] font-medium text-on-surface">Test Térmico</Text>
-              </View>
-              <View className="flex-1 flex-row items-center gap-1.5">
-                <AppIcon name="battery_charging_full" size={16} color={colors.accentEmerald} />
-                <Text className="font-mono text-[10.5px] font-medium text-on-surface">Salud & Ciclos</Text>
-              </View>
-            </View>
-          </LinearGradient>
-        </View>
-
         {/* Categories */}
         <View className="py-1">
           <View className="mb-2 flex-row items-center justify-between px-4">
@@ -447,18 +394,7 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
           </Text>
         </View>
 
-        {/* CHECK summary banner */}
-        {activeSecurity && !loading && cards.length > 0 ? (
-          <View
-            className="mx-4 mt-1 flex-row items-center gap-2 rounded-lg border border-secondary/30 bg-secondary/10 px-3 py-2"
-            style={glow(colors.secondary, 8, 0.12)}
-          >
-            <AppIcon name="verified" size={16} color={colors.secondary} />
-            <Text className="flex-1 font-mono text-[10.5px] leading-snug text-emerald-300">
-              {cards.length} producto(s) con CHECK APROBADO: pasaron los filtros de seguridad y verificación activos.
-            </Text>
-          </View>
-        ) : null}
+        {/* CHECK summary banner removed */}
           </>
         }
         ItemSeparatorComponent={() => <View className="h-4" />}
@@ -526,35 +462,6 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
                 <Text className="font-mono text-[11px] uppercase tracking-wider text-text-secondary">{t('explore.loadingMore')}</Text>
               </View>
             ) : null}
-            <View className="px-4 pb-6 pt-4">
-              <LinearGradient
-                colors={[colors.elevated, colors.inset]}
-                className="flex flex-col gap-3 overflow-hidden rounded-xl border border-line p-4"
-                style={shadow.card}
-              >
-                <View className="flex-row items-center gap-3">
-                  <View
-                    className="h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary-soft"
-                    style={glow(colors.primary, 15, 0.2)}
-                  >
-                    <AppIcon name="verified" size={24} color={colors.primary} />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="text-base font-semibold text-text-primary">{t('explore.sellerCalloutTitle')}</Text>
-                    <Text className="text-xs text-text-secondary">
-                      Certificamos tus componentes gratis y vendes hasta 3x más rápido.
-                    </Text>
-                  </View>
-                </View>
-                <Pressable
-                  className="flex-row items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary-mid py-2.5"
-                  style={glow(colors.primaryMid, 15, 0.5)}
-                >
-                  <Text className="text-xs font-semibold text-text-primary">{t('explore.requestKit')}</Text>
-                  <AppIcon name="arrow_forward" size={18} color={colors.primary} />
-                </Pressable>
-              </LinearGradient>
-            </View>
           </>
         }
         onEndReached={handleEndReached}

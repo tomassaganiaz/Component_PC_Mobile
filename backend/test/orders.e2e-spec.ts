@@ -1,10 +1,10 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
-import * as request from 'supertest';
-import { AppModule } from '../src/app.module';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { Test, TestingModule } from "@nestjs/testing";
+import { INestApplication, ValidationPipe } from "@nestjs/common";
+import * as request from "supertest";
+import { AppModule } from "../src/app.module";
+import { TypeOrmModule } from "@nestjs/typeorm";
 
-describe('Orders (e2e)', () => {
+describe("Orders (e2e)", () => {
   let app: INestApplication;
   let authToken: string;
   let orderId: string;
@@ -17,16 +17,16 @@ describe('Orders (e2e)', () => {
       .overrideModule(TypeOrmModule)
       .useModule(
         TypeOrmModule.forRoot({
-          type: 'sqlite',
-          database: ':memory:',
-          entities: [__dirname + '/../src/**/*.entity{.ts,.js}'],
+          type: "sqlite",
+          database: ":memory:",
+          entities: [__dirname + "/../src/**/*.entity{.ts,.js}"],
           synchronize: true,
         }),
       )
       .compile();
 
     app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix('api');
+    app.setGlobalPrefix("api");
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -36,41 +36,37 @@ describe('Orders (e2e)', () => {
     );
     await app.init();
 
-    await request(app.getHttpServer())
-      .post('/api/auth/register')
-      .send({
-        name: 'Order Buyer',
-        email: 'buyer@example.com',
-        password: 'password123',
-        role: 'buyer',
-      });
+    await request(app.getHttpServer()).post("/api/auth/register").send({
+      name: "Order Buyer",
+      email: "buyer@example.com",
+      password: "password123",
+      role: "buyer",
+    });
 
-    await request(app.getHttpServer())
-      .post('/api/auth/register')
-      .send({
-        name: 'Order Seller',
-        email: 'seller@example.com',
-        password: 'password123',
-        role: 'seller',
-      });
+    await request(app.getHttpServer()).post("/api/auth/register").send({
+      name: "Order Seller",
+      email: "seller@example.com",
+      password: "password123",
+      role: "seller",
+    });
 
     const loginResponse = await request(app.getHttpServer())
-      .post('/api/auth/login')
+      .post("/api/auth/login")
       .send({
-        email: 'buyer@example.com',
-        password: 'password123',
+        email: "buyer@example.com",
+        password: "password123",
       });
     authToken = loginResponse.body.access_token;
 
     const createProductResponse = await request(app.getHttpServer())
-      .post('/api/products')
-      .set('Authorization', `Bearer ${authToken}`)
+      .post("/api/products")
+      .set("Authorization", `Bearer ${authToken}`)
       .send({
-        title: 'Product for Order',
-        description: 'Test product',
+        title: "Product for Order",
+        description: "Test product",
         price: 250,
-        condition: 'used',
-        category: 'gpu',
+        condition: "used",
+        category: "gpu",
       });
     productId = createProductResponse.body.id;
   });
@@ -79,62 +75,62 @@ describe('Orders (e2e)', () => {
     await app.close();
   });
 
-  describe('POST /api/orders', () => {
-    it('should create an order', () => {
+  describe("POST /api/orders", () => {
+    it("should create an order", () => {
       return request(app.getHttpServer())
-        .post('/api/orders')
-        .set('Authorization', `Bearer ${authToken}`)
+        .post("/api/orders")
+        .set("Authorization", `Bearer ${authToken}`)
         .send({
           productId,
-          shippingAddress: 'Av. Corrientes 1234',
-          paymentMethod: 'credit_card',
+          shippingAddress: "Av. Corrientes 1234",
+          paymentMethod: "credit_card",
         })
         .expect(201)
         .expect((res) => {
-          expect(res.body).toHaveProperty('id');
+          expect(res.body).toHaveProperty("id");
           expect(res.body.total).toEqual(250);
-          expect(res.body.status).toEqual('pending');
+          expect(res.body.status).toEqual("pending");
           orderId = res.body.id;
         });
     });
 
-    it('should fail without authentication', () => {
+    it("should fail without authentication", () => {
       return request(app.getHttpServer())
-        .post('/api/orders')
+        .post("/api/orders")
         .send({
           productId,
-          shippingAddress: 'Av. Corrientes 1234',
+          shippingAddress: "Av. Corrientes 1234",
         })
         .expect(401);
     });
 
-    it('should fail with invalid product', () => {
+    it("should fail with invalid product", () => {
       return request(app.getHttpServer())
-        .post('/api/orders')
-        .set('Authorization', `Bearer ${authToken}`)
+        .post("/api/orders")
+        .set("Authorization", `Bearer ${authToken}`)
         .send({
-          productId: 'nonexistent-product-id',
-          shippingAddress: 'Av. Corrientes 1234',
+          productId: "nonexistent-product-id",
+          shippingAddress: "Av. Corrientes 1234",
         })
         .expect(404);
     });
   });
 
-  describe('GET /api/orders', () => {
-    it('should return buyer orders', () => {
+  describe("GET /api/orders", () => {
+    it("should return buyer orders", () => {
       return request(app.getHttpServer())
-        .get('/api/orders')
-        .set('Authorization', `Bearer ${authToken}`)
+        .get("/api/orders")
+        .set("Authorization", `Bearer ${authToken}`)
         .expect(200)
         .expect((res) => {
           expect(Array.isArray(res.body)).toBeTruthy();
         });
     });
 
-    it('should return empty array for new buyer', () => {
+    it("should return empty array for new buyer", () => {
       return request(app.getHttpServer())
-        .get('/api/orders')
-        .set('Authorization', `Bearer ${authToken}`)
+        .get("/api/orders")
+        .set("Authorization", `Bearer ${authToken}`)
         .expect(200)
         .expect((res) => {
           expect(Array.isArray(res.body)).toBeTruthy();
@@ -142,8 +138,8 @@ describe('Orders (e2e)', () => {
     });
   });
 
-  describe('GET /api/orders/:id', () => {
-    it('should return order by id', () => {
+  describe("GET /api/orders/:id", () => {
+    it("should return order by id", () => {
       return request(app.getHttpServer())
         .get(`/api/orders/${orderId}`)
         .expect(200)
@@ -152,49 +148,49 @@ describe('Orders (e2e)', () => {
         });
     });
 
-    it('should return 404 for non-existent order', () => {
+    it("should return 404 for non-existent order", () => {
       return request(app.getHttpServer())
-        .get('/api/orders/nonexistent-id')
+        .get("/api/orders/nonexistent-id")
         .expect(404);
     });
   });
 
-  describe('PATCH /api/orders/:id', () => {
-    it('should update order status', () => {
+  describe("PATCH /api/orders/:id", () => {
+    it("should update order status", () => {
       return request(app.getHttpServer())
         .patch(`/api/orders/${orderId}`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({ status: 'paid' })
+        .set("Authorization", `Bearer ${authToken}`)
+        .send({ status: "paid" })
         .expect(200)
         .expect((res) => {
-          expect(res.body.status).toEqual('paid');
+          expect(res.body.status).toEqual("paid");
         });
     });
 
-    it('should return 404 for non-existent order', () => {
+    it("should return 404 for non-existent order", () => {
       return request(app.getHttpServer())
-        .patch('/api/orders/nonexistent-id')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({ status: 'paid' })
+        .patch("/api/orders/nonexistent-id")
+        .set("Authorization", `Bearer ${authToken}`)
+        .send({ status: "paid" })
         .expect(404);
     });
   });
 
-  describe('POST /api/orders/:id/cancel', () => {
-    it('should cancel an order', () => {
+  describe("POST /api/orders/:id/cancel", () => {
+    it("should cancel an order", () => {
       return request(app.getHttpServer())
         .post(`/api/orders/${orderId}/cancel`)
-        .set('Authorization', `Bearer ${authToken}`)
+        .set("Authorization", `Bearer ${authToken}`)
         .expect(200)
         .expect((res) => {
-          expect(res.body.status).toEqual('cancelled');
+          expect(res.body.status).toEqual("cancelled");
         });
     });
 
-    it('should return 404 for non-existent order', () => {
+    it("should return 404 for non-existent order", () => {
       return request(app.getHttpServer())
-        .post('/api/orders/nonexistent-id/cancel')
-        .set('Authorization', `Bearer ${authToken}`)
+        .post("/api/orders/nonexistent-id/cancel")
+        .set("Authorization", `Bearer ${authToken}`)
         .expect(404);
     });
   });

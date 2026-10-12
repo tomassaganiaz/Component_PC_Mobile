@@ -1,9 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { UsersController } from './users.controller';
-import { UsersService } from './users.service';
-import { UserRole } from './user.entity';
+import { Test, TestingModule } from "@nestjs/testing";
+import { UsersController } from "./users.controller";
+import { UsersService } from "./users.service";
+import { UserRole } from "./user.entity";
 
-describe('UsersController', () => {
+describe("UsersController", () => {
   let controller: UsersController;
   let service: UsersService;
 
@@ -29,18 +29,18 @@ describe('UsersController', () => {
     jest.clearAllMocks();
   });
 
-  describe('create', () => {
-    it('should create a user', async () => {
+  describe("create", () => {
+    it("should create a user", async () => {
       const createUserDto = {
-        name: 'Test User',
-        email: 'test@example.com',
-        password: 'password123',
+        name: "Test User",
+        email: "test@example.com",
+        password: "password123",
       };
 
       const expectedUser = {
-        id: 'uuid-123',
-        name: 'Test User',
-        email: 'test@example.com',
+        id: "uuid-123",
+        name: "Test User",
+        email: "test@example.com",
         role: UserRole.BUYER,
       };
 
@@ -52,11 +52,11 @@ describe('UsersController', () => {
     });
   });
 
-  describe('findAll', () => {
-    it('should return an array of users', async () => {
+  describe("findAll", () => {
+    it("should return an array of users", async () => {
       const expectedUsers = [
-        { id: 'uuid-1', name: 'User 1' },
-        { id: 'uuid-2', name: 'User 2' },
+        { id: "uuid-1", name: "User 1" },
+        { id: "uuid-2", name: "User 2" },
       ];
 
       mockUsersService.findAll.mockResolvedValue(expectedUsers);
@@ -67,44 +67,44 @@ describe('UsersController', () => {
     });
   });
 
-  describe('findOne', () => {
-    it('should return a user by id', async () => {
+  describe("findOne", () => {
+    it("should return a user by id", async () => {
       const expectedUser = {
-        id: 'uuid-123',
-        name: 'Test User',
+        id: "uuid-123",
+        name: "Test User",
       };
 
       mockUsersService.findOne.mockResolvedValue(expectedUser);
 
-      const result = await controller.findOne('uuid-123');
+      const result = await controller.findOne("uuid-123");
 
       expect(result).toEqual(expectedUser);
     });
   });
 
-  describe('update', () => {
-    it('should update a user', async () => {
-      const updateUserDto = { name: 'Updated Name' };
+  describe("update", () => {
+    it("should update a user", async () => {
+      const updateUserDto = { name: "Updated Name" };
       const expectedUser = {
-        id: 'uuid-123',
-        name: 'Updated Name',
+        id: "uuid-123",
+        name: "Updated Name",
       };
 
       mockUsersService.update.mockResolvedValue(expectedUser);
 
-      const result = await controller.update('uuid-123', updateUserDto);
+      const result = await controller.update("uuid-123", updateUserDto);
 
       expect(result).toEqual(expectedUser);
     });
   });
 
-  describe('remove', () => {
-    it('should remove a user', async () => {
+  describe("remove", () => {
+    it("should remove a user", async () => {
       mockUsersService.remove.mockResolvedValue(undefined);
 
-      await controller.remove('uuid-123');
+      await controller.remove("uuid-123");
 
-      expect(mockUsersService.remove).toHaveBeenCalledWith('uuid-123');
+      expect(mockUsersService.remove).toHaveBeenCalledWith("uuid-123");
     });
   });
 });

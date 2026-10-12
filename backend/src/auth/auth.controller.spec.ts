@@ -1,9 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
-import { UsersService } from '../users/users.service';
+import { Test, TestingModule } from "@nestjs/testing";
+import { AuthController } from "./auth.controller";
+import { AuthService } from "./auth.service";
+import { UsersService } from "../users/users.service";
 
-describe('AuthController', () => {
+describe("AuthController", () => {
   let controller: AuthController;
   let authService: AuthService;
   let usersService: UsersService;
@@ -35,19 +35,19 @@ describe('AuthController', () => {
     jest.clearAllMocks();
   });
 
-  describe('register', () => {
+  describe("register", () => {
     const createUserDto = {
-      name: 'Test User',
-      email: 'test@example.com',
-      password: 'password123',
+      name: "Test User",
+      email: "test@example.com",
+      password: "password123",
     };
 
-    it('should create a new user', async () => {
+    it("should create a new user", async () => {
       const expectedUser = {
-        id: 'uuid-123',
-        name: 'Test User',
-        email: 'test@example.com',
-        role: 'buyer',
+        id: "uuid-123",
+        name: "Test User",
+        email: "test@example.com",
+        role: "buyer",
       };
 
       mockUsersService.create.mockResolvedValue(expectedUser);
@@ -59,20 +59,20 @@ describe('AuthController', () => {
     });
   });
 
-  describe('login', () => {
+  describe("login", () => {
     const loginDto = {
-      email: 'test@example.com',
-      password: 'password123',
+      email: "test@example.com",
+      password: "password123",
     };
 
-    it('should return access token and user', async () => {
+    it("should return access token and user", async () => {
       const expectedResponse = {
-        access_token: 'jwt-token',
+        access_token: "jwt-token",
         user: {
-          id: 'uuid-123',
-          name: 'Test User',
-          email: 'test@example.com',
-          role: 'buyer',
+          id: "uuid-123",
+          name: "Test User",
+          email: "test@example.com",
+          role: "buyer",
         },
       };
 
@@ -85,17 +85,17 @@ describe('AuthController', () => {
     });
   });
 
-  describe('getProfile', () => {
-    it('should return user profile from request', async () => {
+  describe("getProfile", () => {
+    it("should return user profile from request", async () => {
       const mockRequest = {
-        user: { id: 'uuid-123', email: 'test@example.com', role: 'buyer' },
+        user: { id: "uuid-123", email: "test@example.com", role: "buyer" },
       };
 
       const expectedProfile = {
-        id: 'uuid-123',
-        name: 'Test User',
-        email: 'test@example.com',
-        role: 'buyer',
+        id: "uuid-123",
+        name: "Test User",
+        email: "test@example.com",
+        role: "buyer",
       };
 
       mockAuthService.getProfile.mockResolvedValue(expectedProfile);
@@ -103,7 +103,7 @@ describe('AuthController', () => {
       const result = await controller.getProfile(mockRequest as any);
 
       expect(result).toEqual(expectedProfile);
-      expect(mockAuthService.getProfile).toHaveBeenCalledWith('uuid-123');
+      expect(mockAuthService.getProfile).toHaveBeenCalledWith("uuid-123");
     });
   });
 });

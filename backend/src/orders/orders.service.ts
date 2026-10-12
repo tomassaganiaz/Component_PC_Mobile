@@ -1,9 +1,15 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Order, OrderStatus } from './order.entity';
-import { CreateOrderDto, UpdateOrderDto } from './dto';
-import { ProductsService } from '../products/products.service';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Order, OrderStatus } from "./order.entity";
+import { CreateOrderDto, UpdateOrderDto } from "./dto";
+import { ProductsService } from "../products/products.service";
+import { ProductStatus } from "../products/product.entity";
 
 const RETURN_WINDOW_DAYS = 10;
 const COVERAGE_DAYS = 45;
@@ -17,37 +23,135 @@ export class OrdersService {
     private readonly productsService: ProductsService,
   ) {}
 
-  async create(createOrderDto: CreateOrderDto, buyerId: string): Promise<Order> {
-    const product = await this.productsService.findOne(createOrderDto.productId);
+  async create(
+    createOrderDto: CreateOrderDto,
+    buyerId: string,
+  ): Promise<Order> {
+    const product = await this.productsService.findOne(
+      createOrderDto.productId,
+    );
 
-    if (product.status === 'sold') {
-      throw new BadRequestException('El producto ya fue vendido');
+    if (product.status === ProductStatus.SOLD) {
+      throw new BadRequestException("El producto ya fue vendido");
     }
 
-    const order = this.orderRepository.create({
-      ...createOrderDto,
-      buyerId,
-      total: product.price,
-      status: OrderStatus.IN_CUSTODY,
-      custodyStartDate: new Date(),
-    });
+    // Reserva atómica de stock: si no hay disponible, se rechaza la compra.
+    const remainingStock = await this.productsService.decrementStock(
+      product.id,
+    );
+    if (remainingStock === null) {
+      throw new BadRequestException("El producto no tiene stock disponible");
+    }
 
-    const savedOrder = await this.orderRepository.save(order);
+    try {
+      const order = this.orderRepository.create({
+        ...createOrderDto,
+        buyerId,
+        total: product.price,
+        status: OrderStatus.PENDING,
+      });
 
-    await this.productsService.update(product.id, { status: 'sold' as any });
+      const savedOrder = await this.orderRepository.save(order);
 
-    return savedOrder;
+      // Si se agotó la última unidad, el producto queda marcado como vendido.
+      if (remainingStock === 0) {
+        await this.productsService.update(product.id, {
+          status: ProductStatus.SOLD,
+        } as any);
+      }
+
+      return savedOrder;
+    } catch (err) {
+      // Compensación: devuelve la unidad reservada si la orden no se pudo crear.
+      await this.productsService.incrementStock(product.id);
+      throw err;
+    }
+  }
+
+  /** Restaura una unidad de stock y reabre el producto si estaba vendido. */
+  private async restoreStock(productId: string): Promise<void> {
+    const product = await this.productsService.findOne(productId);
+    await this.productsService.incrementStock(productId);
+    if (product.status === ProductStatus.SOLD) {
+      await this.productsService.update(productId, {
+        status: ProductStatus.PUBLISHED,
+      } as any);
+    }
+  }
+
+  private assertOwner(order: Order, userId: string, relation: 'buyer' | 'seller') {
+    const isBuyer = order.buyerId === userId;
+    const isSeller = order.product?.sellerId === userId;
+    const allowed = relation === 'buyer' ? isBuyer : isSeller;
+    if (!allowed) {
+      throw new ForbiddenException(
+        relation === 'buyer'
+          ? 'Esta orden no te pertenece'
+          : 'Solo el vendedor del producto puede gestionar esta orden',
+      );
+    }
+  }
+
+  /** Confirma el pago del comprador y deja los fondos en custodia. */
+  async pay(orderId: string, buyerId: string): Promise<Order> {
+    const order = await this.findOne(orderId);
+    this.assertOwner(order, buyerId, 'buyer');
+
+    if (order.status !== OrderStatus.PENDING) {
+      throw new BadRequestException('La orden no está pendiente de pago');
+    }
+
+    order.status = OrderStatus.PAID;
+    order.custodyStartDate = new Date();
+    return this.orderRepository.save(order);
+  }
+
+  /** El vendedor marca el producto como enviado. */
+  async ship(orderId: string, sellerId: string): Promise<Order> {
+    const order = await this.findOne(orderId);
+    this.assertOwner(order, sellerId, 'seller');
+
+    const shippable = [OrderStatus.PAID, OrderStatus.IN_CUSTODY];
+    if (!shippable.includes(order.status)) {
+      throw new BadRequestException(
+        'Solo se pueden enviar órdenes pagadas y en custodia',
+      );
+    }
+
+    order.status = OrderStatus.SHIPPED;
+    return this.orderRepository.save(order);
+  }
+
+  /** El comprador confirma la recepción del producto. */
+  async deliver(orderId: string, buyerId: string): Promise<Order> {
+    const order = await this.findOne(orderId);
+    this.assertOwner(order, buyerId, 'buyer');
+
+    if (order.status !== OrderStatus.SHIPPED) {
+      throw new BadRequestException('Solo se pueden recibir órdenes enviadas');
+    }
+
+    order.status = OrderStatus.DELIVERED;
+    order.custodyEndDate = new Date();
+    return this.orderRepository.save(order);
   }
 
   private daysLeft(from: Date, until: Date): number {
-    return Math.max(0, Math.ceil((until.getTime() - from.getTime()) / MS_PER_DAY));
+    return Math.max(
+      0,
+      Math.ceil((until.getTime() - from.getTime()) / MS_PER_DAY),
+    );
   }
 
   async getProtection(orderId: string): Promise<Record<string, unknown>> {
     const order = await this.findOne(orderId);
     const now = new Date();
-    const escrowUntil = new Date(order.createdAt.getTime() + RETURN_WINDOW_DAYS * MS_PER_DAY);
-    const coverageUntil = new Date(order.createdAt.getTime() + COVERAGE_DAYS * MS_PER_DAY);
+    const escrowUntil = new Date(
+      order.createdAt.getTime() + RETURN_WINDOW_DAYS * MS_PER_DAY,
+    );
+    const coverageUntil = new Date(
+      order.createdAt.getTime() + COVERAGE_DAYS * MS_PER_DAY,
+    );
 
     return {
       orderId,
@@ -63,69 +167,86 @@ export class OrdersService {
         returnWindowDays: RETURN_WINDOW_DAYS,
         coverageDays: COVERAGE_DAYS,
         returnPolicy:
-          'El dinero de la compra queda paralizado durante 10 días. Durante ese plazo podés solicitar la devolución. Pasados los 10 días ya no se aceptan devoluciones, pero la cobertura de la empresa sigue activa.',
+          "El dinero de la compra queda paralizado durante 10 días. Durante ese plazo podés solicitar la devolución. Pasados los 10 días ya no se aceptan devoluciones, pero la cobertura de la empresa sigue activa.",
         coveragePolicy:
-          'La cobertura de TechShield llega hasta 45 días desde la compra: un técnico de la empresa puede revisar o reparar el producto en tu domicilio.',
+          "La cobertura de TechShield llega hasta 45 días desde la compra: un técnico de la empresa puede revisar o reparar el producto en tu domicilio.",
         damagePolicy:
-          'Si el producto devuelto presenta daños que no estaban antes de la compra, el comprador o la empresa se hacen cargo de los daños según la evaluación del laboratorio.',
+          "Si el producto devuelto presenta daños que no estaban antes de la compra, el comprador o la empresa se hacen cargo de los daños según la evaluación del laboratorio.",
       },
     };
   }
 
-  async requestReturn(orderId: string, buyerId: string, reason: string): Promise<Order> {
+  async requestReturn(
+    orderId: string,
+    buyerId: string,
+    reason: string,
+  ): Promise<Order> {
     const order = await this.findOne(orderId);
 
     if (order.buyerId !== buyerId) {
-      throw new ForbiddenException('Esta orden no te pertenece');
+      throw new ForbiddenException("Esta orden no te pertenece");
     }
 
-    const refundable = [OrderStatus.PAID, OrderStatus.IN_CUSTODY, OrderStatus.DELIVERED];
+    const refundable = [
+      OrderStatus.PAID,
+      OrderStatus.IN_CUSTODY,
+      OrderStatus.DELIVERED,
+    ];
     if (!refundable.includes(order.status)) {
-      throw new BadRequestException('Esta orden no puede devolverse');
+      throw new BadRequestException("Esta orden no puede devolverse");
     }
 
     const protection = await this.getProtection(orderId);
     if (!protection.returnWindowOpen) {
       throw new BadRequestException(
-        'La ventana de devolución de 10 días ya venció. Podés solicitar cobertura de la empresa (hasta 45 días).',
+        "La ventana de devolución de 10 días ya venció. Podés solicitar cobertura de la empresa (hasta 45 días).",
       );
     }
 
     order.status = OrderStatus.REFUNDED;
-    order.cancellationReason = reason || 'Devolución solicitada por el comprador';
+    order.cancellationReason =
+      reason || "Devolución solicitada por el comprador";
     order.custodyEndDate = new Date();
     const saved = await this.orderRepository.save(order);
 
     // El producto vuelve al laboratorio: se le hacen revisiones y testeo antes de revenderlo
+    await this.restoreStock(order.productId);
     await this.productsService.update(order.productId, {
-      status: 'published' as any,
+      status: ProductStatus.PUBLISHED,
       verified: false,
-    });
+    } as any);
 
     return saved;
   }
 
-  async requestCoverage(orderId: string, buyerId: string): Promise<Record<string, unknown>> {
+  async requestCoverage(
+    orderId: string,
+    buyerId: string,
+  ): Promise<Record<string, unknown>> {
     const order = await this.findOne(orderId);
 
     if (order.buyerId !== buyerId) {
-      throw new ForbiddenException('Esta orden no te pertenece');
+      throw new ForbiddenException("Esta orden no te pertenece");
     }
 
     if (order.status !== OrderStatus.DELIVERED) {
-      throw new BadRequestException('La cobertura aplica solo a productos entregados');
+      throw new BadRequestException(
+        "La cobertura aplica solo a productos entregados",
+      );
     }
 
     const protection = await this.getProtection(orderId);
     if (!protection.coverageActive) {
-      throw new BadRequestException('La cobertura de la empresa (45 días) ya venció');
+      throw new BadRequestException(
+        "La cobertura de la empresa (45 días) ya venció",
+      );
     }
 
     return {
       ticketId: `COV-${order.id.slice(0, 8).toUpperCase()}`,
       orderId,
       message:
-        'Solicitud de cobertura registrada. Un técnico de TechShield se contactará para revisar o reparar el producto.',
+        "Solicitud de cobertura registrada. Un técnico de TechShield se contactará para revisar o reparar el producto.",
       coverageDaysLeft: protection.coverageDaysLeft,
       coverageUntil: protection.coverageUntil,
     };
@@ -139,14 +260,45 @@ export class OrdersService {
     });
   }
 
+  async findBySeller(sellerId: string): Promise<Record<string, unknown>[]> {
+    const orders = await this.orderRepository.find({
+      where: { product: { sellerId } },
+      relations: ['product', 'buyer'],
+      order: { createdAt: 'DESC' },
+    });
+
+    // Se expone solo la información necesaria del comprador (sin datos sensibles).
+    return orders.map((order) => ({
+      id: order.id,
+      total: order.total,
+      status: order.status,
+      shippingAddress: order.shippingAddress,
+      paymentMethod: order.paymentMethod,
+      custodyStartDate: order.custodyStartDate,
+      custodyEndDate: order.custodyEndDate,
+      cancellationReason: order.cancellationReason,
+      productId: order.productId,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      product: order.product,
+      buyer: order.buyer
+        ? {
+            id: order.buyer.id,
+            name: order.buyer.name,
+            email: order.buyer.email,
+          }
+        : null,
+    }));
+  }
+
   async findOne(id: string): Promise<Order> {
     const order = await this.orderRepository.findOne({
       where: { id },
-      relations: ['buyer', 'product'],
+      relations: ["product"],
     });
 
     if (!order) {
-      throw new NotFoundException('Orden no encontrada');
+      throw new NotFoundException("Orden no encontrada");
     }
 
     return order;
@@ -158,16 +310,27 @@ export class OrdersService {
     return this.orderRepository.save(order);
   }
 
-  async cancel(id: string): Promise<Order> {
+  async cancel(id: string, userId: string): Promise<Order> {
     const order = await this.findOne(id);
 
-    if (order.status !== OrderStatus.PENDING) {
-      throw new BadRequestException('Solo se pueden cancelar órdenes pendientes');
+    const isBuyer = order.buyerId === userId;
+    const isSeller = order.product?.sellerId === userId;
+    if (!isBuyer && !isSeller) {
+      throw new ForbiddenException("Esta orden no te pertenece");
+    }
+
+    const cancellable = [OrderStatus.PENDING, OrderStatus.PAID];
+    if (!cancellable.includes(order.status)) {
+      throw new BadRequestException(
+        "Solo se pueden cancelar órdenes pendientes o pagadas",
+      );
     }
 
     order.status = OrderStatus.CANCELLED;
-    await this.productsService.update(order.productId, { status: 'published' as any });
+    order.custodyEndDate = new Date();
+    const saved = await this.orderRepository.save(order);
+    await this.restoreStock(order.productId);
 
-    return this.orderRepository.save(order);
+    return saved;
   }
 }

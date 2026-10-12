@@ -2,17 +2,17 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import { Repository, MoreThan } from 'typeorm';
-import { createHash, randomUUID } from 'crypto';
-import { UsersService } from '../users/users.service';
-import { User } from '../users/user.entity';
-import { RefreshToken } from './entities/refresh-token.entity';
-import { LoginDto } from '../users/dto';
-import * as bcrypt from 'bcrypt';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { JwtService } from "@nestjs/jwt";
+import { ConfigService } from "@nestjs/config";
+import { Repository, MoreThan } from "typeorm";
+import { createHash, randomUUID } from "crypto";
+import { UsersService } from "../users/users.service";
+import { User } from "../users/user.entity";
+import { RefreshToken } from "./entities/refresh-token.entity";
+import { LoginDto } from "../users/dto";
+import * as bcrypt from "bcrypt";
 
 const OTP_TTL_MS = 5 * 60 * 1000;
 
@@ -28,7 +28,7 @@ export interface OtpChallenge {
 }
 
 function hashToken(token: string): string {
-  return createHash('sha256').update(token).digest('hex');
+  return createHash("sha256").update(token).digest("hex");
 }
 
 @Injectable()
@@ -45,13 +45,13 @@ export class AuthService {
     const user = await this.usersService.findByEmail(email);
 
     if (!user) {
-      throw new UnauthorizedException('Credenciales inválidas');
+      throw new UnauthorizedException("Credenciales inválidas");
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Credenciales inválidas');
+      throw new UnauthorizedException("Credenciales inválidas");
     }
 
     delete (user as any).password;
@@ -65,9 +65,9 @@ export class AuthService {
   }
 
   private async issueRefreshToken(userId: string): Promise<string> {
-    const refreshExp = this.configService.get('JWT_REFRESH_EXPIRATION', '30d');
+    const refreshExp = this.configService.get("JWT_REFRESH_EXPIRATION", "30d");
     const refresh = this.jwtService.sign(
-      { sub: userId, purpose: 'refresh', jti: randomUUID() },
+      { sub: userId, purpose: "refresh", jti: randomUUID() },
       { expiresIn: refreshExp },
     );
     const payload = this.jwtService.decode(refresh) as { exp: number };
@@ -102,8 +102,8 @@ export class AuthService {
 
     if (user.otpEnabled) {
       const otpToken = this.jwtService.sign(
-        { sub: user.id, purpose: 'otp' },
-        { expiresIn: '5m' },
+        { sub: user.id, purpose: "otp" },
+        { expiresIn: "5m" },
       );
       return { requiresOtp: true, otpToken };
     }
@@ -111,16 +111,22 @@ export class AuthService {
     return this.buildSuccess(user);
   }
 
-  async requestOtp(otpToken: string): Promise<{ otpSent: boolean; code: string }> {
+  async requestOtp(
+    otpToken: string,
+  ): Promise<{ otpSent: boolean; code: string }> {
     const payload = this.jwtService.verify(otpToken);
-    if (payload.purpose !== 'otp') {
-      throw new BadRequestException('Token inválido');
+    if (payload.purpose !== "otp") {
+      throw new BadRequestException("Token inválido");
     }
 
     const user = await this.usersService.findOne(payload.sub);
     const code = String(Math.floor(100000 + Math.random() * 900000));
 
-    await this.usersService.setOtpCode(user.id, code, new Date(Date.now() + OTP_TTL_MS));
+    await this.usersService.setOtpCode(
+      user.id,
+      code,
+      new Date(Date.now() + OTP_TTL_MS),
+    );
 
     // Demo: no hay SMS/email, se devuelve el código para poder probar el flujo
     return { otpSent: true, code };
@@ -128,18 +134,21 @@ export class AuthService {
 
   async verifyOtp(otpToken: string, code: string): Promise<LoginSuccess> {
     const payload = this.jwtService.verify(otpToken);
-    if (payload.purpose !== 'otp') {
-      throw new BadRequestException('Token inválido');
+    if (payload.purpose !== "otp") {
+      throw new BadRequestException("Token inválido");
     }
 
     const user = await this.usersService.findOne(payload.sub);
 
     if (!user.otpCode || user.otpCode !== code) {
-      throw new UnauthorizedException('Código OTP incorrecto');
+      throw new UnauthorizedException("Código OTP incorrecto");
     }
 
-    if (!user.otpExpiresAt || new Date(user.otpExpiresAt).getTime() < Date.now()) {
-      throw new UnauthorizedException('El código OTP expiró');
+    if (
+      !user.otpExpiresAt ||
+      new Date(user.otpExpiresAt).getTime() < Date.now()
+    ) {
+      throw new UnauthorizedException("El código OTP expiró");
     }
 
     await this.usersService.clearOtpCode(user.id);
@@ -159,10 +168,10 @@ export class AuthService {
     try {
       payload = this.jwtService.verify(refreshToken);
     } catch {
-      throw new UnauthorizedException('Refresh token inválido o expirado');
+      throw new UnauthorizedException("Refresh token inválido o expirado");
     }
-    if (payload.purpose !== 'refresh' || !payload.sub) {
-      throw new UnauthorizedException('Refresh token inválido');
+    if (payload.purpose !== "refresh" || !payload.sub) {
+      throw new UnauthorizedException("Refresh token inválido");
     }
 
     const stored = await this.refreshTokenRepository.findOne({
@@ -173,12 +182,12 @@ export class AuthService {
       },
     });
     if (!stored) {
-      throw new UnauthorizedException('Refresh token inválido o revocado');
+      throw new UnauthorizedException("Refresh token inválido o revocado");
     }
 
     const user = await this.usersService.findOne(payload.sub);
     if (!user || user.isActive === false) {
-      throw new UnauthorizedException('Usuario inactivo');
+      throw new UnauthorizedException("Usuario inactivo");
     }
 
     // Rotación: se revoca el usado y se emite un par nuevo
@@ -199,7 +208,7 @@ export class AuthService {
   async assertActiveUser(userId: string) {
     const user = await this.usersService.findOne(userId);
     if (!user || user.isActive === false || user.deletedAt) {
-      throw new UnauthorizedException('Usuario inactivo o no encontrado');
+      throw new UnauthorizedException("Usuario inactivo o no encontrado");
     }
     return user;
   }

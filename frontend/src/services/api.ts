@@ -106,7 +106,12 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     throw new ApiError(response.status, message);
   }
 
-  return (await response.json()) as T;
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  const text = await response.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
 
 export function login(email: string, password: string): Promise<LoginResponse> {
@@ -192,6 +197,7 @@ export function getProducts(filters: ProductFilters = {}): Promise<PaginatedProd
   if (filters.noMining === true) params.set('noMining', 'true');
   if (filters.hideWithComplaints === true) params.set('hideWithComplaints', 'true');
   if (filters.hideSuspicious === true) params.set('hideSuspicious', 'true');
+  if (filters.inStock === true) params.set('inStock', 'true');
   if (filters.sellerTier) params.set('sellerTier', filters.sellerTier);
   if (filters.search) params.set('search', filters.search);
   if (filters.page !== undefined) params.set('page', String(filters.page));
@@ -217,6 +223,7 @@ export interface CreateProductInput {
   physicalState?: string;
   brand?: string;
   model?: string;
+  stock?: number;
 }
 
 export function createProduct(input: CreateProductInput): Promise<ApiProduct> {
@@ -224,6 +231,36 @@ export function createProduct(input: CreateProductInput): Promise<ApiProduct> {
     method: 'POST',
     body: JSON.stringify(input),
   });
+}
+
+export interface UpdateProductInput {
+  title?: string;
+  description?: string;
+  price?: number;
+  images?: string[];
+  hoursOfUse?: number;
+  reportedHoursOfUse?: number;
+  usageType?: string;
+  physicalState?: string;
+  status?: string;
+  verified?: boolean;
+  sealed?: boolean;
+  stock?: number;
+}
+
+export function updateProduct(id: string, input: UpdateProductInput): Promise<ApiProduct> {
+  return request<ApiProduct>(`/products/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteProduct(id: string): Promise<void> {
+  return request<void>(`/products/${id}`, { method: 'DELETE' });
+}
+
+export function getProductsBySeller(sellerId: string): Promise<ApiProduct[]> {
+  return request<ApiProduct[]>(`/products/seller/${sellerId}`);
 }
 
 export interface SecurityProfile {
@@ -360,6 +397,7 @@ export interface OrderItem {
   productId: string;
   createdAt: string;
   product?: ApiProduct;
+  buyerId?: string;
 }
 
 export interface CreateOrderInput {
@@ -398,8 +436,44 @@ export function getMyOrders(): Promise<OrderItem[]> {
   return request<OrderItem[]>('/orders');
 }
 
+export interface SellerSale {
+  id: string;
+  total: number;
+  status: string;
+  shippingAddress?: string;
+  paymentMethod?: string;
+  custodyStartDate?: string;
+  custodyEndDate?: string;
+  cancellationReason?: string;
+  productId: string;
+  createdAt: string;
+  updatedAt: string;
+  product?: ApiProduct;
+  buyer?: { id: string; name: string; email: string } | null;
+}
+
+export function getMySales(): Promise<SellerSale[]> {
+  return request<SellerSale[]>('/orders/sales');
+}
+
 export function getOrder(id: string): Promise<OrderItem> {
   return request<OrderItem>(`/orders/${id}`);
+}
+
+export function payOrder(id: string): Promise<OrderItem> {
+  return request<OrderItem>(`/orders/${id}/pay`, { method: 'POST' });
+}
+
+export function shipOrder(id: string): Promise<OrderItem> {
+  return request<OrderItem>(`/orders/${id}/ship`, { method: 'POST' });
+}
+
+export function deliverOrder(id: string): Promise<OrderItem> {
+  return request<OrderItem>(`/orders/${id}/deliver`, { method: 'POST' });
+}
+
+export function cancelOrder(id: string): Promise<OrderItem> {
+  return request<OrderItem>(`/orders/${id}/cancel`, { method: 'POST' });
 }
 
 export function getOrderProtection(id: string): Promise<OrderProtection> {

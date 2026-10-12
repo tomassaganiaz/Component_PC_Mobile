@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 
 import AppHeader from '../components/AppHeader';
 import AppIcon from '../components/AppIcon';
@@ -8,10 +8,17 @@ import ReviewModal from '../components/ReviewModal';
 import { Avatar } from '../components/ui';
 import { useThemeCtx } from '../context/ThemeContext';
 import { useI18n } from '../i18n';
-import { getMyOrders, getProfile, verifyIdentity, verifyPhone } from '../services/api';
+import {
+  deleteProduct,
+  getMyOrders,
+  getProductsBySeller,
+  getProfile,
+  verifyIdentity,
+  verifyPhone,
+} from '../services/api';
 import type { OrderItem } from '../services/api';
 import { colors, glow, shadow } from '../theme';
-import type { LoginSuccess, Nav, UserProfile } from '../types';
+import type { ApiProduct, LoginSuccess, Nav, UserProfile } from '../types';
 
 function Row({
   icon,
@@ -56,6 +63,11 @@ export default function ProfileScreen({
   const [reviewedOrderIds, setReviewedOrderIds] = useState<Set<string>>(new Set());
   const [verifying, setVerifying] = useState<'phone' | 'identity' | null>(null);
   const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [listings, setListings] = useState<ApiProduct[]>([]);
+  const [listingsLoading, setListingsLoading] = useState(true);
+  const [listingsError, setListingsError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<ApiProduct | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const refreshProfile = useCallback(async () => {
     try {
@@ -113,6 +125,41 @@ export default function ProfileScreen({
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await getProductsBySeller(profile.id);
+        if (!cancelled) setListings(data);
+      } catch (err) {
+        if (!cancelled) {
+          setListingsError(err instanceof Error ? err.message : 'No se pudieron cargar tus publicaciones.');
+        }
+      } finally {
+        if (!cancelled) setListingsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [profile.id]);
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    const id = confirmDelete.id;
+    setDeletingId(id);
+    setListingsError(null);
+    try {
+      await deleteProduct(id);
+      setListings((prev) => prev.filter((p) => p.id !== id));
+      setConfirmDelete(null);
+    } catch (err) {
+      setListingsError(err instanceof Error ? err.message : 'No se pudo eliminar el producto.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const roleLabel =
     profile.role === 'seller' ? 'VENDEDOR' : profile.role === 'admin' ? 'ADMIN' : 'COMPRADOR';
   const idVerified = profile.documentVerified === true;
@@ -132,6 +179,18 @@ export default function ProfileScreen({
       : tierLabel === 'NORMAL'
         ? colors.accentCyan
         : colors.diagnosticRed;
+
+  const listingStatus = (p: ApiProduct) => {
+    if (p.status === 'sold') {
+      return { label: t('profile.listingSold'), cls: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300' };
+    }
+    if (p.status === 'published' || p.status === 'verified') {
+      return (p.stock ?? 1) <= 0
+        ? { label: t('profile.listingOutOfStock'), cls: 'border-red-500/40 bg-red-500/10 text-red-400' }
+        : { label: t('profile.listingPublished'), cls: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300' };
+    }
+    return { label: t('profile.listingDraft'), cls: 'border-line bg-inset text-text-secondary' };
+  };
 
   return (
     <View className="flex-1 bg-surface">
@@ -336,6 +395,87 @@ export default function ProfileScreen({
           )}
         </View>
 
+        {/* My listings */}
+        <View className="px-4 pt-4">
+          <View className="mb-2 flex-row items-center justify-between">
+            <Text className="font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+              {t('profile.myListings')} ({listings.length})
+            </Text>
+            <Pressable onPress={() => nav.go({ name: 'publish' })} className="flex-row items-center gap-1">
+              <AppIcon name="add" size={14} color={colors.primary} />
+              <Text className="font-mono text-[11px] font-medium text-primary">{t('profile.newListing')}</Text>
+            </Pressable>
+          </View>
+
+          {listingsError ? (
+            <View className="mb-2 flex-row items-start gap-2 rounded-lg border border-red-500/40 bg-red-500/10 p-3">
+              <AppIcon name="report" size={18} color={colors.diagnosticRed} />
+              <Text className="flex-1 text-xs leading-relaxed text-red-400">{listingsError}</Text>
+            </View>
+          ) : null}
+
+          {listingsLoading ? (
+            <View className="items-center justify-center py-8">
+              <ActivityIndicator color={colors.accentCyan} />
+            </View>
+          ) : listings.length === 0 ? (
+            <View className="flex-row items-center gap-2.5 rounded-xl border border-line bg-panel p-3">
+              <AppIcon name="inventory_2" size={18} color={colors.textMuted} />
+              <Text className="flex-1 text-xs leading-relaxed text-text-secondary">
+                {t('profile.noListings')}
+              </Text>
+            </View>
+          ) : (
+            <View className="flex flex-col gap-2">
+              {listings.map((item) => {
+                const meta = listingStatus(item);
+                const isSold = item.status === 'sold';
+                const deleting = deletingId === item.id;
+                return (
+                  <View key={item.id} className="rounded-xl border border-line bg-panel p-3">
+                    <View className="flex-row items-center gap-3">
+                      <View className="h-9 w-9 items-center justify-center rounded-lg bg-elevated">
+                        <AppIcon name="inventory_2" size={18} color={colors.primary} />
+                      </View>
+                      <View className="min-w-0 flex-1">
+                        <Text className="truncate text-sm font-semibold text-text-primary">{item.title}</Text>
+                        <Text className="font-mono text-[11px] text-text-secondary">
+                          ${Number(item.price).toFixed(2)} · #{item.id.slice(0, 6).toUpperCase()}
+                        </Text>
+                      </View>
+                      <View className={`flex-row items-center gap-1 rounded border px-2 py-0.5 ${meta.cls}`}>
+                        <Text className="font-mono text-[10px] font-semibold uppercase tracking-wider">
+                          {meta.label}
+                        </Text>
+                      </View>
+                    </View>
+                    <View className="mt-2 flex-row items-center justify-between">
+                      <Text className="font-mono text-[11px] text-text-muted">
+                        {t('profile.stockLabel')}: {item.stock ?? 0}
+                      </Text>
+                      {isSold ? (
+                        <Pressable
+                          onPress={() => setConfirmDelete(item)}
+                          disabled={deleting}
+                          className="flex-row items-center gap-1.5 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-1.5"
+                          style={deleting ? { opacity: 0.6 } : undefined}
+                        >
+                          {deleting ? (
+                            <ActivityIndicator size="small" color={colors.diagnosticRed} />
+                          ) : (
+                            <AppIcon name="delete" size={15} color={colors.diagnosticRed} />
+                          )}
+                          <Text className="text-xs font-semibold text-red-400">{t('profile.deleteListing')}</Text>
+                        </Pressable>
+                      ) : null}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </View>
+
         {/* Review modal */}
         <ReviewModal
           visible={!!reviewOrder}
@@ -345,6 +485,50 @@ export default function ProfileScreen({
             setReviewedOrderIds((prev) => new Set(prev).add(orderId));
           }}
         />
+
+        {/* Delete confirmation */}
+        <Modal
+          visible={!!confirmDelete}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setConfirmDelete(null)}
+        >
+          <View className="flex-1 items-center justify-center bg-black/70 px-6">
+            <View className="w-full rounded-2xl border border-line bg-panel p-5" style={shadow.card}>
+              <View className="flex-row items-center gap-2">
+                <AppIcon name="delete" size={20} color={colors.diagnosticRed} />
+                <Text className="text-lg font-semibold text-text-primary">{t('profile.deleteListing')}</Text>
+              </View>
+              <Text className="mt-1 text-xs leading-relaxed text-text-secondary">
+                {t('profile.deleteConfirm')}
+              </Text>
+              {confirmDelete ? (
+                <Text className="mt-2 text-sm font-semibold text-text-primary">{confirmDelete.title}</Text>
+              ) : null}
+              <View className="mt-4 flex-row gap-2">
+                <Pressable
+                  onPress={() => setConfirmDelete(null)}
+                  className="flex-1 items-center justify-center rounded-xl border border-line bg-elevated py-3"
+                >
+                  <Text className="text-sm font-semibold text-text-secondary">{t('common.cancel')}</Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleDelete}
+                  disabled={!!deletingId}
+                  className="flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-red-500 py-3"
+                  style={deletingId ? { opacity: 0.7 } : undefined}
+                >
+                  {deletingId ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <AppIcon name="delete" size={16} color="#ffffff" />
+                  )}
+                  <Text className="text-sm font-semibold text-white">{t('profile.deleteListing')}</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
         {/* Quick actions */}
         <View className="px-4 pt-4">
@@ -362,6 +546,18 @@ export default function ProfileScreen({
               <Text className="flex-1 text-sm text-text-primary">{t('profile.publishProduct')}</Text>
               <AppIcon name="arrow_forward" size={18} color={colors.textMuted} />
             </Pressable>
+            {profile.role === 'seller' || profile.role === 'admin' ? (
+              <Pressable
+                onPress={() => nav.go({ name: 'sales' })}
+                className="flex-row items-center gap-3 rounded-xl border border-line bg-panel p-3"
+              >
+                <View className="h-8 w-8 items-center justify-center rounded-lg bg-elevated">
+                  <AppIcon name="sell" size={17} color={colors.accentCyan} />
+                </View>
+                <Text className="flex-1 text-sm text-text-primary">{t('profile.mySales')}</Text>
+                <AppIcon name="arrow_forward" size={18} color={colors.textMuted} />
+              </Pressable>
+            ) : null}
             <Pressable
               onPress={() => nav.go({ name: 'inspection' })}
               className="flex-row items-center gap-3 rounded-xl border border-line bg-panel p-3"

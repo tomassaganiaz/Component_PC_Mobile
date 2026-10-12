@@ -53,8 +53,42 @@ export class ProductsService {
     const product = this.productRepository.create({
       ...createProductDto,
       sellerId,
+      status: ProductStatus.PUBLISHED,
     });
     return this.productRepository.save(product);
+  }
+
+  /**
+   * Descuenta una unidad de stock de forma atómica (UPDATE condicional).
+   * Devuelve el stock restante, o `null` si no había stock disponible.
+   * Evita la sobreventa ante compras concurrentes.
+   */
+  async decrementStock(productId: string): Promise<number | null> {
+    const result = await this.productRepository
+      .createQueryBuilder()
+      .update(Product)
+      .set({ stock: () => 'stock - 1' })
+      .where('id = :id', { id: productId })
+      .andWhere('stock > 0')
+      .andWhere('deleted_at IS NULL')
+      .returning(['stock'])
+      .execute();
+
+    if (!result.affected || !result.raw?.length) {
+      return null;
+    }
+    return Number(result.raw[0].stock);
+  }
+
+  /** Incrementa una unidad de stock (reposición o compensación). */
+  async incrementStock(productId: string): Promise<void> {
+    await this.productRepository
+      .createQueryBuilder()
+      .update(Product)
+      .set({ stock: () => 'stock + 1' })
+      .where('id = :id', { id: productId })
+      .andWhere('deleted_at IS NULL')
+      .execute();
   }
 
   private computeTier(
@@ -260,6 +294,10 @@ export class ProductsService {
 
     if (filters?.escrow === true) {
       query.andWhere("product.escrowProtected = :escrow", { escrow: true });
+    }
+
+    if (filters?.inStock === true) {
+      query.andWhere("product.stock > 0");
     }
 
     if (filters?.warranty === "extended") {

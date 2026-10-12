@@ -65,6 +65,7 @@ export default function PublishScreen({ nav }: { nav: Nav }) {
   const [category, setCategory] = useState('cpu');
   const [condition, setCondition] = useState(0);
   const [price, setPrice] = useState('');
+  const [stock, setStock] = useState('1');
   const [description, setDescription] = useState('');
   const [usageType, setUsageType] = useState('');
   const [hours, setHours] = useState('');
@@ -86,6 +87,10 @@ export default function PublishScreen({ nav }: { nav: Nav }) {
       setError(t('publish.errPrice'));
       return;
     }
+    if (stock.trim() && (Number.isNaN(Number(stock)) || Number(stock) < 0)) {
+      setError(t('publish.errStock'));
+      return;
+    }
     if (description.trim().length < 10) {
       setError(t('publish.errDesc'));
       return;
@@ -105,6 +110,7 @@ export default function PublishScreen({ nav }: { nav: Nav }) {
         physicalState: physicalState.trim() || undefined,
         hoursOfUse: hours.trim() ? Number(hours) : undefined,
         reportedHoursOfUse: reportedHours.trim() ? Number(reportedHours) : undefined,
+        stock: stock.trim() ? Number(stock) : 1,
       });
       setPublishedId(created.id);
     } catch (err) {
@@ -207,9 +213,15 @@ export default function PublishScreen({ nav }: { nav: Nav }) {
             <Segmented options={[t('publish.newSealed'), t('publish.used')]} value={condition} onChange={setCondition} />
           </View>
 
-          <View>
-            <FieldLabel>{t('publish.fPrice')}</FieldLabel>
-            <Input value={price} onChangeText={setPrice} placeholder="Ej: 340" numeric />
+          <View className="flex-row gap-3">
+            <View className="flex-1">
+              <FieldLabel>{t('publish.fPrice')}</FieldLabel>
+              <Input value={price} onChangeText={setPrice} placeholder="Ej: 340" numeric />
+            </View>
+            <View className="flex-1">
+              <FieldLabel>{t('publish.fStock')}</FieldLabel>
+              <Input value={stock} onChangeText={setStock} placeholder="Ej: 1" numeric />
+            </View>
           </View>
 
           <View>

@@ -58,6 +58,7 @@ function ProtectedRouter() {
       <Stack.Screen name="publish" />
       <Stack.Screen name="inspection" />
       <Stack.Screen name="profile" />
+      <Stack.Screen name="sales" />
       <Stack.Screen name="analytics" />
       <Stack.Screen name="product/[id]" />
     </Stack>

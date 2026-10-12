@@ -4,8 +4,8 @@
  * - Assets same-origin: stale-while-revalidate (usa caché, actualiza en segundo plano).
  * - Requests a la API e imágenes remotas: pasan directo (nunca se cachean).
  */
-const VERSION = 'techshield-v1';
-const SHELL = ['/', '/manifest.json', '/logo192.png', '/logo512.png', '/index.html'];
+const VERSION = 'techshield-v2';
+const SHELL = ['/', '/manifest.json', '/logo192.png', '/logo512.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -33,6 +33,17 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
+  // Nunca cachear el bundle/HMR de Metro (evita servir codigo viejo en dev).
+  if (
+    url.pathname.includes('/node_modules/') ||
+    url.pathname.includes('.bundle') ||
+    url.pathname.includes('@react-refresh') ||
+    url.pathname.includes('/_expo/') ||
+    url.search.includes('platform=')
+  ) {
+    return;
+  }
+
   const isNavigation = req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html');
 
   if (isNavigation) {
@@ -40,14 +51,10 @@ self.addEventListener('fetch', (event) => {
       fetch(req)
         .then((res) => {
           const copy = res.clone();
-          caches.open(VERSION).then((cache) => cache.put('/index.html', copy));
+          caches.open(VERSION).then((cache) => cache.put('/', copy));
           return res;
         })
-        .catch(() =>
-          caches
-            .match('/index.html')
-            .then((cached) => cached || caches.match('/')),
-        ),
+        .catch(() => caches.match('/')),
     );
     return;
   }

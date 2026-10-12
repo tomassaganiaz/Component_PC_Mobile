@@ -1,14 +1,18 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { ReviewsService } from './reviews.service';
-import { Review, ReviewType, ReviewStatus, TrustBadge } from './review.entity';
-import { OrdersService } from '../orders/orders.service';
-import { UsersService } from '../users/users.service';
-import { OrderStatus } from '../orders/order.entity';
-import { NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { Test, TestingModule } from "@nestjs/testing";
+import { getRepositoryToken } from "@nestjs/typeorm";
+import { ReviewsService } from "./reviews.service";
+import { Review, ReviewType, ReviewStatus, TrustBadge } from "./review.entity";
+import { OrdersService } from "../orders/orders.service";
+import { UsersService } from "../users/users.service";
+import { OrderStatus } from "../orders/order.entity";
+import {
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from "@nestjs/common";
+import { DataSource } from "typeorm";
 
-describe('ReviewsService', () => {
+describe("ReviewsService", () => {
   let service: ReviewsService;
   let ordersService: OrdersService;
 
@@ -25,7 +29,9 @@ describe('ReviewsService', () => {
   };
 
   const mockUsersService = {
-    findOne: jest.fn().mockResolvedValue({ id: 'user-id', acceptsTesting: true }),
+    findOne: jest
+      .fn()
+      .mockResolvedValue({ id: "user-id", acceptsTesting: true }),
   };
 
   const mockDataSource = {
@@ -51,31 +57,31 @@ describe('ReviewsService', () => {
     jest.clearAllMocks();
   });
 
-  describe('create', () => {
+  describe("create", () => {
     const createDto = {
-      productId: 'product-uuid',
-      orderId: 'order-uuid',
+      productId: "product-uuid",
+      orderId: "order-uuid",
       rating: 5,
       type: ReviewType.POSITIVE,
-      comment: 'Excelente producto',
+      comment: "Excelente producto",
       sellerRating: 5,
       productRating: 5,
     };
 
-    it('should create a review for delivered order', async () => {
+    it("should create a review for delivered order", async () => {
       const mockOrder = {
-        id: 'order-uuid',
-        buyerId: 'buyer-uuid',
-        productId: 'product-uuid',
+        id: "order-uuid",
+        buyerId: "buyer-uuid",
+        productId: "product-uuid",
         status: OrderStatus.DELIVERED,
-        product: { sellerId: 'seller-uuid' },
+        product: { sellerId: "seller-uuid" },
       };
 
       const savedReview = {
-        id: 'review-uuid',
+        id: "review-uuid",
         ...createDto,
-        buyerId: 'buyer-uuid',
-        sellerId: 'seller-uuid',
+        buyerId: "buyer-uuid",
+        sellerId: "seller-uuid",
         isVerifiedPurchase: true,
         status: ReviewStatus.APPROVED,
       };
@@ -85,71 +91,72 @@ describe('ReviewsService', () => {
       mockRepository.create.mockReturnValue(savedReview);
       mockRepository.save.mockResolvedValue(savedReview);
 
-      const result = await service.create(createDto, 'buyer-uuid');
+      const result = await service.create(createDto, "buyer-uuid");
 
       expect(result).toEqual(savedReview);
     });
 
-    it('should throw BadRequestException if order not delivered', async () => {
+    it("should throw BadRequestException if order not delivered", async () => {
       const mockOrder = {
-        id: 'order-uuid',
-        buyerId: 'buyer-uuid',
-        productId: 'product-uuid',
+        id: "order-uuid",
+        buyerId: "buyer-uuid",
+        productId: "product-uuid",
         status: OrderStatus.PENDING,
       };
 
       mockOrdersService.findOne.mockResolvedValue(mockOrder);
 
-      await expect(service.create(createDto, 'buyer-uuid')).rejects.toThrow(
+      await expect(service.create(createDto, "buyer-uuid")).rejects.toThrow(
         BadRequestException,
       );
     });
 
-    it('should throw BadRequestException if buyer is not order owner', async () => {
+    it("should throw BadRequestException if buyer is not order owner", async () => {
       const mockOrder = {
-        id: 'order-uuid',
-        buyerId: 'other-buyer-uuid',
-        productId: 'product-uuid',
+        id: "order-uuid",
+        buyerId: "other-buyer-uuid",
+        productId: "product-uuid",
         status: OrderStatus.DELIVERED,
       };
 
       mockOrdersService.findOne.mockResolvedValue(mockOrder);
 
-      await expect(service.create(createDto, 'buyer-uuid')).rejects.toThrow(
+      await expect(service.create(createDto, "buyer-uuid")).rejects.toThrow(
         BadRequestException,
       );
     });
 
-    it('should throw ConflictException if review already exists', async () => {
+    it("should throw ConflictException if review already exists", async () => {
       const mockOrder = {
-        id: 'order-uuid',
-        buyerId: 'buyer-uuid',
-        productId: 'product-uuid',
+        id: "order-uuid",
+        buyerId: "buyer-uuid",
+        productId: "product-uuid",
         status: OrderStatus.DELIVERED,
-        product: { sellerId: 'seller-uuid' },
+        product: { sellerId: "seller-uuid" },
       };
 
       mockOrdersService.findOne.mockResolvedValue(mockOrder);
-      mockRepository.findOne.mockResolvedValue({ id: 'existing-review' });
+      mockRepository.findOne.mockResolvedValue({ id: "existing-review" });
 
-      await expect(service.create(createDto, 'buyer-uuid')).rejects.toThrow(
+      await expect(service.create(createDto, "buyer-uuid")).rejects.toThrow(
         ConflictException,
       );
     });
 
-    it('should set status to PENDING for complaints', async () => {
+    it("should set status to PENDING for complaints", async () => {
       const complaintDto = {
         ...createDto,
         type: ReviewType.COMPLAINT,
-        complaintReason: 'El producto no funciona correctamente según lo descrito',
+        complaintReason:
+          "El producto no funciona correctamente según lo descrito",
       };
 
       const mockOrder = {
-        id: 'order-uuid',
-        buyerId: 'buyer-uuid',
-        productId: 'product-uuid',
+        id: "order-uuid",
+        buyerId: "buyer-uuid",
+        productId: "product-uuid",
         status: OrderStatus.DELIVERED,
-        product: { sellerId: 'seller-uuid' },
+        product: { sellerId: "seller-uuid" },
       };
 
       mockOrdersService.findOne.mockResolvedValue(mockOrder);
@@ -157,12 +164,12 @@ describe('ReviewsService', () => {
       mockRepository.create.mockImplementation((data) => data);
       mockRepository.save.mockImplementation((data) => Promise.resolve(data));
 
-      const result = await service.create(complaintDto, 'buyer-uuid');
+      const result = await service.create(complaintDto, "buyer-uuid");
 
       expect(result.status).toEqual(ReviewStatus.PENDING);
     });
 
-    it('should throw BadRequestException if complaint has no reason', async () => {
+    it("should throw BadRequestException if complaint has no reason", async () => {
       const complaintDto = {
         ...createDto,
         type: ReviewType.COMPLAINT,
@@ -170,27 +177,27 @@ describe('ReviewsService', () => {
       };
 
       const mockOrder = {
-        id: 'order-uuid',
-        buyerId: 'buyer-uuid',
-        productId: 'product-uuid',
+        id: "order-uuid",
+        buyerId: "buyer-uuid",
+        productId: "product-uuid",
         status: OrderStatus.DELIVERED,
-        product: { sellerId: 'seller-uuid' },
+        product: { sellerId: "seller-uuid" },
       };
 
       mockOrdersService.findOne.mockResolvedValue(mockOrder);
       mockRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.create(complaintDto, 'buyer-uuid')).rejects.toThrow(
+      await expect(service.create(complaintDto, "buyer-uuid")).rejects.toThrow(
         BadRequestException,
       );
     });
   });
 
-  describe('findAll', () => {
-    it('should return paginated reviews', async () => {
+  describe("findAll", () => {
+    it("should return paginated reviews", async () => {
       const expectedReviews = [
-        { id: 'review-1', rating: 5 },
-        { id: 'review-2', rating: 4 },
+        { id: "review-1", rating: 5 },
+        { id: "review-2", rating: 4 },
       ];
 
       const mockQueryBuilder = {
@@ -211,94 +218,113 @@ describe('ReviewsService', () => {
     });
   });
 
-  describe('findBySeller', () => {
-    it('should return reviews for a seller', async () => {
+  describe("findBySeller", () => {
+    it("should return reviews for a seller", async () => {
       const expectedReviews = [
-        { id: 'review-1', sellerId: 'seller-uuid', status: ReviewStatus.APPROVED },
+        {
+          id: "review-1",
+          sellerId: "seller-uuid",
+          status: ReviewStatus.APPROVED,
+        },
       ];
 
       mockRepository.find.mockResolvedValue(expectedReviews);
 
-      const result = await service.findBySeller('seller-uuid');
+      const result = await service.findBySeller("seller-uuid");
 
       expect(result).toEqual(expectedReviews);
     });
   });
 
-  describe('findByProduct', () => {
-    it('should return reviews for a product', async () => {
+  describe("findByProduct", () => {
+    it("should return reviews for a product", async () => {
       const expectedReviews = [
-        { id: 'review-1', productId: 'product-uuid', status: ReviewStatus.APPROVED },
+        {
+          id: "review-1",
+          productId: "product-uuid",
+          status: ReviewStatus.APPROVED,
+        },
       ];
 
       mockRepository.find.mockResolvedValue(expectedReviews);
 
-      const result = await service.findByProduct('product-uuid');
+      const result = await service.findByProduct("product-uuid");
 
       expect(result).toEqual(expectedReviews);
     });
   });
 
-  describe('findOne', () => {
-    it('should return a review by id', async () => {
+  describe("findOne", () => {
+    it("should return a review by id", async () => {
       const expectedReview = {
-        id: 'review-uuid',
+        id: "review-uuid",
         rating: 5,
-        buyer: { id: 'buyer-uuid' },
-        seller: { id: 'seller-uuid' },
-        product: { id: 'product-uuid' },
+        buyer: { id: "buyer-uuid" },
+        seller: { id: "seller-uuid" },
+        product: { id: "product-uuid" },
       };
 
       mockRepository.findOne.mockResolvedValue(expectedReview);
 
-      const result = await service.findOne('review-uuid');
+      const result = await service.findOne("review-uuid");
 
       expect(result).toEqual(expectedReview);
     });
 
-    it('should throw NotFoundException if review not found', async () => {
+    it("should throw NotFoundException if review not found", async () => {
       mockRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.findOne('nonexistent-id')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne("nonexistent-id")).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
-  describe('updateStatus', () => {
-    it('should update review status', async () => {
+  describe("updateStatus", () => {
+    it("should update review status", async () => {
       const existingReview = {
-        id: 'review-uuid',
+        id: "review-uuid",
         status: ReviewStatus.PENDING,
       };
 
       const updateDto = {
-        status: 'resolved',
-        resolutionNotes: 'Queja resuelta satisfactoriamente',
+        status: "resolved",
+        resolutionNotes: "Queja resuelta satisfactoriamente",
       };
 
       mockRepository.findOne.mockResolvedValue(existingReview);
-      mockRepository.save.mockResolvedValue({ ...existingReview, ...updateDto });
+      mockRepository.save.mockResolvedValue({
+        ...existingReview,
+        ...updateDto,
+      });
 
-      const result = await service.updateStatus('review-uuid', updateDto, 'admin-uuid');
+      const result = await service.updateStatus(
+        "review-uuid",
+        updateDto,
+        "admin-uuid",
+      );
 
-      expect(result.status).toEqual('resolved');
-      expect(result.resolutionNotes).toEqual('Queja resuelta satisfactoriamente');
+      expect(result.status).toEqual("resolved");
+      expect(result.resolutionNotes).toEqual(
+        "Queja resuelta satisfactoriamente",
+      );
     });
   });
 
-  describe('getTrustBadge', () => {
-    it('should return INTERMEDIATE badge for less than 3 reviews', async () => {
+  describe("getTrustBadge", () => {
+    it("should return INTERMEDIATE badge for less than 3 reviews", async () => {
       mockRepository.find.mockResolvedValue([
         { rating: 5, type: ReviewType.POSITIVE },
         { rating: 3, type: ReviewType.NEUTRAL },
       ]);
 
-      const result = await service.getTrustBadge('seller-uuid');
+      const result = await service.getTrustBadge("seller-uuid");
 
       expect(result.badge).toEqual(TrustBadge.INTERMEDIATE);
       expect(result.totalReviews).toEqual(2);
     });
 
-    it('should return SAFE badge for high rating and low complaints', async () => {
+    it("should return SAFE badge for high rating and low complaints", async () => {
       const reviews = Array(10)
         .fill(null)
         .map(() => ({
@@ -308,13 +334,13 @@ describe('ReviewsService', () => {
 
       mockRepository.find.mockResolvedValue(reviews);
 
-      const result = await service.getTrustBadge('seller-uuid');
+      const result = await service.getTrustBadge("seller-uuid");
 
       expect(result.badge).toEqual(TrustBadge.SAFE);
       expect(result.averageRating).toBeGreaterThanOrEqual(4.0);
     });
 
-    it('should return UNSAFE badge for low rating', async () => {
+    it("should return UNSAFE badge for low rating", async () => {
       const reviews = [
         { rating: 1, type: ReviewType.COMPLAINT },
         { rating: 2, type: ReviewType.COMPLAINT },
@@ -324,12 +350,12 @@ describe('ReviewsService', () => {
 
       mockRepository.find.mockResolvedValue(reviews);
 
-      const result = await service.getTrustBadge('seller-uuid');
+      const result = await service.getTrustBadge("seller-uuid");
 
       expect(result.badge).toEqual(TrustBadge.UNSAFE);
     });
 
-    it('should return UNSAFE badge for high complaint rate', async () => {
+    it("should return UNSAFE badge for high complaint rate", async () => {
       const reviews = [
         { rating: 5, type: ReviewType.POSITIVE },
         { rating: 1, type: ReviewType.COMPLAINT },
@@ -339,7 +365,7 @@ describe('ReviewsService', () => {
 
       mockRepository.find.mockResolvedValue(reviews);
 
-      const result = await service.getTrustBadge('seller-uuid');
+      const result = await service.getTrustBadge("seller-uuid");
 
       expect(result.badge).toEqual(TrustBadge.UNSAFE);
       expect(result.complaintRate).toBeGreaterThanOrEqual(25);

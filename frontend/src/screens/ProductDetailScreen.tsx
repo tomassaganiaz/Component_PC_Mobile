@@ -5,7 +5,7 @@ import AppIcon from '../components/AppIcon';
 import ProductImage from '../components/ProductImage';
 import { Avatar, ProgressBar } from '../components/ui';
 import { useI18n } from '../i18n';
-import { createOrder, createReport, getSellerReviews, getTrustBadge } from '../services/api';
+import { createOrder, createReport, getSellerReviews, getTrustBadge, payOrder } from '../services/api';
 import type { OrderItem, ReviewItem, SecurityProfile } from '../services/api';
 import { useTrack } from '../hooks/useTrack';
 import { IMAGES } from '../data/mock';
@@ -298,6 +298,7 @@ function SellerSecurity({
 export default function ProductDetailScreen({ nav, product }: { nav: Nav; product: ExploreCard }) {
   const trackEvent = useTrack();
   const { t } = useI18n();
+  const outOfStock = (product.stock ?? 1) <= 0;
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
@@ -335,6 +336,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
   const marker = gallery[galleryIndex]?.desc ?? 'Inspección macro: Chasis frontal';
 
   const handleBuy = () => {
+    if (outOfStock) return;
     setCheckoutOpen(true);
     setOrderError(null);
     setCreatedOrder(null);
@@ -353,7 +355,15 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
         shippingAddress: shippingAddress.trim(),
         paymentMethod,
       });
-      setCreatedOrder(order);
+      // El pago se confirma de inmediato (mock): fondos en custodia. Si falla,
+      // la orden queda pendiente y se puede pagar desde el seguimiento.
+      let paid = order;
+      try {
+        paid = await payOrder(order.id);
+      } catch {
+        /* queda pendiente */
+      }
+      setCreatedOrder(paid);
       trackEvent('purchase', {
         orderId: order.id,
         productId: product.id,
@@ -501,6 +511,18 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
           <Text className="font-mono text-[11px] text-on-surface-variant">CAJA ORIGINAL + ACCESORIOS</Text>
         </View>
       </View>
+
+        {outOfStock ? (
+          <View className="mx-4 mt-3 flex-row items-start gap-2.5 rounded-lg border border-red-500/50 bg-red-500/10 p-3">
+            <AppIcon name="block" size={18} color={colors.diagnosticRed} />
+            <View className="flex-1">
+              <Text className="text-xs font-bold uppercase tracking-wide text-red-300">{t('product.outOfStock')}</Text>
+              <Text className="mt-0.5 text-xs leading-relaxed text-red-200/90">
+                {t('product.outOfStockDesc')}
+              </Text>
+            </View>
+          </View>
+        ) : null}
 
         {product.verified ? <CheckedBanner /> : null}
 
@@ -835,12 +857,21 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
           </View>
         </View>
         <Pressable
-          onPress={handleBuy}
-          className="flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-secondary py-3.5"
-          style={shadow.panel}
+          onPress={outOfStock ? undefined : handleBuy}
+          disabled={outOfStock}
+          className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl py-3.5 ${
+            outOfStock ? 'bg-elevated' : 'bg-secondary'
+          }`}
+          style={outOfStock ? undefined : shadow.panel}
         >
-          <AppIcon name="lock" size={20} color={colors.onSecondary} />
-          <Text className="text-[15px] font-semibold text-on-secondary">{t('product.buy')}</Text>
+          <AppIcon
+            name={outOfStock ? 'block' : 'lock'}
+            size={20}
+            color={outOfStock ? colors.textMuted : colors.onSecondary}
+          />
+          <Text className={`text-[15px] font-semibold ${outOfStock ? 'text-text-muted' : 'text-on-secondary'}`}>
+            {outOfStock ? t('product.outOfStock') : t('product.buy')}
+          </Text>
         </Pressable>
       </View>
 

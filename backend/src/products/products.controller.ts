@@ -15,6 +15,7 @@ import { Request as ExpressRequest } from "express";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { ProductsService } from "./products.service";
 import { CreateProductDto, UpdateProductDto, FilterProductDto } from "./dto";
+import { ProductStatus } from "./product.entity";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -79,13 +80,20 @@ export class ProductsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SELLER, UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Eliminar producto (vendedor dueño o admin)" })
+  @ApiOperation({
+    summary: "Eliminar producto vendido (vendedor dueño o admin)",
+  })
   async remove(@Param("id") id: string, @Request() req: ExpressRequest) {
     const product = await this.productsService.findOne(id);
     const user = req.user as { id: string; role: string };
     if (user.role !== UserRole.ADMIN && product.sellerId !== user.id) {
       throw new ForbiddenException(
         "Solo el vendedor del catálogo o un admin pueden eliminarlo",
+      );
+    }
+    if (user.role !== UserRole.ADMIN && product.status !== ProductStatus.SOLD) {
+      throw new ForbiddenException(
+        "Solo podés eliminar productos que ya fueron vendidos",
       );
     }
     return this.productsService.remove(id);

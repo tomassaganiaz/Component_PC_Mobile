@@ -6,6 +6,7 @@ export type ScreenName =
   | 'filters'
   | 'publish'
   | 'profile'
+  | 'sales'
   | 'analytics';
 
 export interface Route {
@@ -50,6 +51,7 @@ export interface ApiProduct {
   conditionGrade?: string;
   verified: boolean;
   sealed?: boolean;
+  stock?: number;
   escrowProtected?: boolean;
   coverageExtended?: boolean;
   warranty?: { days: number; extended: boolean; remainingDays: number; label: string };
@@ -63,6 +65,7 @@ export interface ApiProduct {
   reviewCount?: number;
   createdAt: string;
   seller?: { id: string; name: string; acceptsTesting: boolean };
+  sellerId?: string;
   securityTier?: SellerTier;
   sellerStats?: SellerStats;
 }
@@ -82,6 +85,7 @@ export interface ProductFilters {
   noMining?: boolean;
   hideWithComplaints?: boolean;
   hideSuspicious?: boolean;
+  inStock?: boolean;
   escrow?: boolean;
   page?: number;
   limit?: number;
@@ -155,6 +159,7 @@ export interface Product {
   intro: string;
   condition?: 'new' | 'used';
   sealed?: boolean;
+  stock?: number;
   verified?: boolean;
   escrowProtected?: boolean;
   warranty?: { days: number; extended: boolean; remainingDays: number; label: string };

@@ -193,6 +193,7 @@ export default function ProductCard({
   onBuy: () => void;
 }) {
   const tier = card.sellerTier ? tierMeta[card.sellerTier] : null;
+  const outOfStock = (card.stock ?? 1) <= 0;
 
   return (
     <Pressable
@@ -205,6 +206,15 @@ export default function ProductCard({
         <View className="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl border border-line bg-inset">
           <ProductImage uri={card.image} style={{ width: '100%', height: '100%' }} iconSize={32} width={256} />
           {card.verified ? <VerifiedBadge /> : null}
+          {outOfStock ? (
+            <View className="absolute inset-0 z-10 items-center justify-center bg-black/45">
+              <View className="rounded border border-red-500/60 bg-red-500/90 px-2.5 py-1">
+                <Text className="font-mono text-[10px] font-bold uppercase tracking-wider text-white">
+                  Sin stock
+                </Text>
+              </View>
+            </View>
+          ) : null}
           <View
             className={`absolute left-1.5 top-1.5 rounded border px-2 py-0.5 bg-inset/90 ${tagTones[card.tagTone]}`}
           >
@@ -231,12 +241,17 @@ export default function ProductCard({
               </View>
             </View>
             <Pressable
-              onPress={onBuy}
-              className="h-9 flex-row items-center gap-1.5 rounded-lg bg-secondary px-3.5"
-              style={shadow.panel}
+              onPress={outOfStock ? undefined : onBuy}
+              disabled={outOfStock}
+              className={`h-9 flex-row items-center gap-1.5 rounded-lg px-3.5 ${
+                outOfStock ? 'bg-elevated' : 'bg-secondary'
+              }`}
+              style={outOfStock ? undefined : shadow.panel}
             >
-              <AppIcon name="lock" size={16} color={colors.onSecondary} />
-              <Text className="text-xs font-semibold text-on-secondary">Comprar</Text>
+              <AppIcon name={outOfStock ? 'block' : 'lock'} size={16} color={outOfStock ? colors.textMuted : colors.onSecondary} />
+              <Text className={`text-xs font-semibold ${outOfStock ? 'text-text-muted' : 'text-on-secondary'}`}>
+                {outOfStock ? 'Sin stock' : 'Comprar'}
+              </Text>
             </Pressable>
           </View>
         </View>

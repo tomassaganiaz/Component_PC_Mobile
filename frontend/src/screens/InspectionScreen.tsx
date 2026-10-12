@@ -8,7 +8,19 @@ import BottomNav from '../components/BottomNav';
 import ProductImage from '../components/ProductImage';
 import { Pill, PulseDot } from '../components/ui';
 import { useI18n } from '../i18n';
-import { chatSafetyCheck, getOrder, getOrderProtection, getProductVerifications, requestOrderCoverage, requestOrderReturn } from '../services/api';
+import {
+  cancelOrder,
+  chatSafetyCheck,
+  deliverOrder,
+  getOrder,
+  getOrderProtection,
+  getProductVerifications,
+  payOrder,
+  requestOrderCoverage,
+  requestOrderReturn,
+  shipOrder,
+} from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { IMAGES, INSPECTION_STEPS } from '../data/mock';
 import { colors, glow, shadow } from '../theme';
 import type { ChatSafetyResult, OrderItem, OrderProtection, VerificationItem } from '../services/api';
@@ -82,14 +94,17 @@ function OrderTracking({
   loading,
   error,
   nav,
+  onUpdated,
 }: {
   order: OrderItem | null;
   protection: OrderProtection | null;
   loading: boolean;
   error: string | null;
   nav: Nav;
+  onUpdated: (order: OrderItem) => void;
 }) {
   const { t, formatDate } = useI18n();
+  const { session } = useAuth();
   const [returnOpen, setReturnOpen] = useState(false);
   const [returnReason, setReturnReason] = useState('');
   const [returnLoading, setReturnLoading] = useState(false);
@@ -99,6 +114,25 @@ function OrderTracking({
   const [coverageError, setCoverageError] = useState<string | null>(null);
   const [coverageResult, setCoverageResult] = useState<{ ticketId: string; message: string } | null>(null);
   const [verification, setVerification] = useState<VerificationItem | null>(null);
+  const [action, setAction] = useState<'pay' | 'ship' | 'deliver' | 'cancel' | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const runAction = async (
+    kind: 'pay' | 'ship' | 'deliver' | 'cancel',
+    fn: (id: string) => Promise<OrderItem>,
+  ) => {
+    if (!order) return;
+    setAction(kind);
+    setActionError(null);
+    try {
+      const updated = await fn(order.id);
+      onUpdated(updated);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : t('inspection.actionError'));
+    } finally {
+      setAction(null);
+    }
+  };
 
   const handleReturn = async () => {
     if (!order || returnReason.trim().length < 10) {
@@ -179,6 +213,19 @@ function OrderTracking({
   const product = order.product;
   const title = product?.title ?? `Orden #${order.id.slice(0, 8).toUpperCase()}`;
 
+  const userId = session?.user?.id;
+  const isAdmin = session?.user?.role === 'admin';
+  const isBuyer = !!userId && order.buyerId === userId;
+  const isSeller = !!userId && product?.sellerId === userId;
+  const s = order.status;
+  const showPay = (isBuyer || isAdmin) && s === 'pending';
+  const showShip = (isSeller || isAdmin) && (s === 'paid' || s === 'in_custody');
+  const showDeliver = (isBuyer || isAdmin) && s === 'shipped';
+  const showCancel = (isBuyer || isSeller || isAdmin) && (s === 'pending' || s === 'paid');
+  const showActions = showPay || showShip || showDeliver || showCancel;
+  const awaitingShipment = isBuyer && (s === 'paid' || s === 'in_custody');
+  const awaitingDelivery = isBuyer && s === 'shipped';
+
   return (
     <>
     <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
@@ -229,6 +276,83 @@ function OrderTracking({
           </View>
         </View>
       </View>
+
+      {showActions ? (
+        <View className="mb-4 px-4">
+          <View className="rounded-xl border border-line bg-panel p-4" style={shadow.panel}>
+            <View className="mb-3 flex-row items-center gap-1.5">
+              <AppIcon name="handshake" size={20} color={colors.accentCyan} />
+              <Text className="text-xl font-semibold text-slate-100">{t('inspection.actions')}</Text>
+            </View>
+
+            {awaitingShipment ? (
+              <View className="mb-3 flex-row items-start gap-2 rounded-lg border border-line bg-inset p-2.5">
+                <AppIcon name="local_shipping" size={16} color={colors.accentCyan} />
+                <Text className="flex-1 text-xs leading-relaxed text-slate-400">
+                  {t('inspection.awaitingShipment')}
+                </Text>
+              </View>
+            ) : null}
+            {awaitingDelivery ? (
+              <View className="mb-3 flex-row items-start gap-2 rounded-lg border border-line bg-inset p-2.5">
+                <AppIcon name="local_shipping" size={16} color={colors.accentEmerald} />
+                <Text className="flex-1 text-xs leading-relaxed text-slate-400">
+                  {t('inspection.awaitingDelivery')}
+                </Text>
+              </View>
+            ) : null}
+
+            {actionError ? <Text className="mb-2 text-xs text-red-400">{actionError}</Text> : null}
+
+            <View className="flex flex-col gap-2">
+              {showPay ? (
+                <Pressable
+                  onPress={() => runAction('pay', payOrder)}
+                  disabled={!!action}
+                  className="flex-row items-center justify-center gap-2 rounded-xl bg-blue-600 py-3"
+                  style={action ? { opacity: 0.7 } : glow('#2563eb', 16, 0.3)}
+                >
+                  <AppIcon name={action === 'pay' ? 'sync' : 'account_balance_wallet'} size={18} color="#ffffff" />
+                  <Text className="text-sm font-semibold text-white">{t('inspection.pay')}</Text>
+                </Pressable>
+              ) : null}
+              {showShip ? (
+                <Pressable
+                  onPress={() => runAction('ship', shipOrder)}
+                  disabled={!!action}
+                  className="flex-row items-center justify-center gap-2 rounded-xl bg-blue-600 py-3"
+                  style={action ? { opacity: 0.7 } : glow('#2563eb', 16, 0.3)}
+                >
+                  <AppIcon name={action === 'ship' ? 'sync' : 'local_shipping'} size={18} color="#ffffff" />
+                  <Text className="text-sm font-semibold text-white">{t('inspection.ship')}</Text>
+                </Pressable>
+              ) : null}
+              {showDeliver ? (
+                <Pressable
+                  onPress={() => runAction('deliver', deliverOrder)}
+                  disabled={!!action}
+                  className="flex-row items-center justify-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 py-3"
+                  style={action ? { opacity: 0.7 } : undefined}
+                >
+                  <AppIcon name={action === 'deliver' ? 'sync' : 'check_circle'} size={18} color={colors.accentEmerald} />
+                  <Text className="text-sm font-semibold text-emerald-300">{t('inspection.deliver')}</Text>
+                </Pressable>
+              ) : null}
+              {showCancel ? (
+                <Pressable
+                  onPress={() => runAction('cancel', cancelOrder)}
+                  disabled={!!action}
+                  className="flex-row items-center justify-center gap-2 rounded-xl border border-red-500/40 bg-red-500/10 py-3"
+                  style={action ? { opacity: 0.7 } : undefined}
+                >
+                  <AppIcon name={action === 'cancel' ? 'sync' : 'close'} size={18} color={colors.diagnosticRed} />
+                  <Text className="text-sm font-semibold text-red-400">{t('inspection.cancelOrder')}</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
+        </View>
+      ) : null}
 
       {/* Workflow tracker */}
       <View className="mb-4 px-4">
@@ -591,7 +715,14 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
       <AppHeader subtitle="Verified Orders" activeTab />
 
       {orderId ? (
-        <OrderTracking order={order} protection={protection} loading={orderLoading} error={orderError} nav={nav} />
+        <OrderTracking
+          order={order}
+          protection={protection}
+          loading={orderLoading}
+          error={orderError}
+          nav={nav}
+          onUpdated={(o) => setOrder(o)}
+        />
       ) : (
       <ScrollView
         className="flex-1"

@@ -35,6 +35,7 @@ export function toExploreCard(api: ApiProduct): ExploreCard {
     intro: api.description,
     condition: api.condition,
     sealed: api.sealed,
+    stock: api.stock,
     verified,
     escrowProtected: api.escrowProtected,
     warranty: api.warranty,

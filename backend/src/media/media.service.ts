@@ -1,5 +1,5 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
-import sharp from 'sharp';
+import { Injectable, BadRequestException } from "@nestjs/common";
+import sharp from "sharp";
 
 interface CacheEntry {
   buffer: Buffer;
@@ -7,7 +7,7 @@ interface CacheEntry {
   at: number;
 }
 
-const ALLOWED_HOST_SUFFIXES = ['googleusercontent.com', 'ggpht.com'];
+const ALLOWED_HOST_SUFFIXES = ["googleusercontent.com", "ggpht.com"];
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1h
 const CACHE_MAX_ENTRIES = 200;
 
@@ -20,22 +20,26 @@ export class MediaService {
     try {
       parsed = new URL(url);
     } catch {
-      throw new BadRequestException('URL inválida');
+      throw new BadRequestException("URL inválida");
     }
-    if (parsed.protocol !== 'https:') {
-      throw new BadRequestException('Solo se permiten URLs https');
+    if (parsed.protocol !== "https:") {
+      throw new BadRequestException("Solo se permiten URLs https");
     }
     const host = parsed.hostname.toLowerCase();
-    const allowed = ALLOWED_HOST_SUFFIXES.some((s) => host === s || host.endsWith(`.${s}`));
+    const allowed = ALLOWED_HOST_SUFFIXES.some(
+      (s) => host === s || host.endsWith(`.${s}`),
+    );
     if (!allowed) {
-      throw new BadRequestException('Host no permitido');
+      throw new BadRequestException("Host no permitido");
     }
     return parsed;
   }
 
   private remember(key: string, entry: CacheEntry) {
     if (this.cache.size >= CACHE_MAX_ENTRIES) {
-      const oldest = [...this.cache.entries()].sort((a, b) => a[1].at - b[1].at)[0];
+      const oldest = [...this.cache.entries()].sort(
+        (a, b) => a[1].at - b[1].at,
+      )[0];
       if (oldest) this.cache.delete(oldest[0]);
     }
     this.cache.set(key, entry);
@@ -66,7 +70,9 @@ export class MediaService {
       clearTimeout(timeout);
     }
     if (!res.ok) {
-      throw new BadRequestException(`No se pudo descargar la imagen (${res.status})`);
+      throw new BadRequestException(
+        `No se pudo descargar la imagen (${res.status})`,
+      );
     }
 
     const input = Buffer.from(await res.arrayBuffer());
@@ -75,7 +81,11 @@ export class MediaService {
       .webp({ quality: q })
       .toBuffer();
 
-    const entry: CacheEntry = { buffer, contentType: 'image/webp', at: Date.now() };
+    const entry: CacheEntry = {
+      buffer,
+      contentType: "image/webp",
+      at: Date.now(),
+    };
     this.remember(key, entry);
     return { buffer, contentType: entry.contentType };
   }

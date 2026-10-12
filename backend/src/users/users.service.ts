@@ -1,9 +1,13 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from './user.entity';
-import { CreateUserDto, UpdateUserDto } from './dto';
-import * as bcrypt from 'bcrypt';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { User } from "./user.entity";
+import { CreateUserDto, UpdateUserDto } from "./dto";
+import * as bcrypt from "bcrypt";
 
 @Injectable()
 export class UsersService {
@@ -18,7 +22,7 @@ export class UsersService {
     });
 
     if (existingUser) {
-      throw new ConflictException('El email ya está registrado');
+      throw new ConflictException("El email ya está registrado");
     }
 
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
@@ -40,7 +44,7 @@ export class UsersService {
   async findOne(id: string): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id } });
     if (!user) {
-      throw new NotFoundException('Usuario no encontrado');
+      throw new NotFoundException("Usuario no encontrado");
     }
     return user;
   }
@@ -49,17 +53,17 @@ export class UsersService {
     return this.userRepository.findOne({
       where: { email },
       select: [
-        'id',
-        'email',
-        'password',
-        'name',
-        'role',
-        'acceptsTesting',
-        'phoneVerified',
-        'documentVerified',
-        'otpEnabled',
-        'otpCode',
-        'otpExpiresAt',
+        "id",
+        "email",
+        "password",
+        "name",
+        "role",
+        "acceptsTesting",
+        "phoneVerified",
+        "documentVerified",
+        "otpEnabled",
+        "otpCode",
+        "otpExpiresAt",
       ],
     });
   }

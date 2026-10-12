@@ -76,6 +76,7 @@ describe("ProductsService", () => {
       expect(mockRepository.create).toHaveBeenCalledWith({
         ...createProductDto,
         sellerId: "seller-uuid",
+        status: ProductStatus.PUBLISHED,
       });
     });
   });
@@ -298,6 +299,57 @@ describe("ProductsService", () => {
       await expect(service.remove("nonexistent-id")).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe("stock", () => {
+    it("decrementStock returns the remaining stock when available", async () => {
+      const qb = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        returning: jest.fn().mockReturnThis(),
+        execute: jest
+          .fn()
+          .mockResolvedValue({ affected: 1, raw: [{ stock: 2 }] }),
+      };
+      mockRepository.createQueryBuilder.mockReturnValue(qb);
+
+      const remaining = await service.decrementStock("p1");
+
+      expect(remaining).toBe(2);
+      expect(qb.andWhere).toHaveBeenCalledWith("stock > 0");
+    });
+
+    it("decrementStock returns null when out of stock", async () => {
+      const qb = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        returning: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ affected: 0, raw: [] }),
+      };
+      mockRepository.createQueryBuilder.mockReturnValue(qb);
+
+      expect(await service.decrementStock("p1")).toBeNull();
+    });
+
+    it("incrementStock runs the update", async () => {
+      const qb = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      };
+      mockRepository.createQueryBuilder.mockReturnValue(qb);
+
+      await service.incrementStock("p1");
+
+      expect(qb.set).toHaveBeenCalled();
+      expect(qb.execute).toHaveBeenCalled();
     });
   });
 });
