@@ -1,74 +1,55 @@
-import { Test, TestingModule } from "@nestjs/testing";
-import { INestApplication, ValidationPipe } from "@nestjs/common";
-import * as request from "supertest";
-import { AppModule } from "../src/app.module";
-import { TypeOrmModule } from "@nestjs/typeorm";
+import { INestApplication } from "@nestjs/common";
+import request from "supertest";
+import { createTestApp, registerAndLogin, type TestUser } from "./test-app";
 
 describe("Orders (e2e)", () => {
   let app: INestApplication;
-  let authToken: string;
-  let orderId: string;
+  let seller: TestUser;
+  let buyer: TestUser;
+  let stranger: TestUser;
+  let admin: TestUser;
   let productId: string;
+  let orderId: string;
+  const suffix = Date.now();
 
-  beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-      .overrideModule(TypeOrmModule)
-      .useModule(
-        TypeOrmModule.forRoot({
-          type: "sqlite",
-          database: ":memory:",
-          entities: [__dirname + "/../src/**/*.entity{.ts,.js}"],
-          synchronize: true,
-        }),
-      )
-      .compile();
-
-    app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix("api");
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
-    await app.init();
-
-    await request(app.getHttpServer()).post("/api/auth/register").send({
-      name: "Order Buyer",
-      email: "buyer@example.com",
-      password: "password123",
-      role: "buyer",
-    });
-
-    await request(app.getHttpServer()).post("/api/auth/register").send({
-      name: "Order Seller",
-      email: "seller@example.com",
-      password: "password123",
-      role: "seller",
-    });
-
-    const loginResponse = await request(app.getHttpServer())
-      .post("/api/auth/login")
-      .send({
-        email: "buyer@example.com",
-        password: "password123",
-      });
-    authToken = loginResponse.body.access_token;
-
-    const createProductResponse = await request(app.getHttpServer())
+  const createProduct = async (stock: number, title: string) => {
+    const res = await request(app.getHttpServer())
       .post("/api/products")
-      .set("Authorization", `Bearer ${authToken}`)
+      .set("Authorization", `Bearer ${seller.token}`)
       .send({
-        title: "Product for Order",
-        description: "Test product",
+        title,
+        description: "Producto para órdenes e2e con descripción válida",
         price: 250,
         condition: "used",
         category: "gpu",
+        stock,
       });
-    productId = createProductResponse.body.id;
+    expect(res.status).toBe(201);
+    return res.body.id as string;
+  };
+
+  beforeAll(async () => {
+    app = await createTestApp();
+    seller = await registerAndLogin(app, {
+      name: "Order Seller",
+      email: `orders.seller.${suffix}@test.com`,
+      role: "seller",
+    });
+    buyer = await registerAndLogin(app, {
+      name: "Order Buyer",
+      email: `orders.buyer.${suffix}@test.com`,
+      role: "buyer",
+    });
+    stranger = await registerAndLogin(app, {
+      name: "Order Stranger",
+      email: `orders.stranger.${suffix}@test.com`,
+      role: "buyer",
+    });
+    admin = await registerAndLogin(app, {
+      name: "Order Admin",
+      email: `orders.admin.${suffix}@test.com`,
+      role: "admin",
+    });
   });
 
   afterAll(async () => {
@@ -76,122 +57,234 @@ describe("Orders (e2e)", () => {
   });
 
   describe("POST /api/orders", () => {
-    it("should create an order", () => {
-      return request(app.getHttpServer())
+    it("crea una orden en pending y descuenta stock (queda sold)", async () => {
+      productId = await createProduct(1, "Order GPU");
+
+      const res = await request(app.getHttpServer())
         .post("/api/orders")
-        .set("Authorization", `Bearer ${authToken}`)
+        .set("Authorization", `Bearer ${buyer.token}`)
         .send({
           productId,
           shippingAddress: "Av. Corrientes 1234",
           paymentMethod: "credit_card",
-        })
-        .expect(201)
-        .expect((res) => {
-          expect(res.body).toHaveProperty("id");
-          expect(res.body.total).toEqual(250);
-          expect(res.body.status).toEqual("pending");
-          orderId = res.body.id;
         });
+
+      expect(res.status).toBe(201);
+      expect(res.body.status).toBe("pending");
+      expect(Number(res.body.total)).toBe(250);
+      orderId = res.body.id;
+
+      const product = await request(app.getHttpServer()).get(
+        `/api/products/${productId}`,
+      );
+      expect(product.body.stock).toBe(0);
+      expect(product.body.status).toBe("sold");
     });
 
-    it("should fail without authentication", () => {
-      return request(app.getHttpServer())
+    it("rechaza la compra si no hay stock -> 400", async () => {
+      const res = await request(app.getHttpServer())
         .post("/api/orders")
+        .set("Authorization", `Bearer ${stranger.token}`)
         .send({
           productId,
-          shippingAddress: "Av. Corrientes 1234",
-        })
-        .expect(401);
+          shippingAddress: "Otra dirección",
+          paymentMethod: "credit_card",
+        });
+      expect(res.status).toBe(400);
     });
 
-    it("should fail with invalid product", () => {
-      return request(app.getHttpServer())
+    it("falla sin autenticación -> 401", async () => {
+      const res = await request(app.getHttpServer())
         .post("/api/orders")
-        .set("Authorization", `Bearer ${authToken}`)
+        .send({ productId, shippingAddress: "x" });
+      expect(res.status).toBe(401);
+    });
+
+    it("falla con uuid de producto inexistente -> 404", async () => {
+      const res = await request(app.getHttpServer())
+        .post("/api/orders")
+        .set("Authorization", `Bearer ${buyer.token}`)
         .send({
-          productId: "nonexistent-product-id",
-          shippingAddress: "Av. Corrientes 1234",
-        })
-        .expect(404);
+          productId: "00000000-0000-0000-0000-000000000000",
+          shippingAddress: "x",
+        });
+      expect(res.status).toBe(404);
+    });
+
+    it("falla con productId inválido -> 400", async () => {
+      const res = await request(app.getHttpServer())
+        .post("/api/orders")
+        .set("Authorization", `Bearer ${buyer.token}`)
+        .send({ productId: "not-a-uuid", shippingAddress: "x" });
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe("Ciclo de vida (pay / ship / deliver)", () => {
+    it("el comprador paga -> paid", async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/api/orders/${orderId}/pay`)
+        .set("Authorization", `Bearer ${buyer.token}`);
+      expect(res.status).toBe(201);
+      expect(res.body.status).toBe("paid");
+      expect(res.body.custodyStartDate).toBeTruthy();
+    });
+
+    it("un comprador no puede marcar como enviado -> 403", async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/api/orders/${orderId}/ship`)
+        .set("Authorization", `Bearer ${buyer.token}`);
+      expect(res.status).toBe(403);
+    });
+
+    it("el vendedor marca como enviado -> shipped", async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/api/orders/${orderId}/ship`)
+        .set("Authorization", `Bearer ${seller.token}`);
+      expect(res.status).toBe(201);
+      expect(res.body.status).toBe("shipped");
+    });
+
+    it("el comprador confirma recepción -> delivered", async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/api/orders/${orderId}/deliver`)
+        .set("Authorization", `Bearer ${buyer.token}`);
+      expect(res.status).toBe(201);
+      expect(res.body.status).toBe("delivered");
+      expect(res.body.custodyEndDate).toBeTruthy();
+    });
+
+    it("no se puede entregar una orden que no fue enviada -> 400", async () => {
+      const pid = await createProduct(2, "Order GPU pending");
+      const created = await request(app.getHttpServer())
+        .post("/api/orders")
+        .set("Authorization", `Bearer ${buyer.token}`)
+        .send({ productId: pid, shippingAddress: "x", paymentMethod: "card" });
+
+      const res = await request(app.getHttpServer())
+        .post(`/api/orders/${created.body.id}/deliver`)
+        .set("Authorization", `Bearer ${buyer.token}`);
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe("Cancelación y reposición de stock", () => {
+    it("cancelar una orden pendiente repone el stock", async () => {
+      const pid = await createProduct(2, "Order GPU cancel");
+
+      const created = await request(app.getHttpServer())
+        .post("/api/orders")
+        .set("Authorization", `Bearer ${buyer.token}`)
+        .send({ productId: pid, shippingAddress: "x", paymentMethod: "card" });
+      expect(created.status).toBe(201);
+
+      const before = await request(app.getHttpServer()).get(`/api/products/${pid}`);
+      expect(before.body.stock).toBe(1);
+
+      const cancel = await request(app.getHttpServer())
+        .post(`/api/orders/${created.body.id}/cancel`)
+        .set("Authorization", `Bearer ${buyer.token}`);
+      expect(cancel.status).toBe(201);
+      expect(cancel.body.status).toBe("cancelled");
+
+      const after = await request(app.getHttpServer()).get(`/api/products/${pid}`);
+      expect(after.body.stock).toBe(2);
+      expect(after.body.status).toBe("published");
+    });
+  });
+
+  describe("Autorización de órdenes", () => {
+    it("GET /api/orders/:id: buyer y seller OK, ajeno 403, admin OK", async () => {
+      expect(
+        (
+          await request(app.getHttpServer())
+            .get(`/api/orders/${orderId}`)
+            .set("Authorization", `Bearer ${buyer.token}`)
+        ).status,
+      ).toBe(200);
+      expect(
+        (
+          await request(app.getHttpServer())
+            .get(`/api/orders/${orderId}`)
+            .set("Authorization", `Bearer ${seller.token}`)
+        ).status,
+      ).toBe(200);
+      expect(
+        (
+          await request(app.getHttpServer())
+            .get(`/api/orders/${orderId}`)
+            .set("Authorization", `Bearer ${stranger.token}`)
+        ).status,
+      ).toBe(403);
+      expect(
+        (
+          await request(app.getHttpServer())
+            .get(`/api/orders/${orderId}`)
+            .set("Authorization", `Bearer ${admin.token}`)
+        ).status,
+      ).toBe(200);
+    });
+
+    it("GET /api/orders/:id/protection: ajeno 403, buyer OK", async () => {
+      expect(
+        (
+          await request(app.getHttpServer())
+            .get(`/api/orders/${orderId}/protection`)
+            .set("Authorization", `Bearer ${stranger.token}`)
+        ).status,
+      ).toBe(403);
+      expect(
+        (
+          await request(app.getHttpServer())
+            .get(`/api/orders/${orderId}/protection`)
+            .set("Authorization", `Bearer ${buyer.token}`)
+        ).status,
+      ).toBe(200);
+    });
+
+    it("PATCH /api/orders/:id: buyer 403, admin 200", async () => {
+      const asBuyer = await request(app.getHttpServer())
+        .patch(`/api/orders/${orderId}`)
+        .set("Authorization", `Bearer ${buyer.token}`)
+        .send({ status: "delivered" });
+      expect(asBuyer.status).toBe(403);
+
+      const asAdmin = await request(app.getHttpServer())
+        .patch(`/api/orders/${orderId}`)
+        .set("Authorization", `Bearer ${admin.token}`)
+        .send({ shippingAddress: "Actualizada por admin" });
+      expect(asAdmin.status).toBe(200);
+    });
+  });
+
+  describe("GET /api/orders/sales", () => {
+    it("el vendedor ve sus ventas (comprador sanitizado)", async () => {
+      const res = await request(app.getHttpServer())
+        .get("/api/orders/sales")
+        .set("Authorization", `Bearer ${seller.token}`);
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      const sale = res.body.find((s: { id: string }) => s.id === orderId);
+      expect(sale).toBeDefined();
+      expect(sale.buyer).toHaveProperty("name");
+      expect(sale.buyer.password).toBeUndefined();
+    });
+
+    it("un comprador no puede ver ventas -> 403", async () => {
+      const res = await request(app.getHttpServer())
+        .get("/api/orders/sales")
+        .set("Authorization", `Bearer ${buyer.token}`);
+      expect(res.status).toBe(403);
     });
   });
 
   describe("GET /api/orders", () => {
-    it("should return buyer orders", () => {
-      return request(app.getHttpServer())
+    it("devuelve las compras del comprador", async () => {
+      const res = await request(app.getHttpServer())
         .get("/api/orders")
-        .set("Authorization", `Bearer ${authToken}`)
-        .expect(200)
-        .expect((res) => {
-          expect(Array.isArray(res.body)).toBeTruthy();
-        });
-    });
-
-    it("should return empty array for new buyer", () => {
-      return request(app.getHttpServer())
-        .get("/api/orders")
-        .set("Authorization", `Bearer ${authToken}`)
-        .expect(200)
-        .expect((res) => {
-          expect(Array.isArray(res.body)).toBeTruthy();
-        });
-    });
-  });
-
-  describe("GET /api/orders/:id", () => {
-    it("should return order by id", () => {
-      return request(app.getHttpServer())
-        .get(`/api/orders/${orderId}`)
-        .expect(200)
-        .expect((res) => {
-          expect(res.body.id).toEqual(orderId);
-        });
-    });
-
-    it("should return 404 for non-existent order", () => {
-      return request(app.getHttpServer())
-        .get("/api/orders/nonexistent-id")
-        .expect(404);
-    });
-  });
-
-  describe("PATCH /api/orders/:id", () => {
-    it("should update order status", () => {
-      return request(app.getHttpServer())
-        .patch(`/api/orders/${orderId}`)
-        .set("Authorization", `Bearer ${authToken}`)
-        .send({ status: "paid" })
-        .expect(200)
-        .expect((res) => {
-          expect(res.body.status).toEqual("paid");
-        });
-    });
-
-    it("should return 404 for non-existent order", () => {
-      return request(app.getHttpServer())
-        .patch("/api/orders/nonexistent-id")
-        .set("Authorization", `Bearer ${authToken}`)
-        .send({ status: "paid" })
-        .expect(404);
-    });
-  });
-
-  describe("POST /api/orders/:id/cancel", () => {
-    it("should cancel an order", () => {
-      return request(app.getHttpServer())
-        .post(`/api/orders/${orderId}/cancel`)
-        .set("Authorization", `Bearer ${authToken}`)
-        .expect(200)
-        .expect((res) => {
-          expect(res.body.status).toEqual("cancelled");
-        });
-    });
-
-    it("should return 404 for non-existent order", () => {
-      return request(app.getHttpServer())
-        .post("/api/orders/nonexistent-id/cancel")
-        .set("Authorization", `Bearer ${authToken}`)
-        .expect(404);
+        .set("Authorization", `Bearer ${buyer.token}`);
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
     });
   });
 });

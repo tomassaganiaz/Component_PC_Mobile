@@ -1,10 +1,10 @@
-import { IsString, IsOptional, IsEnum } from "class-validator";
+import { IsString, IsOptional, IsEnum, IsUUID } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { OrderStatus } from "../order.entity";
 
 export class CreateOrderDto {
-  @ApiProperty({ example: "product-uuid" })
-  @IsString()
+  @ApiProperty({ example: "3f1e2d4c-...-uuid" })
+  @IsUUID()
   productId: string;
 
   @ApiPropertyOptional({ example: "Av. Corrientes 1234, CABA" })

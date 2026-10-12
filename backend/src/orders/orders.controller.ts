@@ -8,6 +8,7 @@ import {
   UseGuards,
   Request,
   ForbiddenException,
+  ParseUUIDPipe,
 } from "@nestjs/common";
 import { Request as ExpressRequest } from "express";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
@@ -66,7 +67,7 @@ export class OrdersController {
   @ApiOperation({
     summary: "Ventana de protección: devolución 10 días / cobertura 45 días",
   })
-  async getProtection(@Param("id") id: string, @Request() req: ExpressRequest) {
+  async getProtection(@Param("id", new ParseUUIDPipe()) id: string, @Request() req: ExpressRequest) {
     const order = await this.ordersService.findOne(id);
     this.assertCanView(order, req.user as { id: string; role: string });
     return this.ordersService.getProtection(id);
@@ -75,7 +76,7 @@ export class OrdersController {
   @Post(":id/return")
   @ApiOperation({ summary: "Solicitar devolución (dentro de los 10 días)" })
   requestReturn(
-    @Param("id") id: string,
+    @Param("id", new ParseUUIDPipe()) id: string,
     @Body() returnOrderDto: ReturnOrderDto,
     @Request() req: ExpressRequest,
   ) {
@@ -90,13 +91,13 @@ export class OrdersController {
   @ApiOperation({
     summary: "Solicitar cobertura de la empresa (hasta 45 días)",
   })
-  requestCoverage(@Param("id") id: string, @Request() req: ExpressRequest) {
+  requestCoverage(@Param("id", new ParseUUIDPipe()) id: string, @Request() req: ExpressRequest) {
     return this.ordersService.requestCoverage(id, (req.user as any).id);
   }
 
   @Get(":id")
   @ApiOperation({ summary: "Obtener detalle de orden (comprador, vendedor o admin)" })
-  async findOne(@Param("id") id: string, @Request() req: ExpressRequest) {
+  async findOne(@Param("id", new ParseUUIDPipe()) id: string, @Request() req: ExpressRequest) {
     const order = await this.ordersService.findOne(id);
     this.assertCanView(order, req.user as { id: string; role: string });
     return order;
@@ -108,7 +109,7 @@ export class OrdersController {
   @ApiOperation({
     summary: "Actualizar orden (solo admin; usar /pay, /ship, /deliver, /cancel)",
   })
-  update(@Param("id") id: string, @Body() updateOrderDto: UpdateOrderDto) {
+  update(@Param("id", new ParseUUIDPipe()) id: string, @Body() updateOrderDto: UpdateOrderDto) {
     return this.ordersService.update(id, updateOrderDto);
   }
 
@@ -116,7 +117,7 @@ export class OrdersController {
   @ApiOperation({
     summary: "Confirmar pago del comprador y dejar los fondos en custodia",
   })
-  pay(@Param("id") id: string, @Request() req: ExpressRequest) {
+  pay(@Param("id", new ParseUUIDPipe()) id: string, @Request() req: ExpressRequest) {
     return this.ordersService.pay(id, (req.user as any).id);
   }
 
@@ -124,19 +125,19 @@ export class OrdersController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.SELLER, UserRole.ADMIN)
   @ApiOperation({ summary: "Marcar pedido como enviado (vendedor)" })
-  ship(@Param("id") id: string, @Request() req: ExpressRequest) {
+  ship(@Param("id", new ParseUUIDPipe()) id: string, @Request() req: ExpressRequest) {
     return this.ordersService.ship(id, (req.user as any).id);
   }
 
   @Post(":id/deliver")
   @ApiOperation({ summary: "Confirmar recepción del producto (comprador)" })
-  deliver(@Param("id") id: string, @Request() req: ExpressRequest) {
+  deliver(@Param("id", new ParseUUIDPipe()) id: string, @Request() req: ExpressRequest) {
     return this.ordersService.deliver(id, (req.user as any).id);
   }
 
   @Post(":id/cancel")
   @ApiOperation({ summary: "Cancelar orden (comprador o vendedor)" })
-  cancel(@Param("id") id: string, @Request() req: ExpressRequest) {
+  cancel(@Param("id", new ParseUUIDPipe()) id: string, @Request() req: ExpressRequest) {
     return this.ordersService.cancel(id, (req.user as any).id);
   }
 }

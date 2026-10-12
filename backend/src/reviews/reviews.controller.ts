@@ -8,6 +8,7 @@ import {
   Query,
   UseGuards,
   Request,
+  ParseUUIDPipe,
 } from "@nestjs/common";
 import { Request as ExpressRequest } from "express";
 import {
@@ -102,7 +103,7 @@ export class ReviewsController {
 
   @Get(":id")
   @ApiOperation({ summary: "Obtener detalle de una reseña" })
-  findOne(@Param("id") id: string) {
+  findOne(@Param("id", new ParseUUIDPipe()) id: string) {
     return this.reviewsService.findOne(id);
   }
 
@@ -112,7 +113,7 @@ export class ReviewsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "Resolver queja (solo admin)" })
   updateStatus(
-    @Param("id") id: string,
+    @Param("id", new ParseUUIDPipe()) id: string,
     @Body() updateDto: UpdateReviewStatusDto,
     @Request() req: ExpressRequest,
   ) {

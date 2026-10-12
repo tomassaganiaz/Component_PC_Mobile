@@ -54,7 +54,9 @@ import { ThrottlerUserGuard } from "./common/throttler-user.guard";
             entities: [__dirname + "/**/*.entity{.ts,.js}"],
             migrations: [__dirname + "/database/migrations/*{.ts,.js}"],
             synchronize: nodeEnv === "development",
-            logging: nodeEnv === "development",
+            logging:
+              nodeEnv === "development" &&
+              configService.get("DATABASE_LOGGING", "true") !== "false",
           };
         }
 
@@ -68,7 +70,9 @@ import { ThrottlerUserGuard } from "./common/throttler-user.guard";
           entities: [__dirname + "/**/*.entity{.ts,.js}"],
           migrations: [__dirname + "/database/migrations/*{.ts,.js}"],
           synchronize: nodeEnv === "development",
-          logging: nodeEnv === "development",
+          logging:
+            nodeEnv === "development" &&
+            configService.get("DATABASE_LOGGING", "true") !== "false",
           ssl:
             nodeEnv === "production"
               ? { rejectUnauthorized: false }

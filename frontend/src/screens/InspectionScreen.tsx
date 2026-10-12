@@ -225,6 +225,7 @@ function OrderTracking({
   const showActions = showPay || showShip || showDeliver || showCancel;
   const awaitingShipment = isBuyer && (s === 'paid' || s === 'in_custody');
   const awaitingDelivery = isBuyer && s === 'shipped';
+  const returnableStatus = ['paid', 'in_custody', 'delivered'].includes(s);
 
   return (
     <>
@@ -448,7 +449,7 @@ function OrderTracking({
             ) : null}
 
             <View className="mt-3 flex-row gap-2">
-              {protection.returnWindowOpen && order.status !== 'refunded' && order.status !== 'cancelled' ? (
+              {protection.returnWindowOpen && returnableStatus ? (
                 <Pressable
                   onPress={() => {
                     setReturnOpen(true);

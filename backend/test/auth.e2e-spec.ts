@@ -1,37 +1,15 @@
-import { Test, TestingModule } from "@nestjs/testing";
-import { INestApplication, ValidationPipe } from "@nestjs/common";
-import * as request from "supertest";
-import { AppModule } from "../src/app.module";
-import { TypeOrmModule } from "@nestjs/typeorm";
+import { INestApplication } from "@nestjs/common";
+import request from "supertest";
+import { createTestApp } from "./test-app";
 
 describe("Auth (e2e)", () => {
   let app: INestApplication;
+  const suffix = Date.now();
+  const email = `auth.e2e.${suffix}@test.com`;
+  const password = "password123";
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-      .overrideModule(TypeOrmModule)
-      .useModule(
-        TypeOrmModule.forRoot({
-          type: "sqlite",
-          database: ":memory:",
-          entities: [__dirname + "/../src/**/*.entity{.ts,.js}"],
-          synchronize: true,
-        }),
-      )
-      .compile();
-
-    app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix("api");
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
-    await app.init();
+    app = await createTestApp();
   });
 
   afterAll(async () => {
@@ -39,123 +17,92 @@ describe("Auth (e2e)", () => {
   });
 
   describe("POST /api/auth/register", () => {
-    it("should register a new user", () => {
-      return request(app.getHttpServer())
+    it("registra un usuario sin exponer el password", async () => {
+      const res = await request(app.getHttpServer())
         .post("/api/auth/register")
-        .send({
-          name: "Test User",
-          email: "test@example.com",
-          password: "password123",
-        })
-        .expect(201)
-        .expect((res) => {
-          expect(res.body).toHaveProperty("id");
-          expect(res.body.email).toEqual("test@example.com");
-          expect(res.body.password).toBeUndefined();
-        });
+        .send({ name: "Auth User", email, password });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty("id");
+      expect(res.body.email).toBe(email);
+      expect(res.body.password).toBeUndefined();
     });
 
-    it("should fail with invalid email", () => {
-      return request(app.getHttpServer())
+    it("falla con email inválido -> 400", async () => {
+      const res = await request(app.getHttpServer())
         .post("/api/auth/register")
-        .send({
-          name: "Test User",
-          email: "invalid-email",
-          password: "password123",
-        })
-        .expect(400);
+        .send({ name: "Bad", email: "invalid-email", password });
+      expect(res.status).toBe(400);
     });
 
-    it("should fail with short password", () => {
-      return request(app.getHttpServer())
+    it("falla con password corto -> 400", async () => {
+      const res = await request(app.getHttpServer())
         .post("/api/auth/register")
-        .send({
-          name: "Test User",
-          email: "test2@example.com",
-          password: "12345",
-        })
-        .expect(400);
+        .send({ name: "Bad", email: `short.${suffix}@test.com`, password: "12345" });
+      expect(res.status).toBe(400);
+    });
+
+    it("falla con email duplicado -> 409", async () => {
+      const res = await request(app.getHttpServer())
+        .post("/api/auth/register")
+        .send({ name: "Auth User", email, password });
+      expect(res.status).toBe(409);
     });
   });
 
   describe("POST /api/auth/login", () => {
-    beforeAll(async () => {
-      await request(app.getHttpServer()).post("/api/auth/register").send({
-        name: "Login User",
-        email: "login@example.com",
-        password: "password123",
-      });
+    it("loguea con credenciales válidas", async () => {
+      const res = await request(app.getHttpServer())
+        .post("/api/auth/login")
+        .send({ email, password });
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty("access_token");
+      expect(res.body.user.email).toBe(email);
     });
 
-    it("should login with valid credentials", () => {
-      return request(app.getHttpServer())
+    it("falla con password incorrecto -> 401", async () => {
+      const res = await request(app.getHttpServer())
         .post("/api/auth/login")
-        .send({
-          email: "login@example.com",
-          password: "password123",
-        })
-        .expect(201)
-        .expect((res) => {
-          expect(res.body).toHaveProperty("access_token");
-          expect(res.body).toHaveProperty("user");
-          expect(res.body.user.email).toEqual("login@example.com");
-        });
+        .send({ email, password: "wrong-password" });
+      expect(res.status).toBe(401);
     });
 
-    it("should fail with wrong password", () => {
-      return request(app.getHttpServer())
+    it("falla con email inexistente -> 401", async () => {
+      const res = await request(app.getHttpServer())
         .post("/api/auth/login")
-        .send({
-          email: "login@example.com",
-          password: "wrongpassword",
-        })
-        .expect(401);
-    });
-
-    it("should fail with non-existent email", () => {
-      return request(app.getHttpServer())
-        .post("/api/auth/login")
-        .send({
-          email: "nonexistent@example.com",
-          password: "password123",
-        })
-        .expect(401);
+        .send({ email: `nope.${suffix}@test.com`, password });
+      expect(res.status).toBe(401);
     });
   });
 
   describe("GET /api/auth/profile", () => {
-    let authToken: string;
+    let token = "";
 
     beforeAll(async () => {
-      const response = await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         .post("/api/auth/login")
-        .send({
-          email: "login@example.com",
-          password: "password123",
-        });
-      authToken = response.body.access_token;
+        .send({ email, password });
+      token = res.body.access_token;
     });
 
-    it("should return user profile with valid token", () => {
-      return request(app.getHttpServer())
+    it("devuelve el perfil con token válido", async () => {
+      const res = await request(app.getHttpServer())
         .get("/api/auth/profile")
-        .set("Authorization", `Bearer ${authToken}`)
-        .expect(200)
-        .expect((res) => {
-          expect(res.body).toHaveProperty("id");
-          expect(res.body.email).toEqual("login@example.com");
-        });
+        .set("Authorization", `Bearer ${token}`);
+      expect(res.status).toBe(200);
+      expect(res.body.email).toBe(email);
     });
 
-    it("should fail without token", () => {
-      return request(app.getHttpServer()).get("/api/auth/profile").expect(401);
+    it("falla sin token -> 401", async () => {
+      const res = await request(app.getHttpServer()).get("/api/auth/profile");
+      expect(res.status).toBe(401);
     });
 
-    it("should fail with invalid token", () => {
-      return request(app.getHttpServer())
+    it("falla con token inválido -> 401", async () => {
+      const res = await request(app.getHttpServer())
         .get("/api/auth/profile")
-        .set("Authorization", "Bearer invalid-token")
-        .expect(401);
+        .set("Authorization", "Bearer invalid-token");
+      expect(res.status).toBe(401);
     });
   });
 });

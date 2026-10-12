@@ -1,76 +1,39 @@
-import { Test, TestingModule } from "@nestjs/testing";
-import { INestApplication, ValidationPipe } from "@nestjs/common";
-import * as request from "supertest";
-import { AppModule } from "../src/app.module";
-import { TypeOrmModule } from "@nestjs/typeorm";
+import { INestApplication } from "@nestjs/common";
+import request from "supertest";
+import { createTestApp, registerAndLogin, type TestUser } from "./test-app";
 
 describe("Verifications (e2e)", () => {
   let app: INestApplication;
-  let adminToken: string;
-  let sellerToken: string;
+  let admin: TestUser;
+  let seller: TestUser;
   let productId: string;
+  let verificationId: string;
+  const suffix = Date.now();
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-      .overrideModule(TypeOrmModule)
-      .useModule(
-        TypeOrmModule.forRoot({
-          type: "sqlite",
-          database: ":memory:",
-          entities: [__dirname + "/../src/**/*.entity{.ts,.js}"],
-          synchronize: true,
-        }),
-      )
-      .compile();
-
-    app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix("api");
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
-    await app.init();
-
-    await request(app.getHttpServer()).post("/api/auth/register").send({
-      name: "Admin User",
-      email: "admin@example.com",
-      password: "password123",
+    app = await createTestApp();
+    admin = await registerAndLogin(app, {
+      name: "Verif Admin",
+      email: `verif.admin.${suffix}@test.com`,
       role: "admin",
     });
-
-    await request(app.getHttpServer()).post("/api/auth/register").send({
-      name: "Seller User",
-      email: "seller@example.com",
-      password: "password123",
+    seller = await registerAndLogin(app, {
+      name: "Verif Seller",
+      email: `verif.seller.${suffix}@test.com`,
       role: "seller",
     });
 
-    const adminLogin = await request(app.getHttpServer())
-      .post("/api/auth/login")
-      .send({ email: "admin@example.com", password: "password123" });
-    adminToken = adminLogin.body.access_token;
-
-    const sellerLogin = await request(app.getHttpServer())
-      .post("/api/auth/login")
-      .send({ email: "seller@example.com", password: "password123" });
-    sellerToken = sellerLogin.body.access_token;
-
-    const createProductResponse = await request(app.getHttpServer())
+    const product = await request(app.getHttpServer())
       .post("/api/products")
-      .set("Authorization", `Bearer ${sellerToken}`)
+      .set("Authorization", `Bearer ${seller.token}`)
       .send({
         title: "Used GPU for Verification",
-        description: "GPU used for testing",
+        description: "GPU usada para verificación e2e con descripción válida",
         price: 300,
         condition: "used",
         category: "gpu",
       });
-    productId = createProductResponse.body.id;
+    productId = product.body.id;
   });
 
   afterAll(async () => {
@@ -78,68 +41,63 @@ describe("Verifications (e2e)", () => {
   });
 
   describe("POST /api/verifications", () => {
-    it("should create a verification as admin", () => {
-      return request(app.getHttpServer())
+    it("crea una verificación como admin", async () => {
+      const res = await request(app.getHttpServer())
         .post("/api/verifications")
-        .set("Authorization", `Bearer ${adminToken}`)
+        .set("Authorization", `Bearer ${admin.token}`)
         .send({
           productId,
           result: "pass",
-          notes: "Product verified successfully",
+          notes: "Producto verificado correctamente",
           hoursOfUse: 500,
           physicalState: "Good",
-        })
-        .expect(201)
-        .expect((res) => {
-          expect(res.body).toHaveProperty("id");
-          expect(res.body.result).toEqual("pass");
-          expect(res.body.verifiedBy).toEqual("admin@example.com");
         });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty("id");
+      expect(res.body.result).toBe("pass");
+      expect(res.body.verifiedBy).toBe(admin.id);
+      verificationId = res.body.id;
     });
 
-    it("should fail without authentication", () => {
-      return request(app.getHttpServer())
+    it("falla sin autenticación -> 401", async () => {
+      const res = await request(app.getHttpServer())
         .post("/api/verifications")
-        .send({
-          productId,
-          result: "pass",
-          notes: "Test",
-        })
-        .expect(401);
+        .send({ productId, result: "pass", notes: "Test" });
+      expect(res.status).toBe(401);
     });
 
-    it("should fail with non-admin role", () => {
-      return request(app.getHttpServer())
+    it("falla con rol no admin -> 403", async () => {
+      const res = await request(app.getHttpServer())
         .post("/api/verifications")
-        .set("Authorization", `Bearer ${sellerToken}`)
-        .send({
-          productId,
-          result: "pass",
-          notes: "Test",
-        })
-        .expect(403);
+        .set("Authorization", `Bearer ${seller.token}`)
+        .send({ productId, result: "pass", notes: "Test" });
+      expect(res.status).toBe(403);
     });
   });
 
-  describe("GET /api/verifications/product/:productId", () => {
-    it("should return verifications for a product", () => {
-      return request(app.getHttpServer())
+  describe("GET /api/verifications", () => {
+    it("devuelve las verificaciones de un producto", async () => {
+      const res = await request(app.getHttpServer())
         .get(`/api/verifications/product/${productId}`)
-        .expect(200)
-        .expect((res) => {
-          expect(Array.isArray(res.body)).toBeTruthy();
-        });
+        .set("Authorization", `Bearer ${seller.token}`);
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
     });
-  });
 
-  describe("GET /api/verifications/:id", () => {
-    it("should return verification by id", () => {
-      return request(app.getHttpServer())
-        .get(`/api/verifications/${productId}`)
-        .expect(200)
-        .expect((res) => {
-          expect(res.body).toHaveProperty("id");
-        });
+    it("devuelve una verificación por id", async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/verifications/${verificationId}`)
+        .set("Authorization", `Bearer ${seller.token}`);
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("id");
+    });
+
+    it("falla sin autenticación -> 401", async () => {
+      const res = await request(app.getHttpServer()).get(
+        `/api/verifications/product/${productId}`,
+      );
+      expect(res.status).toBe(401);
     });
   });
 });

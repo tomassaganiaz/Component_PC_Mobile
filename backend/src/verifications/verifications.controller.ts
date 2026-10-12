@@ -6,6 +6,7 @@ import {
   Param,
   UseGuards,
   Request,
+  ParseUUIDPipe,
 } from "@nestjs/common";
 import { Request as ExpressRequest } from "express";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
@@ -37,13 +38,13 @@ export class VerificationsController {
 
   @Get("product/:productId")
   @ApiOperation({ summary: "Obtener verificaciones de un producto" })
-  findByProduct(@Param("productId") productId: string) {
+  findByProduct(@Param("productId", new ParseUUIDPipe()) productId: string) {
     return this.verificationsService.findByProduct(productId);
   }
 
   @Get(":id")
   @ApiOperation({ summary: "Obtener detalle de verificación" })
-  findOne(@Param("id") id: string) {
+  findOne(@Param("id", new ParseUUIDPipe()) id: string) {
     return this.verificationsService.findOne(id);
   }
 }

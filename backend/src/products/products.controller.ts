@@ -10,6 +10,7 @@ import {
   UseGuards,
   Request,
   ForbiddenException,
+  ParseUUIDPipe,
 } from "@nestjs/common";
 import { Request as ExpressRequest } from "express";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
@@ -46,7 +47,7 @@ export class ProductsController {
 
   @Get(":id")
   @ApiOperation({ summary: "Obtener detalle de producto" })
-  findOne(@Param("id") id: string) {
+  findOne(@Param("id", new ParseUUIDPipe()) id: string) {
     return this.productsService.findOne(id);
   }
 
@@ -62,7 +63,7 @@ export class ProductsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "Actualizar producto (vendedor dueño o admin)" })
   async update(
-    @Param("id") id: string,
+    @Param("id", new ParseUUIDPipe()) id: string,
     @Body() updateProductDto: UpdateProductDto,
     @Request() req: ExpressRequest,
   ) {
@@ -83,7 +84,7 @@ export class ProductsController {
   @ApiOperation({
     summary: "Eliminar producto vendido (vendedor dueño o admin)",
   })
-  async remove(@Param("id") id: string, @Request() req: ExpressRequest) {
+  async remove(@Param("id", new ParseUUIDPipe()) id: string, @Request() req: ExpressRequest) {
     const product = await this.productsService.findOne(id);
     const user = req.user as { id: string; role: string };
     if (user.role !== UserRole.ADMIN && product.sellerId !== user.id) {
