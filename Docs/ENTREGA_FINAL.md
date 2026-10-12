@@ -70,7 +70,44 @@ eas build -p android --profile preview   # genera APK (perfil preview)
 | Frontend (Jest) | 18 |
 | Lint / typecheck / build | OK |
 
-## 8. Checklist de entrega
+## 8. Revisión en múltiples dispositivos (QR)
+
+### Opción A — Misma red Wi-Fi (lo más simple)
+1. Backend: `cd backend && npm run start:dev` (queda en `http://<IP-LAN>:3000`).
+2. Compilar la web apuntando a tu IP de LAN:
+   ```bash
+   cd Frontend
+   npm run build:web:lan
+   ```
+3. Servir + QR:
+   ```bash
+   npm run serve:web
+   ```
+   Muestra la URL (ej. `http://192.168.0.111:4173`) **y un QR**. Cualquier celular en la misma Wi-Fi lo escanea y abre la web (PWA). Cualquier cantidad de dispositivos.
+4. Si Windows bloquea: permitir **Node.js** en la red privada (Firewall).
+
+### Opción B — Redes distintas (público)
+- **Web pública**: el repo ya trae el workflow `.github/workflows/web.yml` (deploy a **Netlify**). Configurá los secrets `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID` y `EXPO_PUBLIC_API_URL` (URL pública del backend) y hacé push → la web queda publicada; mostrá el QR de esa URL.
+- **Backend público**: `cd backend && npm run tunnel` (expone la API por un túnel) y compilá la web con `EXPO_PUBLIC_API_URL="<url-túnel>/api"`.
+- **QR de un túnel de la web**: `PUBLIC_URL="https://tu-web.ngrok.io" npm run serve:web`.
+
+### Opción C — App móvil nativa (Expo Go)
+```bash
+cd backend && npm run tunnel            # API pública
+cd Frontend
+$env:EXPO_PUBLIC_API_URL="<url-túnel>/api"; npm run start:tunnel
+```
+Escaneás el QR con **Expo Go** (funciona desde cualquier red). En iOS/Android.
+
+## 8.b. Comandos de build web
+
+| Comando | Qué hace |
+|---|---|
+| `npm run build:web` | Export estático (usa `EXPO_PUBLIC_API_URL` o config por defecto) |
+| `npm run build:web:lan` | Export apuntando a la IP de tu LAN (para QR local) |
+| `npm run serve:web` | Sirve `dist/` y muestra QR |
+
+## 9. Checklist de entrega
 
 - [ ] `app.json` con nombre y bundle IDs (hecho).
 - [ ] `eas.json` configurado (hecho).
