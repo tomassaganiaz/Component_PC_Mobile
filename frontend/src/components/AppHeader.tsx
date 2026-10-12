@@ -1,7 +1,9 @@
 import { Image, Pressable, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 
 import AppIcon from './AppIcon';
 import { Avatar, PulseDot } from './ui';
+import { useNotifications } from '../context/NotificationsContext';
 import { IMAGES } from '../data/mock';
 import { colors, shadow } from '../theme';
 
@@ -14,6 +16,9 @@ export default function AppHeader({
   activeTab?: boolean;
   onNotify?: () => void;
 }) {
+  const router = useRouter();
+  const { unread } = useNotifications();
+  const handleNotify = onNotify ?? (() => router.push('/notifications'));
   return (
     <View
       className="w-full flex-row items-center justify-between bg-surface px-4 pb-2 pt-3"
@@ -42,14 +47,20 @@ export default function AppHeader({
       </View>
       <View className="flex-row items-center gap-2">
         <Pressable
-          onPress={onNotify}
+          onPress={handleNotify}
           className="relative h-10 w-10 items-center justify-center rounded-lg"
           style={{ borderWidth: 1, borderColor: 'transparent' }}
         >
           <AppIcon name="notifications" size={22} color={colors.textSecondary} />
-          <View className="absolute right-2 top-2">
-            <PulseDot size={6} />
-          </View>
+          {unread > 0 ? (
+            <View className="absolute right-0.5 top-0.5 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1">
+              <Text className="text-[9px] font-bold text-white">{unread > 9 ? '9+' : unread}</Text>
+            </View>
+          ) : (
+            <View className="absolute right-2 top-2">
+              <PulseDot size={6} />
+            </View>
+          )}
         </Pressable>
         <Avatar uri={IMAGES.profile} size={34} />
       </View>

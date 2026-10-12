@@ -8,6 +8,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { MarketplaceProvider } from '../context/MarketplaceContext';
+import { NotificationsProvider } from '../context/NotificationsContext';
 import { ThemeProvider } from '../context/ThemeContext';
 import { I18nProvider, useI18n } from '../i18n';
 import { initWebVitals } from '../services/webVitals';
@@ -59,6 +60,7 @@ function ProtectedRouter() {
       <Stack.Screen name="inspection" />
       <Stack.Screen name="profile" />
       <Stack.Screen name="sales" />
+      <Stack.Screen name="notifications" />
       <Stack.Screen name="analytics" />
       <Stack.Screen name="product/[id]" />
     </Stack>
@@ -75,14 +77,16 @@ export default function RootLayout() {
       <I18nProvider>
         <Head.Provider>
           <AuthProvider>
-            <MarketplaceProvider>
-              <SafeAreaProvider>
-                <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface }} edges={['top', 'bottom']}>
-                  <StatusBar style="auto" />
-                  <ProtectedRouter />
-                </SafeAreaView>
-              </SafeAreaProvider>
-            </MarketplaceProvider>
+            <NotificationsProvider>
+              <MarketplaceProvider>
+                <SafeAreaProvider>
+                  <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface }} edges={['top', 'bottom']}>
+                    <StatusBar style="auto" />
+                    <ProtectedRouter />
+                  </SafeAreaView>
+                </SafeAreaProvider>
+              </MarketplaceProvider>
+            </NotificationsProvider>
           </AuthProvider>
         </Head.Provider>
       </I18nProvider>

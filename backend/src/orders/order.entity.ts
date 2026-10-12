@@ -59,6 +59,17 @@ export class Order {
   @Column({ type: "text", nullable: true, name: "cancellation_reason" })
   cancellationReason: string;
 
+  @Column({ type: "varchar", length: 40, nullable: true, name: "coupon_code" })
+  couponCode: string | null;
+
+  @Column({
+    type: "decimal",
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  discount: number;
+
   // Relations
   @ManyToOne(() => User, (user) => user.orders, { onDelete: "CASCADE" })
   @JoinColumn({ name: "buyer_id" })

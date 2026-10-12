@@ -398,12 +398,15 @@ export interface OrderItem {
   createdAt: string;
   product?: ApiProduct;
   buyerId?: string;
+  discount?: number;
+  couponCode?: string | null;
 }
 
 export interface CreateOrderInput {
   productId: string;
   shippingAddress?: string;
   paymentMethod?: string;
+  couponCode?: string;
 }
 
 export interface OrderProtection {
@@ -490,5 +493,72 @@ export function requestOrderReturn(id: string, reason: string): Promise<OrderIte
 export function requestOrderCoverage(id: string): Promise<{ ticketId: string; message: string }> {
   return request<{ ticketId: string; message: string }>(`/orders/${id}/coverage`, {
     method: 'POST',
+  });
+}
+
+/* ------------------------------ Reputation ------------------------------ */
+
+export type ReputationMedal = 'none' | 'silver' | 'gold' | 'platinum';
+
+export interface SellerReputation {
+  level: number;
+  color: string;
+  label: string;
+  medal: ReputationMedal;
+  averageRating: number;
+  positivity: number;
+  complaintRate: number;
+  totalReviews: number;
+  totalSales: number;
+  transactionsLast60d: number;
+  cancelledLast60d: number;
+  breakdown: { positive: number; neutral: number; complaint: number };
+}
+
+export function getSellerReputation(sellerId: string): Promise<SellerReputation> {
+  return request<SellerReputation>(`/reviews/reputation/${sellerId}`);
+}
+
+/* ---------------------------- Notifications ----------------------------- */
+
+export interface AppNotification {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  read: boolean;
+  metadata?: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export function getNotifications(): Promise<AppNotification[]> {
+  return request<AppNotification[]>('/notifications');
+}
+
+export function getUnreadNotifications(): Promise<{ count: number }> {
+  return request<{ count: number }>('/notifications/unread-count');
+}
+
+export function markNotificationRead(id: string): Promise<AppNotification> {
+  return request<AppNotification>(`/notifications/${id}/read`, { method: 'PATCH' });
+}
+
+export function markAllNotificationsRead(): Promise<{ success: boolean }> {
+  return request<{ success: boolean }>('/notifications/read-all', { method: 'PATCH' });
+}
+
+/* ------------------------------- Coupons -------------------------------- */
+
+export interface CouponValidation {
+  code: string;
+  type: 'percent' | 'fixed';
+  discount: number;
+  finalTotal: number;
+}
+
+export function validateCoupon(code: string, amount: number): Promise<CouponValidation> {
+  return request<CouponValidation>('/coupons/validate', {
+    method: 'POST',
+    body: JSON.stringify({ code, amount }),
   });
 }

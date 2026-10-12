@@ -101,6 +101,16 @@ export class ReviewsController {
     return this.reviewsService.getSellerStats(sellerId);
   }
 
+  @Get("reputation/:sellerId")
+  @ApiOperation({
+    summary: "Reputación formal del vendedor (termómetro, medalla y métricas)",
+  })
+  getSellerReputation(
+    @Param("sellerId", new ParseUUIDPipe()) sellerId: string,
+  ) {
+    return this.reviewsService.getSellerReputation(sellerId);
+  }
+
   @Get(":id")
   @ApiOperation({ summary: "Obtener detalle de una reseña" })
   findOne(@Param("id", new ParseUUIDPipe()) id: string) {

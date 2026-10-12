@@ -26,6 +26,31 @@ export interface SecurityProfile {
   breakdown: { positive: number; neutral: number; complaint: number };
 }
 
+export type ReputationMedal = "none" | "silver" | "gold" | "platinum";
+
+export interface SellerReputation {
+  level: number; // 1..5 (termómetro)
+  color: string; // color del termómetro
+  label: string; // etiqueta legible
+  medal: ReputationMedal;
+  averageRating: number;
+  positivity: number;
+  complaintRate: number;
+  totalReviews: number;
+  totalSales: number;
+  transactionsLast60d: number;
+  cancelledLast60d: number;
+  breakdown: { positive: number; neutral: number; complaint: number };
+}
+
+const REPUTATION_LEVELS: { level: number; color: string; label: string }[] = [
+  { level: 1, color: "#ef4444", label: "Malo" },
+  { level: 2, color: "#f97316", label: "Regular" },
+  { level: 3, color: "#facc15", label: "Bueno" },
+  { level: 4, color: "#84cc16", label: "Muy bueno" },
+  { level: 5, color: "#10b981", label: "Excelente" },
+];
+
 @Injectable()
 export class ReviewsService {
   constructor(
@@ -258,6 +283,85 @@ export class ReviewsService {
       responseRate: 95, // Placeholder - implement actual calculation
       badge: badgeData.badge,
       tier: badgeData.tier,
+    };
+  }
+
+  private computeReputationLevel(
+    positivity: number,
+    complaints: number,
+    totalReviews: number,
+    totalSales: number,
+  ): number {
+    // Sin historial suficiente: nivel base según ventas cerradas.
+    if (totalReviews < 3) {
+      return totalSales >= 5 ? 3 : 2;
+    }
+    if (positivity >= 90 && complaints === 0) return 5;
+    if (positivity >= 75) return 4;
+    if (positivity >= 60) return 3;
+    if (positivity >= 40) return 2;
+    return 1;
+  }
+
+  private computeMedal(
+    level: number,
+    totalSales: number,
+  ): ReputationMedal {
+    if (level >= 5 && totalSales >= 50) return "platinum";
+    if (level >= 4 && totalSales >= 10) return "gold";
+    if (level >= 3 && totalSales >= 3) return "silver";
+    return "none";
+  }
+
+  /** Reputación formal del vendedor (termómetro + medalla + métricas). */
+  async getSellerReputation(sellerId: string): Promise<SellerReputation> {
+    const badge = await this.getTrustBadge(sellerId);
+
+    const since = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+    const orderRepo = this.dataSource.getRepository("Order");
+    const base = () =>
+      orderRepo
+        .createQueryBuilder("o")
+        .innerJoin("o.product", "p")
+        .where("p.sellerId = :sellerId", { sellerId });
+
+    const [totalSales, transactionsLast60d, cancelledLast60d] =
+      await Promise.all([
+        base()
+          .andWhere("o.status = :s", { s: OrderStatus.DELIVERED })
+          .getCount(),
+        base()
+          .andWhere("o.status = :s", { s: OrderStatus.DELIVERED })
+          .andWhere("o.createdAt >= :since", { since })
+          .getCount(),
+        base()
+          .andWhere("o.status = :s", { s: OrderStatus.CANCELLED })
+          .andWhere("o.createdAt >= :since", { since })
+          .getCount(),
+      ]);
+
+    const level = this.computeReputationLevel(
+      badge.positivity,
+      badge.complaints,
+      badge.totalReviews,
+      totalSales,
+    );
+    const meta =
+      REPUTATION_LEVELS.find((l) => l.level === level) ?? REPUTATION_LEVELS[0];
+
+    return {
+      level,
+      color: meta.color,
+      label: meta.label,
+      medal: this.computeMedal(level, totalSales),
+      averageRating: badge.averageRating,
+      positivity: badge.positivity,
+      complaintRate: badge.complaintRate,
+      totalReviews: badge.totalReviews,
+      totalSales,
+      transactionsLast60d,
+      cancelledLast60d,
+      breakdown: badge.breakdown,
     };
   }
 }

@@ -14,6 +14,8 @@ import { ReportsModule } from "./reports/reports.module";
 import { ChatModule } from "./chat/chat.module";
 import { AnalyticsModule } from "./analytics/analytics.module";
 import { MediaModule } from "./media/media.module";
+import { NotificationsModule } from "./notifications/notifications.module";
+import { CouponsModule } from "./coupons/coupons.module";
 import { ThrottlerUserGuard } from "./common/throttler-user.guard";
 
 @Module({
@@ -92,6 +94,8 @@ import { ThrottlerUserGuard } from "./common/throttler-user.guard";
     ChatModule,
     AnalyticsModule,
     MediaModule,
+    NotificationsModule,
+    CouponsModule,
   ],
   controllers: [AppController],
   providers: [

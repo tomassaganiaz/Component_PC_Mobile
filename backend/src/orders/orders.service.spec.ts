@@ -4,6 +4,8 @@ import { OrdersService } from "./orders.service";
 import { Order, OrderStatus } from "./order.entity";
 import { ProductsService } from "../products/products.service";
 import { ProductStatus } from "../products/product.entity";
+import { NotificationsService } from "../notifications/notifications.service";
+import { CouponsService } from "../coupons/coupons.service";
 import {
   NotFoundException,
   BadRequestException,
@@ -28,12 +30,23 @@ describe("OrdersService", () => {
     incrementStock: jest.fn(),
   };
 
+  const mockNotifications = {
+    create: jest.fn().mockResolvedValue({}),
+  };
+
+  const mockCouponsService = {
+    validate: jest.fn(),
+    redeem: jest.fn().mockResolvedValue(undefined),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrdersService,
         { provide: getRepositoryToken(Order), useValue: mockRepository },
         { provide: ProductsService, useValue: mockProductsService },
+        { provide: NotificationsService, useValue: mockNotifications },
+        { provide: CouponsService, useValue: mockCouponsService },
       ],
     }).compile();
 

@@ -7,6 +7,7 @@ export type ScreenName =
   | 'publish'
   | 'profile'
   | 'sales'
+  | 'notifications'
   | 'analytics';
 
 export interface Route {

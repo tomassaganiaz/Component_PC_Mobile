@@ -10,6 +10,9 @@ import { Order, OrderStatus } from "./order.entity";
 import { CreateOrderDto, UpdateOrderDto } from "./dto";
 import { ProductsService } from "../products/products.service";
 import { ProductStatus } from "../products/product.entity";
+import { NotificationsService } from "../notifications/notifications.service";
+import { NotificationType } from "../notifications/notification.entity";
+import { CouponsService } from "../coupons/coupons.service";
 
 const RETURN_WINDOW_DAYS = 10;
 const COVERAGE_DAYS = 45;
@@ -21,6 +24,8 @@ export class OrdersService {
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
     private readonly productsService: ProductsService,
+    private readonly notifications: NotificationsService,
+    private readonly coupons: CouponsService,
   ) {}
 
   async create(
@@ -35,6 +40,20 @@ export class OrdersService {
       throw new BadRequestException("El producto ya fue vendido");
     }
 
+    // Cupón (opcional): se valida ANTES de reservar stock.
+    let total = Number(product.price);
+    let discount = 0;
+    let couponCode: string | null = null;
+    if (createOrderDto.couponCode) {
+      const applied = await this.coupons.validate(
+        createOrderDto.couponCode,
+        total,
+      );
+      discount = applied.discount;
+      total = applied.finalTotal;
+      couponCode = applied.code;
+    }
+
     // Reserva atómica de stock: si no hay disponible, se rechaza la compra.
     const remainingStock = await this.productsService.decrementStock(
       product.id,
@@ -47,7 +66,9 @@ export class OrdersService {
       const order = this.orderRepository.create({
         ...createOrderDto,
         buyerId,
-        total: product.price,
+        total,
+        discount,
+        couponCode,
         status: OrderStatus.PENDING,
       });
 
@@ -59,6 +80,18 @@ export class OrdersService {
           status: ProductStatus.SOLD,
         } as any);
       }
+
+      if (couponCode) {
+        await this.coupons.redeem(couponCode);
+      }
+
+      await this.notifications.create(
+        product.sellerId,
+        NotificationType.SALE,
+        "Nueva venta",
+        `Tenés una nueva orden por "${product.title}".`,
+        { orderId: savedOrder.id, productId: product.id },
+      );
 
       return savedOrder;
     } catch (err) {
@@ -103,7 +136,19 @@ export class OrdersService {
 
     order.status = OrderStatus.PAID;
     order.custodyStartDate = new Date();
-    return this.orderRepository.save(order);
+    const saved = await this.orderRepository.save(order);
+
+    if (order.product?.sellerId) {
+      await this.notifications.create(
+        order.product.sellerId,
+        NotificationType.ORDER_PAID,
+        "Venta pagada",
+        `El comprador pagó "${order.product.title}". Prepará el envío.`,
+        { orderId: order.id },
+      );
+    }
+
+    return saved;
   }
 
   /** El vendedor marca el producto como enviado. */
@@ -119,7 +164,17 @@ export class OrdersService {
     }
 
     order.status = OrderStatus.SHIPPED;
-    return this.orderRepository.save(order);
+    const saved = await this.orderRepository.save(order);
+
+    await this.notifications.create(
+      order.buyerId,
+      NotificationType.ORDER_SHIPPED,
+      "Pedido enviado",
+      `Tu pedido "${order.product?.title ?? ""}" está en camino.`,
+      { orderId: order.id },
+    );
+
+    return saved;
   }
 
   /** El comprador confirma la recepción del producto. */
@@ -133,7 +188,26 @@ export class OrdersService {
 
     order.status = OrderStatus.DELIVERED;
     order.custodyEndDate = new Date();
-    return this.orderRepository.save(order);
+    const saved = await this.orderRepository.save(order);
+
+    await this.notifications.create(
+      order.buyerId,
+      NotificationType.ORDER_DELIVERED,
+      "Entrega confirmada",
+      `Confirmaste la recepción de "${order.product?.title ?? "tu pedido"}".`,
+      { orderId: order.id },
+    );
+    if (order.product?.sellerId) {
+      await this.notifications.create(
+        order.product.sellerId,
+        NotificationType.ORDER_DELIVERED,
+        "Producto entregado",
+        `El comprador confirmó la entrega de "${order.product.title}".`,
+        { orderId: order.id },
+      );
+    }
+
+    return saved;
   }
 
   private daysLeft(from: Date, until: Date): number {
@@ -330,6 +404,17 @@ export class OrdersService {
     order.custodyEndDate = new Date();
     const saved = await this.orderRepository.save(order);
     await this.restoreStock(order.productId);
+
+    const counterpart = isBuyer ? order.product?.sellerId : order.buyerId;
+    if (counterpart) {
+      await this.notifications.create(
+        counterpart,
+        NotificationType.ORDER_CANCELLED,
+        "Orden cancelada",
+        `Se canceló la orden por "${order.product?.title ?? "un producto"}".`,
+        { orderId: order.id },
+      );
+    }
 
     return saved;
   }

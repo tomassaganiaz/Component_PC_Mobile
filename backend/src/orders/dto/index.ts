@@ -16,6 +16,11 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   paymentMethod?: string;
+
+  @ApiPropertyOptional({ example: "TECH10" })
+  @IsOptional()
+  @IsString()
+  couponCode?: string;
 }
 
 export class UpdateOrderDto {

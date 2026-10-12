@@ -5,8 +5,9 @@ import AppIcon from '../components/AppIcon';
 import ProductImage from '../components/ProductImage';
 import { Avatar, ProgressBar } from '../components/ui';
 import { useI18n } from '../i18n';
-import { createOrder, createReport, getSellerReviews, getTrustBadge, payOrder } from '../services/api';
-import type { OrderItem, ReviewItem, SecurityProfile } from '../services/api';
+import { createOrder, createReport, getSellerReputation, getSellerReviews, getTrustBadge, payOrder, validateCoupon } from '../services/api';
+import type { CouponValidation, OrderItem, ReviewItem, SecurityProfile, SellerReputation } from '../services/api';
+import ReputationMeter from '../components/ReputationMeter';
 import { useTrack } from '../hooks/useTrack';
 import { IMAGES } from '../data/mock';
 import { colors, glow, shadow } from '../theme';
@@ -172,14 +173,21 @@ function SellerSecurity({
 }) {
   const { t } = useI18n();
   const [badge, setBadge] = useState<SecurityProfile | null>(null);
+  const [reputation, setReputation] = useState<SellerReputation | null>(null);
 
   useEffect(() => {
     if (!product.sellerId) return;
     let cancelled = false;
     (async () => {
       try {
-        const data = await getTrustBadge(product.sellerId!);
-        if (!cancelled) setBadge(data);
+        const [b, rep] = await Promise.all([
+          getTrustBadge(product.sellerId!),
+          getSellerReputation(product.sellerId!).catch(() => null),
+        ]);
+        if (!cancelled) {
+          setBadge(b);
+          setReputation(rep);
+        }
       } catch {
         // conservar fallback con sellerStats del producto
       }
@@ -272,6 +280,7 @@ function SellerSecurity({
             ? 'Acepta todas las revisiones y testeos del producto antes de venderlo.'
             : 'Acepta pocas o ninguna revisión y testeo antes de vender.'}
         </Text>
+        {reputation ? <ReputationMeter reputation={reputation} /> : null}
         {onViewReviews ? (
           <Pressable
             onPress={onViewReviews}
@@ -311,6 +320,10 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
   const [placing, setPlacing] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
   const [createdOrder, setCreatedOrder] = useState<OrderItem | null>(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponApplied, setCouponApplied] = useState<CouponValidation | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponApplying, setCouponApplying] = useState(false);
 
   const [reviewsOpen, setReviewsOpen] = useState(false);
   const [sellerReviews, setSellerReviews] = useState<ReviewItem[]>([]);
@@ -340,6 +353,24 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
     setCheckoutOpen(true);
     setOrderError(null);
     setCreatedOrder(null);
+    setCouponCode('');
+    setCouponApplied(null);
+    setCouponError(null);
+  };
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponApplying(true);
+    setCouponError(null);
+    try {
+      const res = await validateCoupon(couponCode.trim(), Number(product.price));
+      setCouponApplied(res);
+    } catch (err) {
+      setCouponApplied(null);
+      setCouponError(err instanceof Error ? err.message : t('product.checkout.couponError'));
+    } finally {
+      setCouponApplying(false);
+    }
   };
 
   const handlePlaceOrder = async () => {
@@ -354,6 +385,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
         productId: product.id,
         shippingAddress: shippingAddress.trim(),
         paymentMethod,
+        couponCode: couponApplied?.code,
       });
       // El pago se confirma de inmediato (mock): fondos en custodia. Si falla,
       // la orden queda pendiente y se puede pagar desde el seguimiento.
@@ -1046,7 +1078,9 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
                     <Text className="truncate text-sm font-semibold text-text-primary">{product.title}</Text>
                     <Text className="font-mono text-xs text-text-secondary">Custodia escrow incluida</Text>
                   </View>
-                  <Text className="text-lg font-bold text-text-primary">${product.price}</Text>
+                  <Text className="text-lg font-bold text-text-primary">
+                    ${couponApplied ? couponApplied.finalTotal.toFixed(2) : product.price}
+                  </Text>
                 </View>
 
                 <Text className="mb-1.5 mt-4 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
@@ -1092,6 +1126,50 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
                     );
                   })}
                 </View>
+
+                <Text className="mb-1.5 mt-4 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+                  {t('product.checkout.coupon')}
+                </Text>
+                <View className="flex-row gap-2">
+                  <TextInput
+                    value={couponCode}
+                    onChangeText={(v) => {
+                      setCouponCode(v);
+                      setCouponError(null);
+                    }}
+                    placeholder={t('product.checkout.couponPh')}
+                    placeholderTextColor={colors.textMuted}
+                    autoCapitalize="characters"
+                    className="flex-1 rounded-xl border border-line bg-panel px-3 py-2.5 text-sm text-text-primary"
+                  />
+                  <Pressable
+                    onPress={handleApplyCoupon}
+                    disabled={couponApplying || !couponCode.trim()}
+                    className="items-center justify-center rounded-xl border border-line bg-elevated px-4"
+                    style={couponApplying ? { opacity: 0.7 } : undefined}
+                  >
+                    {couponApplying ? (
+                      <AppIcon name="sync" size={16} color={colors.textPrimary} />
+                    ) : (
+                      <Text className="text-xs font-semibold text-primary">
+                        {t('product.checkout.couponApply')}
+                      </Text>
+                    )}
+                  </Pressable>
+                </View>
+                {couponError ? (
+                  <Text className="mt-2 text-xs text-red-400">{couponError}</Text>
+                ) : null}
+                {couponApplied ? (
+                  <View className="mt-2 flex-row items-center justify-between rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2">
+                    <Text className="text-xs font-semibold text-emerald-300">
+                      {t('product.checkout.couponApplied', { code: couponApplied.code })}
+                    </Text>
+                    <Text className="text-xs font-bold text-emerald-300">
+                      -${couponApplied.discount.toFixed(2)}
+                    </Text>
+                  </View>
+                ) : null}
 
                 {orderError ? (
                   <View className="mt-3 flex-row items-start gap-2 rounded-lg border border-red-500/40 bg-red-500/10 p-3">
