@@ -40,3 +40,20 @@ export class ReturnOrderDto {
   @IsString()
   reason: string;
 }
+
+export class CheckoutCartDto {
+  @ApiPropertyOptional({ example: "Av. Corrientes 1234, CABA" })
+  @IsOptional()
+  @IsString()
+  shippingAddress?: string;
+
+  @ApiPropertyOptional({ example: "credit_card" })
+  @IsOptional()
+  @IsString()
+  paymentMethod?: string;
+
+  @ApiPropertyOptional({ example: "TECH10" })
+  @IsOptional()
+  @IsString()
+  couponCode?: string;
+}

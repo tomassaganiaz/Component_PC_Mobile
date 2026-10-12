@@ -74,7 +74,12 @@ export class ReviewsService {
       throw new BadRequestException("Solo puedes reseñar tus propias compras");
     }
 
-    if (order.productId !== productId) {
+    const item = order.items?.find((i) => i.productId === productId);
+    const sourceProduct =
+      item?.product ??
+      (order.productId === productId ? order.product : null) ??
+      undefined;
+    if (!sourceProduct) {
       throw new BadRequestException("El producto no corresponde a esta orden");
     }
 
@@ -105,7 +110,7 @@ export class ReviewsService {
     const review = this.reviewRepository.create({
       ...createReviewDto,
       buyerId,
-      sellerId: order.product.sellerId,
+      sellerId: sourceProduct.sellerId,
       isVerifiedPurchase: true,
       status:
         type === ReviewType.COMPLAINT

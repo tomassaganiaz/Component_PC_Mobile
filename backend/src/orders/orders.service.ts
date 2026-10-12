@@ -8,11 +8,12 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Order, OrderStatus } from "./order.entity";
 import { CreateOrderDto, UpdateOrderDto } from "./dto";
-import { ProductsService } from "../products/products.service";
+import { ProductsService, ProductWithSecurity } from "../products/products.service";
 import { ProductStatus } from "../products/product.entity";
 import { NotificationsService } from "../notifications/notifications.service";
 import { NotificationType } from "../notifications/notification.entity";
 import { CouponsService } from "../coupons/coupons.service";
+import { CartService } from "../cart/cart.service";
 
 const RETURN_WINDOW_DAYS = 10;
 const COVERAGE_DAYS = 45;
@@ -26,6 +27,7 @@ export class OrdersService {
     private readonly productsService: ProductsService,
     private readonly notifications: NotificationsService,
     private readonly coupons: CouponsService,
+    private readonly cartService: CartService,
   ) {}
 
   async create(
@@ -70,6 +72,14 @@ export class OrdersService {
         discount,
         couponCode,
         status: OrderStatus.PENDING,
+        productId: product.id,
+        items: [
+          {
+            productId: product.id,
+            quantity: 1,
+            unitPrice: Number(product.price),
+          },
+        ],
       });
 
       const savedOrder = await this.orderRepository.save(order);
@@ -101,20 +111,137 @@ export class OrdersService {
     }
   }
 
-  /** Restaura una unidad de stock y reabre el producto si estaba vendido. */
-  private async restoreStock(productId: string): Promise<void> {
-    const product = await this.productsService.findOne(productId);
-    await this.productsService.incrementStock(productId);
-    if (product.status === ProductStatus.SOLD) {
-      await this.productsService.update(productId, {
-        status: ProductStatus.PUBLISHED,
-      } as any);
+  /** Genera una orden a partir del carrito del comprador. */
+  async createFromCart(
+    buyerId: string,
+    dto: {
+      shippingAddress?: string;
+      paymentMethod?: string;
+      couponCode?: string;
+    },
+  ): Promise<Order> {
+    const cart = await this.cartService.getCart(buyerId);
+    if (!cart.items || cart.items.length === 0) {
+      throw new BadRequestException("El carrito está vacío");
+    }
+
+    const itemsData: { product: ProductWithSecurity; quantity: number }[] = [];
+    let total = 0;
+    for (const item of cart.items) {
+      const product = await this.productsService.findOne(item.productId);
+      if (product.status === ProductStatus.SOLD) {
+        throw new BadRequestException(`"${product.title}" ya fue vendido`);
+      }
+      if ((product.stock ?? 0) < item.quantity) {
+        throw new BadRequestException(
+          `Stock insuficiente para "${product.title}"`,
+        );
+      }
+      itemsData.push({ product, quantity: item.quantity });
+      total += Number(product.price) * item.quantity;
+    }
+
+    let discount = 0;
+    let couponCode: string | null = null;
+    if (dto.couponCode) {
+      const applied = await this.coupons.validate(dto.couponCode, total);
+      discount = applied.discount;
+      total = applied.finalTotal;
+      couponCode = applied.code;
+    }
+
+    const reserved: string[] = [];
+    try {
+      // Reserva atómica de stock por cada unidad.
+      for (const { product, quantity } of itemsData) {
+        for (let i = 0; i < quantity; i++) {
+          const remaining = await this.productsService.decrementStock(
+            product.id,
+          );
+          if (remaining === null) {
+            throw new BadRequestException(
+              `Stock insuficiente para "${product.title}"`,
+            );
+          }
+          reserved.push(product.id);
+          if (remaining === 0) {
+            await this.productsService.update(product.id, {
+              status: ProductStatus.SOLD,
+            } as any);
+          }
+        }
+      }
+
+      const order = this.orderRepository.create({
+        buyerId,
+        total,
+        discount,
+        couponCode,
+        status: OrderStatus.PENDING,
+        shippingAddress: dto.shippingAddress,
+        paymentMethod: dto.paymentMethod,
+        items: itemsData.map((d) => ({
+          productId: d.product.id,
+          quantity: d.quantity,
+          unitPrice: Number(d.product.price),
+        })),
+      });
+      const saved = await this.orderRepository.save(order);
+
+      if (couponCode) {
+        await this.coupons.redeem(couponCode);
+      }
+      await this.cartService.clear(buyerId);
+
+      for (const d of itemsData) {
+        await this.notifications.create(
+          d.product.sellerId,
+          NotificationType.SALE,
+          "Nueva venta",
+          `Tenés una nueva orden por "${d.product.title}".`,
+          { orderId: saved.id, productId: d.product.id },
+        );
+      }
+
+      return saved;
+    } catch (err) {
+      for (const pid of reserved) {
+        await this.productsService.incrementStock(pid);
+      }
+      throw err;
+    }
+  }
+
+  /** Restaura el stock de todos los ítems de una orden. */
+  private async restoreOrderStock(order: Order): Promise<void> {
+    const items =
+      order.items && order.items.length > 0
+        ? order.items.map((i) => ({
+            productId: i.productId,
+            quantity: i.quantity,
+          }))
+        : order.productId
+          ? [{ productId: order.productId, quantity: 1 }]
+          : [];
+
+    for (const { productId, quantity } of items) {
+      const product = await this.productsService.findOne(productId);
+      for (let i = 0; i < quantity; i++) {
+        await this.productsService.incrementStock(productId);
+      }
+      if (product.status === ProductStatus.SOLD) {
+        await this.productsService.update(productId, {
+          status: ProductStatus.PUBLISHED,
+        } as any);
+      }
     }
   }
 
   private assertOwner(order: Order, userId: string, relation: 'buyer' | 'seller') {
     const isBuyer = order.buyerId === userId;
-    const isSeller = order.product?.sellerId === userId;
+    const isSeller =
+      order.product?.sellerId === userId ||
+      (order.items?.some((i) => i.product?.sellerId === userId) ?? false);
     const allowed = relation === 'buyer' ? isBuyer : isSeller;
     if (!allowed) {
       throw new ForbiddenException(
@@ -123,6 +250,23 @@ export class OrdersService {
           : 'Solo el vendedor del producto puede gestionar esta orden',
       );
     }
+  }
+
+  private orderSellerIds(order: Order): string[] {
+    const ids = new Set<string>();
+    if (order.product?.sellerId) ids.add(order.product.sellerId);
+    order.items?.forEach((i) => {
+      if (i.product?.sellerId) ids.add(i.product.sellerId);
+    });
+    return [...ids];
+  }
+
+  private orderTitle(order: Order): string {
+    if (order.product?.title) return order.product.title;
+    const first = order.items?.[0]?.product?.title;
+    const count = order.items?.length ?? 0;
+    if (count > 1) return `${first ?? 'producto'} + ${count - 1} más`;
+    return first ?? 'tu pedido';
   }
 
   /** Confirma el pago del comprador y deja los fondos en custodia. */
@@ -138,12 +282,12 @@ export class OrdersService {
     order.custodyStartDate = new Date();
     const saved = await this.orderRepository.save(order);
 
-    if (order.product?.sellerId) {
+    for (const sellerId of this.orderSellerIds(order)) {
       await this.notifications.create(
-        order.product.sellerId,
+        sellerId,
         NotificationType.ORDER_PAID,
         "Venta pagada",
-        `El comprador pagó "${order.product.title}". Prepará el envío.`,
+        `El comprador pagó "${this.orderTitle(order)}". Prepará el envío.`,
         { orderId: order.id },
       );
     }
@@ -170,7 +314,7 @@ export class OrdersService {
       order.buyerId,
       NotificationType.ORDER_SHIPPED,
       "Pedido enviado",
-      `Tu pedido "${order.product?.title ?? ""}" está en camino.`,
+      `Tu pedido "${this.orderTitle(order)}" está en camino.`,
       { orderId: order.id },
     );
 
@@ -194,15 +338,15 @@ export class OrdersService {
       order.buyerId,
       NotificationType.ORDER_DELIVERED,
       "Entrega confirmada",
-      `Confirmaste la recepción de "${order.product?.title ?? "tu pedido"}".`,
+      `Confirmaste la recepción de "${this.orderTitle(order)}".`,
       { orderId: order.id },
     );
-    if (order.product?.sellerId) {
+    for (const sellerId of this.orderSellerIds(order)) {
       await this.notifications.create(
-        order.product.sellerId,
+        sellerId,
         NotificationType.ORDER_DELIVERED,
         "Producto entregado",
-        `El comprador confirmó la entrega de "${order.product.title}".`,
+        `El comprador confirmó la entrega de "${this.orderTitle(order)}".`,
         { orderId: order.id },
       );
     }
@@ -284,11 +428,16 @@ export class OrdersService {
     const saved = await this.orderRepository.save(order);
 
     // El producto vuelve al laboratorio: se le hacen revisiones y testeo antes de revenderlo
-    await this.restoreStock(order.productId);
-    await this.productsService.update(order.productId, {
-      status: ProductStatus.PUBLISHED,
-      verified: false,
-    } as any);
+    await this.restoreOrderStock(order);
+    const productIds = new Set<string>();
+    if (order.productId) productIds.add(order.productId);
+    order.items?.forEach((i) => productIds.add(i.productId));
+    for (const pid of productIds) {
+      await this.productsService.update(pid, {
+        status: ProductStatus.PUBLISHED,
+        verified: false,
+      } as any);
+    }
 
     return saved;
   }
@@ -335,16 +484,24 @@ export class OrdersService {
   }
 
   async findBySeller(sellerId: string): Promise<Record<string, unknown>[]> {
-    const orders = await this.orderRepository.find({
-      where: { product: { sellerId } },
-      relations: ['product', 'buyer'],
-      order: { createdAt: 'DESC' },
-    });
+    const orders = await this.orderRepository
+      .createQueryBuilder("order")
+      .leftJoinAndSelect("order.items", "item")
+      .leftJoinAndSelect("item.product", "itemProduct")
+      .leftJoinAndSelect("order.product", "product")
+      .leftJoinAndSelect("order.buyer", "buyer")
+      .where(
+        "(itemProduct.sellerId = :sellerId OR product.sellerId = :sellerId)",
+        { sellerId },
+      )
+      .orderBy("order.createdAt", "DESC")
+      .getMany();
 
     // Se expone solo la información necesaria del comprador (sin datos sensibles).
     return orders.map((order) => ({
       id: order.id,
       total: order.total,
+      discount: order.discount,
       status: order.status,
       shippingAddress: order.shippingAddress,
       paymentMethod: order.paymentMethod,
@@ -354,7 +511,14 @@ export class OrdersService {
       productId: order.productId,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
-      product: order.product,
+      product: order.product ?? order.items?.[0]?.product ?? null,
+      items: (order.items ?? []).map((i) => ({
+        id: i.id,
+        productId: i.productId,
+        quantity: i.quantity,
+        unitPrice: i.unitPrice,
+        product: i.product,
+      })),
       buyer: order.buyer
         ? {
             id: order.buyer.id,
@@ -368,7 +532,7 @@ export class OrdersService {
   async findOne(id: string): Promise<Order> {
     const order = await this.orderRepository.findOne({
       where: { id },
-      relations: ["product"],
+      relations: ["product", "items", "items.product"],
     });
 
     if (!order) {
@@ -388,7 +552,9 @@ export class OrdersService {
     const order = await this.findOne(id);
 
     const isBuyer = order.buyerId === userId;
-    const isSeller = order.product?.sellerId === userId;
+    const isSeller =
+      order.product?.sellerId === userId ||
+      (order.items?.some((i) => i.product?.sellerId === userId) ?? false);
     if (!isBuyer && !isSeller) {
       throw new ForbiddenException("Esta orden no te pertenece");
     }
@@ -403,15 +569,24 @@ export class OrdersService {
     order.status = OrderStatus.CANCELLED;
     order.custodyEndDate = new Date();
     const saved = await this.orderRepository.save(order);
-    await this.restoreStock(order.productId);
+    await this.restoreOrderStock(order);
 
-    const counterpart = isBuyer ? order.product?.sellerId : order.buyerId;
-    if (counterpart) {
+    if (isBuyer) {
+      for (const sellerId of this.orderSellerIds(order)) {
+        await this.notifications.create(
+          sellerId,
+          NotificationType.ORDER_CANCELLED,
+          "Orden cancelada",
+          `Se canceló la orden por "${this.orderTitle(order)}".`,
+          { orderId: order.id },
+        );
+      }
+    } else {
       await this.notifications.create(
-        counterpart,
+        order.buyerId,
         NotificationType.ORDER_CANCELLED,
         "Orden cancelada",
-        `Se canceló la orden por "${order.product?.title ?? "un producto"}".`,
+        `El vendedor canceló la orden por "${this.orderTitle(order)}".`,
         { orderId: order.id },
       );
     }

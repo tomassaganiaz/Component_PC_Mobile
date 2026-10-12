@@ -15,6 +15,8 @@ function routeHref(next: Route): Parameters<typeof router.push>[0] {
       return '/sales';
     case 'notifications':
       return '/notifications';
+    case 'cart':
+      return '/cart';
     case 'analytics':
       return '/analytics';
     case 'inspection':

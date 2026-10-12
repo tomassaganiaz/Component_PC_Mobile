@@ -6,6 +6,7 @@ import { Order } from "./order.entity";
 import { ProductsModule } from "../products/products.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { CouponsModule } from "../coupons/coupons.module";
+import { CartModule } from "../cart/cart.module";
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { CouponsModule } from "../coupons/coupons.module";
     ProductsModule,
     NotificationsModule,
     CouponsModule,
+    CartModule,
   ],
   controllers: [OrdersController],
   providers: [OrdersService],

@@ -78,6 +78,7 @@ const MAP: Record<string, MIconName> = {
   event: 'event',
   delete: 'delete',
   block: 'block',
+  remove: 'remove',
 };
 
 interface Props {

@@ -5,6 +5,7 @@ import AppIcon from '../components/AppIcon';
 import ProductImage from '../components/ProductImage';
 import { Avatar, ProgressBar } from '../components/ui';
 import { useI18n } from '../i18n';
+import { useCart } from '../context/CartContext';
 import { createOrder, createReport, getSellerReputation, getSellerReviews, getTrustBadge, payOrder, validateCoupon } from '../services/api';
 import type { CouponValidation, OrderItem, ReviewItem, SecurityProfile, SellerReputation } from '../services/api';
 import ReputationMeter from '../components/ReputationMeter';
@@ -307,7 +308,9 @@ function SellerSecurity({
 export default function ProductDetailScreen({ nav, product }: { nav: Nav; product: ExploreCard }) {
   const trackEvent = useTrack();
   const { t } = useI18n();
+  const { add: addToCart } = useCart();
   const outOfStock = (product.stock ?? 1) <= 0;
+  const [addedToCart, setAddedToCart] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
@@ -356,6 +359,17 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
     setCouponCode('');
     setCouponApplied(null);
     setCouponError(null);
+  };
+
+  const handleAddToCart = async () => {
+    if (outOfStock) return;
+    try {
+      await addToCart(product.id, 1);
+      setAddedToCart(true);
+      setTimeout(() => setAddedToCart(false), 1500);
+    } catch {
+      // sin carrito
+    }
   };
 
   const handleApplyCoupon = async () => {
@@ -888,6 +902,18 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
             <Text className="font-mono text-[11px] text-text-secondary">{product.currency}</Text>
           </View>
         </View>
+        <Pressable
+          onPress={handleAddToCart}
+          disabled={outOfStock}
+          className="h-[52px] w-[52px] items-center justify-center rounded-xl border border-line bg-panel"
+          style={outOfStock ? { opacity: 0.5 } : undefined}
+        >
+          <AppIcon
+            name={addedToCart ? 'check' : 'shopping_cart'}
+            size={22}
+            color={addedToCart ? colors.accentEmerald : colors.secondary}
+          />
+        </Pressable>
         <Pressable
           onPress={outOfStock ? undefined : handleBuy}
           disabled={outOfStock}

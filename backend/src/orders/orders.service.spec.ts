@@ -6,6 +6,7 @@ import { ProductsService } from "../products/products.service";
 import { ProductStatus } from "../products/product.entity";
 import { NotificationsService } from "../notifications/notifications.service";
 import { CouponsService } from "../coupons/coupons.service";
+import { CartService } from "../cart/cart.service";
 import {
   NotFoundException,
   BadRequestException,
@@ -21,6 +22,7 @@ describe("OrdersService", () => {
     save: jest.fn(),
     find: jest.fn(),
     findOne: jest.fn(),
+    createQueryBuilder: jest.fn(),
   };
 
   const mockProductsService = {
@@ -39,6 +41,11 @@ describe("OrdersService", () => {
     redeem: jest.fn().mockResolvedValue(undefined),
   };
 
+  const mockCartService = {
+    getCart: jest.fn(),
+    clear: jest.fn().mockResolvedValue(undefined),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -47,6 +54,7 @@ describe("OrdersService", () => {
         { provide: ProductsService, useValue: mockProductsService },
         { provide: NotificationsService, useValue: mockNotifications },
         { provide: CouponsService, useValue: mockCouponsService },
+        { provide: CartService, useValue: mockCartService },
       ],
     }).compile();
 
@@ -170,13 +178,18 @@ describe("OrdersService", () => {
 
       mockRepository.find.mockResolvedValue(orders);
 
+      const qb = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(orders),
+      };
+      mockRepository.createQueryBuilder.mockReturnValue(qb);
+
       const result = await service.findBySeller("seller-1");
 
-      expect(mockRepository.find).toHaveBeenCalledWith({
-        where: { product: { sellerId: "seller-1" } },
-        relations: ["product", "buyer"],
-        order: { createdAt: "DESC" },
-      });
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith("order");
+      expect(qb.where).toHaveBeenCalled();
       expect(result[0].buyer).toEqual({
         id: "buyer-1",
         name: "Buyer One",

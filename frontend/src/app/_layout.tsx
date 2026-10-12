@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '../context/AuthContext';
+import { CartProvider } from '../context/CartContext';
 import { MarketplaceProvider } from '../context/MarketplaceContext';
 import { NotificationsProvider } from '../context/NotificationsContext';
 import { ThemeProvider } from '../context/ThemeContext';
@@ -61,6 +62,7 @@ function ProtectedRouter() {
       <Stack.Screen name="profile" />
       <Stack.Screen name="sales" />
       <Stack.Screen name="notifications" />
+      <Stack.Screen name="cart" />
       <Stack.Screen name="analytics" />
       <Stack.Screen name="product/[id]" />
     </Stack>
@@ -78,14 +80,16 @@ export default function RootLayout() {
         <Head.Provider>
           <AuthProvider>
             <NotificationsProvider>
-              <MarketplaceProvider>
-                <SafeAreaProvider>
-                  <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface }} edges={['top', 'bottom']}>
-                    <StatusBar style="auto" />
-                    <ProtectedRouter />
-                  </SafeAreaView>
-                </SafeAreaProvider>
-              </MarketplaceProvider>
+              <CartProvider>
+                <MarketplaceProvider>
+                  <SafeAreaProvider>
+                    <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface }} edges={['top', 'bottom']}>
+                      <StatusBar style="auto" />
+                      <ProtectedRouter />
+                    </SafeAreaView>
+                  </SafeAreaProvider>
+                </MarketplaceProvider>
+              </CartProvider>
             </NotificationsProvider>
           </AuthProvider>
         </Head.Provider>

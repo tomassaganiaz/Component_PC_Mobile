@@ -5,11 +5,13 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
   Index,
 } from "typeorm";
 import { User } from "../users/user.entity";
 import { Product } from "../products/product.entity";
+import { OrderItemEntity } from "./order-item.entity";
 
 export enum OrderStatus {
   PENDING = "pending",
@@ -78,12 +80,16 @@ export class Order {
   @Column({ name: "buyer_id" })
   buyerId: string;
 
-  @ManyToOne(() => Product, { onDelete: "CASCADE" })
+  @ManyToOne(() => Product, { onDelete: "CASCADE", nullable: true })
   @JoinColumn({ name: "product_id" })
-  product: Product;
+  product: Product | null;
 
-  @Column({ name: "product_id" })
-  productId: string;
+  @Column({ name: "product_id", nullable: true })
+  productId: string | null;
+
+  /** Ítems de la orden (carrito / compra directa). */
+  @OneToMany(() => OrderItemEntity, (item) => item.order, { cascade: true })
+  items: OrderItemEntity[];
 
   @CreateDateColumn({ name: "created_at", type: "timestamptz" })
   createdAt: Date;

@@ -400,6 +400,7 @@ export interface OrderItem {
   buyerId?: string;
   discount?: number;
   couponCode?: string | null;
+  items?: { id: string; productId: string; quantity: number; unitPrice: number; product?: ApiProduct }[];
 }
 
 export interface CreateOrderInput {
@@ -560,5 +561,57 @@ export function validateCoupon(code: string, amount: number): Promise<CouponVali
   return request<CouponValidation>('/coupons/validate', {
     method: 'POST',
     body: JSON.stringify({ code, amount }),
+  });
+}
+
+/* --------------------------------- Cart --------------------------------- */
+
+export interface CartItemData {
+  id: string;
+  productId: string;
+  quantity: number;
+  product?: ApiProduct;
+}
+
+export interface CartData {
+  id: string;
+  userId: string;
+  items: CartItemData[];
+}
+
+export function getCart(): Promise<CartData> {
+  return request<CartData>('/cart');
+}
+
+export function addToCart(productId: string, quantity = 1): Promise<CartData> {
+  return request<CartData>('/cart/items', {
+    method: 'POST',
+    body: JSON.stringify({ productId, quantity }),
+  });
+}
+
+export function updateCartItem(itemId: string, quantity: number): Promise<CartData> {
+  return request<CartData>(`/cart/items/${itemId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ quantity }),
+  });
+}
+
+export function removeCartItem(itemId: string): Promise<CartData> {
+  return request<CartData>(`/cart/items/${itemId}`, { method: 'DELETE' });
+}
+
+export function clearCart(): Promise<{ success: boolean }> {
+  return request<{ success: boolean }>('/cart', { method: 'DELETE' });
+}
+
+export function checkoutCart(input: {
+  shippingAddress?: string;
+  paymentMethod?: string;
+  couponCode?: string;
+}): Promise<OrderItem> {
+  return request<OrderItem>('/orders/checkout', {
+    method: 'POST',
+    body: JSON.stringify(input),
   });
 }

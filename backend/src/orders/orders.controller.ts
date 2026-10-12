@@ -13,7 +13,7 @@ import {
 import { Request as ExpressRequest } from "express";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { OrdersService } from "./orders.service";
-import { CreateOrderDto, UpdateOrderDto, ReturnOrderDto } from "./dto";
+import { CreateOrderDto, UpdateOrderDto, ReturnOrderDto, CheckoutCartDto } from "./dto";
 import { Order } from "./order.entity";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
@@ -47,6 +47,12 @@ export class OrdersController {
     @Request() req: ExpressRequest,
   ) {
     return this.ordersService.create(createOrderDto, (req.user as any).id);
+  }
+
+  @Post("checkout")
+  @ApiOperation({ summary: "Crear una orden desde el carrito (multi-ítem)" })
+  checkout(@Body() dto: CheckoutCartDto, @Request() req: ExpressRequest) {
+    return this.ordersService.createFromCart((req.user as any).id, dto);
   }
 
   @Get()

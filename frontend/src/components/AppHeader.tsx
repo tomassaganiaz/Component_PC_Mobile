@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 
 import AppIcon from './AppIcon';
 import { Avatar, PulseDot } from './ui';
+import { useCart } from '../context/CartContext';
 import { useNotifications } from '../context/NotificationsContext';
 import { IMAGES } from '../data/mock';
 import { colors, shadow } from '../theme';
@@ -18,6 +19,7 @@ export default function AppHeader({
 }) {
   const router = useRouter();
   const { unread } = useNotifications();
+  const { count } = useCart();
   const handleNotify = onNotify ?? (() => router.push('/notifications'));
   return (
     <View
@@ -46,6 +48,17 @@ export default function AppHeader({
         ) : null}
       </View>
       <View className="flex-row items-center gap-2">
+        <Pressable
+          onPress={() => router.push('/cart')}
+          className="relative h-10 w-10 items-center justify-center rounded-lg"
+        >
+          <AppIcon name="shopping_cart" size={22} color={colors.textSecondary} />
+          {count > 0 ? (
+            <View className="absolute right-0.5 top-0.5 min-w-[16px] items-center justify-center rounded-full bg-secondary px-1">
+              <Text className="text-[9px] font-bold text-on-secondary">{count > 9 ? '9+' : count}</Text>
+            </View>
+          ) : null}
+        </Pressable>
         <Pressable
           onPress={handleNotify}
           className="relative h-10 w-10 items-center justify-center rounded-lg"

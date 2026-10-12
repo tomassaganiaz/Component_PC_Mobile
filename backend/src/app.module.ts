@@ -16,6 +16,7 @@ import { AnalyticsModule } from "./analytics/analytics.module";
 import { MediaModule } from "./media/media.module";
 import { NotificationsModule } from "./notifications/notifications.module";
 import { CouponsModule } from "./coupons/coupons.module";
+import { CartModule } from "./cart/cart.module";
 import { ThrottlerUserGuard } from "./common/throttler-user.guard";
 
 @Module({
@@ -96,6 +97,7 @@ import { ThrottlerUserGuard } from "./common/throttler-user.guard";
     MediaModule,
     NotificationsModule,
     CouponsModule,
+    CartModule,
   ],
   controllers: [AppController],
   providers: [
