@@ -702,3 +702,20 @@ export interface AdminOverview {
 export function getAdminOverview(): Promise<AdminOverview> {
   return request<AdminOverview>('/admin/overview');
 }
+
+/* ------------------------------- Shipping -------------------------------- */
+
+export interface ShipmentInfo {
+  id: string;
+  orderId: string;
+  carrier: string;
+  service: string;
+  trackingCode: string;
+  status: string;
+  cost: number;
+  estimatedDays: number;
+}
+
+export function getOrderShipment(orderId: string): Promise<ShipmentInfo | null> {
+  return request<ShipmentInfo | null>(`/shipping/order/${orderId}`);
+}

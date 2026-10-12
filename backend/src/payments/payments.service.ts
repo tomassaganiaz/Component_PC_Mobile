@@ -3,13 +3,17 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Inject,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { randomUUID } from "crypto";
 import { Payment, PaymentStatus } from "./payment.entity";
 import { OrdersService } from "../orders/orders.service";
 import { OrderStatus } from "../orders/order.entity";
+import {
+  PAYMENT_PROVIDER,
+  PaymentProvider,
+} from "./providers/payment-provider.interface";
 
 @Injectable()
 export class PaymentsService {
@@ -17,6 +21,8 @@ export class PaymentsService {
     @InjectRepository(Payment)
     private readonly repository: Repository<Payment>,
     private readonly ordersService: OrdersService,
+    @Inject(PAYMENT_PROVIDER)
+    private readonly provider: PaymentProvider,
   ) {}
 
   /** Crea una intención de pago (mock) para una orden pendiente. */
@@ -38,12 +44,16 @@ export class PaymentsService {
       throw new BadRequestException("La orden no está pendiente de pago");
     }
 
+    const result = await this.provider.createPayment(Number(order.total), {
+      orderId,
+    });
+
     const payment = this.repository.create({
       orderId,
-      provider: "mock",
+      provider: this.provider.name,
       status: PaymentStatus.PENDING,
       amount: Number(order.total),
-      externalId: `mock_${randomUUID()}`,
+      externalId: result.externalId,
     });
     const saved = await this.repository.save(payment);
 
@@ -52,7 +62,7 @@ export class PaymentsService {
       provider: saved.provider,
       status: saved.status,
       amount: Number(saved.amount),
-      clientSecret: saved.externalId as string,
+      clientSecret: result.clientSecret,
     };
   }
 
@@ -88,6 +98,9 @@ export class PaymentsService {
     });
     if (!payment) {
       throw new NotFoundException("No hay un pago confirmado para reembolsar");
+    }
+    if (payment.externalId) {
+      await this.provider.refund(payment.externalId);
     }
     payment.status = PaymentStatus.REFUNDED;
     return this.repository.save(payment);

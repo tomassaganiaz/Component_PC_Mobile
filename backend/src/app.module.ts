@@ -19,6 +19,7 @@ import { CouponsModule } from "./coupons/coupons.module";
 import { CartModule } from "./cart/cart.module";
 import { PaymentsModule } from "./payments/payments.module";
 import { WalletsModule } from "./wallets/wallet.module";
+import { ShippingModule } from "./shipping/shipping.module";
 import { AdminModule } from "./admin/admin.module";
 import { ThrottlerUserGuard } from "./common/throttler-user.guard";
 
@@ -103,6 +104,7 @@ import { ThrottlerUserGuard } from "./common/throttler-user.guard";
     CartModule,
     PaymentsModule,
     WalletsModule,
+    ShippingModule,
     AdminModule,
   ],
   controllers: [AppController],

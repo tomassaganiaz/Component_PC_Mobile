@@ -15,6 +15,7 @@ import { NotificationType } from "../notifications/notification.entity";
 import { CouponsService } from "../coupons/coupons.service";
 import { CartService } from "../cart/cart.service";
 import { WalletService } from "../wallets/wallet.service";
+import { ShippingService } from "../shipping/shipping.service";
 
 const RETURN_WINDOW_DAYS = 10;
 const COVERAGE_DAYS = 45;
@@ -30,6 +31,7 @@ export class OrdersService {
     private readonly coupons: CouponsService,
     private readonly cartService: CartService,
     private readonly walletService: WalletService,
+    private readonly shipping: ShippingService,
   ) {}
 
   async create(
@@ -355,6 +357,8 @@ export class OrdersService {
     order.status = OrderStatus.SHIPPED;
     const saved = await this.orderRepository.save(order);
 
+    await this.shipping.createForOrder(order.id);
+
     await this.notifications.create(
       order.buyerId,
       NotificationType.ORDER_SHIPPED,
@@ -378,6 +382,8 @@ export class OrdersService {
     order.status = OrderStatus.DELIVERED;
     order.custodyEndDate = new Date();
     const saved = await this.orderRepository.save(order);
+
+    await this.shipping.markDelivered(order.id);
 
     await this.notifications.create(
       order.buyerId,

@@ -174,7 +174,7 @@ Prioridad **MoSCoW**. Esfuerzo en puntos (≈1 pto ≈ 2–3 h).
 | 2 | Wallet/payouts | ✅ |
 | 3 | Variaciones/SKU | ✅ |
 | 3 | Panel admin | ✅ |
-| 4 | Pasarela real + envíos | ⬜ |
+| 4 | Pasarela real + envíos | ✅ (mock/pluggable) |
 
 ---
 

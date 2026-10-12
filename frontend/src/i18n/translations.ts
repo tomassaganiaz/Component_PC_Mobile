@@ -329,6 +329,14 @@ export const translations: Record<Locale, Record<string, string>> = {
     'admin.hint': 'La moderación de quejas, reportes y verificaciones se gestiona desde sus endpoints (admin).',
     'admin.errLoad': 'No se pudo cargar el panel.',
 
+    'shipment.title': 'Envío',
+    'shipment.carrier': 'Transportista',
+    'shipment.statusLabel': 'Estado',
+    'shipment.status.pending': 'Pendiente',
+    'shipment.status.in_transit': 'En tránsito',
+    'shipment.status.delivered': 'Entregado',
+    'shipment.eta': 'Entrega en ~{n} días',
+
     'inspection.loading': 'Cargando seguimiento...',
     'inspection.notFound': 'No se pudo cargar la orden',
     'inspection.backMarketplace': 'Volver al Marketplace',
@@ -727,6 +735,14 @@ export const translations: Record<Locale, Record<string, string>> = {
     'admin.reports': 'Open reports',
     'admin.hint': 'Complaints, reports and verifications are moderated through their admin endpoints.',
     'admin.errLoad': 'Could not load the panel.',
+
+    'shipment.title': 'Shipment',
+    'shipment.carrier': 'Carrier',
+    'shipment.statusLabel': 'Status',
+    'shipment.status.pending': 'Pending',
+    'shipment.status.in_transit': 'In transit',
+    'shipment.status.delivered': 'Delivered',
+    'shipment.eta': 'Delivery in ~{n} days',
 
     'inspection.loading': 'Loading tracking...',
     'inspection.notFound': 'Could not load the order',

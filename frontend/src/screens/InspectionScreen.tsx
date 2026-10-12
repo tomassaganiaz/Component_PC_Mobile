@@ -14,6 +14,7 @@ import {
   deliverOrder,
   getOrder,
   getOrderProtection,
+  getOrderShipment,
   getProductVerifications,
   payOrder,
   requestOrderCoverage,
@@ -23,7 +24,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { IMAGES, INSPECTION_STEPS } from '../data/mock';
 import { colors, glow, shadow } from '../theme';
-import type { ChatSafetyResult, OrderItem, OrderProtection, VerificationItem } from '../services/api';
+import type { ChatSafetyResult, OrderItem, OrderProtection, ShipmentInfo, VerificationItem } from '../services/api';
 import type { Nav } from '../types';
 
 const BUNDLE_IMAGE =
@@ -114,6 +115,7 @@ function OrderTracking({
   const [coverageError, setCoverageError] = useState<string | null>(null);
   const [coverageResult, setCoverageResult] = useState<{ ticketId: string; message: string } | null>(null);
   const [verification, setVerification] = useState<VerificationItem | null>(null);
+  const [shipment, setShipment] = useState<ShipmentInfo | null>(null);
   const [action, setAction] = useState<'pay' | 'ship' | 'deliver' | 'cancel' | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -179,6 +181,22 @@ function OrderTracking({
       cancelled = true;
     };
   }, [order?.productId]);
+
+  useEffect(() => {
+    if (!order?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await getOrderShipment(order.id);
+        if (!cancelled) setShipment(data ?? null);
+      } catch {
+        // sin envío registrado
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [order?.id, order?.status]);
 
   if (loading) {
     return (
@@ -350,6 +368,35 @@ function OrderTracking({
                   <Text className="text-sm font-semibold text-red-400">{t('inspection.cancelOrder')}</Text>
                 </Pressable>
               ) : null}
+            </View>
+          </View>
+        </View>
+      ) : null}
+
+      {shipment ? (
+        <View className="mb-4 px-4">
+          <View className="rounded-xl border border-line bg-panel p-4" style={shadow.panel}>
+            <View className="mb-2 flex-row items-center gap-1.5">
+              <AppIcon name="local_shipping" size={20} color={colors.accentCyan} />
+              <Text className="text-xl font-semibold text-slate-100">{t('shipment.title')}</Text>
+            </View>
+            <View className="flex-row items-center justify-between">
+              <Text className="text-xs text-slate-400">
+                {t('shipment.carrier')}: {shipment.carrier}
+              </Text>
+              <View className="rounded border border-cyan-500/40 bg-cyan-950/40 px-2 py-0.5">
+                <Text className="font-mono text-[10px] font-semibold text-cyan-300">
+                  {shipment.trackingCode}
+                </Text>
+              </View>
+            </View>
+            <View className="mt-2 flex-row items-center justify-between">
+              <Text className="text-xs text-slate-400">
+                {t('shipment.statusLabel')}: {t(`shipment.status.${shipment.status}`)}
+              </Text>
+              <Text className="text-xs text-slate-400">
+                {t('shipment.eta', { n: shipment.estimatedDays })}
+              </Text>
             </View>
           </View>
         </View>
