@@ -6,8 +6,8 @@ import ProductImage from '../components/ProductImage';
 import { Avatar, ProgressBar } from '../components/ui';
 import { useI18n } from '../i18n';
 import { useCart } from '../context/CartContext';
-import { confirmPayment, createOrder, createPaymentIntent, createReport, getSellerReputation, getSellerReviews, getTrustBadge, validateCoupon } from '../services/api';
-import type { CouponValidation, OrderItem, ReviewItem, SecurityProfile, SellerReputation } from '../services/api';
+import { confirmPayment, createOrder, createPaymentIntent, createReport, getProductVariations, getSellerReputation, getSellerReviews, getTrustBadge, validateCoupon } from '../services/api';
+import type { CouponValidation, OrderItem, ProductVariation, ReviewItem, SecurityProfile, SellerReputation } from '../services/api';
 import ReputationMeter from '../components/ReputationMeter';
 import { useTrack } from '../hooks/useTrack';
 import { IMAGES } from '../data/mock';
@@ -327,6 +327,22 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
   const [couponApplied, setCouponApplied] = useState<CouponValidation | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponApplying, setCouponApplying] = useState(false);
+  const [variations, setVariations] = useState<ProductVariation[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await getProductVariations(product.id);
+        if (!cancelled) setVariations(list);
+      } catch {
+        // sin variaciones
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [product.id]);
 
   const [reviewsOpen, setReviewsOpen] = useState(false);
   const [sellerReviews, setSellerReviews] = useState<ReviewItem[]>([]);
@@ -657,6 +673,48 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
         ) : null}
 
         <VerificationData product={product} />
+
+        {variations.length > 0 ? (
+          <View className="px-4 pt-4">
+            <View className="flex flex-col gap-2 rounded-xl border border-line bg-card p-4" style={shadow.panel}>
+              <View className="flex-row items-center gap-2">
+                <AppIcon name="tune" size={20} color={colors.accentCyan} />
+                <Text className="text-lg font-semibold text-text-primary">{t('variations.title')}</Text>
+              </View>
+              {variations.map((v) => (
+                <View
+                  key={v.id}
+                  className="flex-row items-center justify-between rounded-lg border border-line/60 bg-surface p-2.5"
+                >
+                  <View className="min-w-0 flex-1">
+                    <Text className="text-sm font-semibold text-text-primary">{v.sku}</Text>
+                    {v.attributes ? (
+                      <Text className="text-xs text-text-secondary">
+                        {Object.entries(v.attributes)
+                          .map(([k, val]) => `${k}: ${val}`)
+                          .join(' · ')}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <View className="items-end">
+                    {Number(v.priceDelta) !== 0 ? (
+                      <Text className="font-mono text-xs text-text-secondary">
+                        {Number(v.priceDelta) > 0 ? '+' : ''}
+                        {Number(v.priceDelta).toFixed(2)}
+                      </Text>
+                    ) : null}
+                    <Text
+                      className="font-mono text-[11px] font-semibold"
+                      style={{ color: v.stock > 0 ? colors.accentEmerald : colors.diagnosticRed }}
+                    >
+                      {v.stock > 0 ? t('variations.stock', { n: v.stock }) : t('variations.out')}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : null}
 
         {/* Report */}
         {product.report ? (

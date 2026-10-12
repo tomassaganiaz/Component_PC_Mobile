@@ -81,6 +81,11 @@ const MAP: Record<string, MIconName> = {
   remove: 'remove',
   south_west: 'south-west',
   north_east: 'north-east',
+  attach_money: 'attach-money',
+  flag: 'flag',
+  info: 'info-outline',
+  admin_panel_settings: 'admin-panel-settings',
+  tune: 'tune',
 };
 
 interface Props {

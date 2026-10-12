@@ -44,8 +44,24 @@ export class OrdersService {
       throw new BadRequestException("El producto ya fue vendido");
     }
 
+    // Variante (opcional): define precio y stock específicos.
+    let unitPrice = Number(product.price);
+    let variationId: string | null = null;
+    if (createOrderDto.variationId) {
+      const variation = await this.productsService.findVariation(
+        createOrderDto.variationId,
+      );
+      if (variation.productId !== product.id) {
+        throw new BadRequestException(
+          "La variación no corresponde al producto",
+        );
+      }
+      variationId = variation.id;
+      unitPrice = Number(product.price) + Number(variation.priceDelta);
+    }
+
     // Cupón (opcional): se valida ANTES de reservar stock.
-    let total = Number(product.price);
+    let total = unitPrice;
     let discount = 0;
     let couponCode: string | null = null;
     if (createOrderDto.couponCode) {
@@ -58,10 +74,10 @@ export class OrdersService {
       couponCode = applied.code;
     }
 
-    // Reserva atómica de stock: si no hay disponible, se rechaza la compra.
-    const remainingStock = await this.productsService.decrementStock(
-      product.id,
-    );
+    // Reserva atómica de stock (variante o producto).
+    const remainingStock = variationId
+      ? await this.productsService.decrementVariationStock(variationId)
+      : await this.productsService.decrementStock(product.id);
     if (remainingStock === null) {
       throw new BadRequestException("El producto no tiene stock disponible");
     }
@@ -78,16 +94,17 @@ export class OrdersService {
         items: [
           {
             productId: product.id,
+            variationId,
             quantity: 1,
-            unitPrice: Number(product.price),
+            unitPrice,
           },
         ],
       });
 
       const savedOrder = await this.orderRepository.save(order);
 
-      // Si se agotó la última unidad, el producto queda marcado como vendido.
-      if (remainingStock === 0) {
+      // Si se agotó la última unidad del producto (sin variante), queda vendido.
+      if (!variationId && remainingStock === 0) {
         await this.productsService.update(product.id, {
           status: ProductStatus.SOLD,
         } as any);
@@ -108,7 +125,11 @@ export class OrdersService {
       return savedOrder;
     } catch (err) {
       // Compensación: devuelve la unidad reservada si la orden no se pudo crear.
-      await this.productsService.incrementStock(product.id);
+      if (variationId) {
+        await this.productsService.incrementVariationStock(variationId);
+      } else {
+        await this.productsService.incrementStock(product.id);
+      }
       throw err;
     }
   }
@@ -220,18 +241,23 @@ export class OrdersService {
       order.items && order.items.length > 0
         ? order.items.map((i) => ({
             productId: i.productId,
+            variationId: i.variationId,
             quantity: i.quantity,
           }))
         : order.productId
-          ? [{ productId: order.productId, quantity: 1 }]
+          ? [{ productId: order.productId, variationId: null, quantity: 1 }]
           : [];
 
-    for (const { productId, quantity } of items) {
+    for (const { productId, variationId, quantity } of items) {
       const product = await this.productsService.findOne(productId);
       for (let i = 0; i < quantity; i++) {
-        await this.productsService.incrementStock(productId);
+        if (variationId) {
+          await this.productsService.incrementVariationStock(variationId);
+        } else {
+          await this.productsService.incrementStock(productId);
+        }
       }
-      if (product.status === ProductStatus.SOLD) {
+      if (!variationId && product.status === ProductStatus.SOLD) {
         await this.productsService.update(productId, {
           status: ProductStatus.PUBLISHED,
         } as any);

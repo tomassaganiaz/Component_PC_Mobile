@@ -15,7 +15,13 @@ import {
 import { Request as ExpressRequest } from "express";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { ProductsService } from "./products.service";
-import { CreateProductDto, UpdateProductDto, FilterProductDto } from "./dto";
+import {
+  CreateProductDto,
+  UpdateProductDto,
+  FilterProductDto,
+  CreateVariationDto,
+  UpdateVariationDto,
+} from "./dto";
 import { ProductStatus } from "./product.entity";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
@@ -98,5 +104,67 @@ export class ProductsController {
       );
     }
     return this.productsService.remove(id);
+  }
+
+  /* ------------------------------ Variaciones ------------------------------ */
+
+  @Get(":id/variations")
+  @ApiOperation({ summary: "Listar variaciones de un producto" })
+  listVariations(@Param("id", new ParseUUIDPipe()) id: string) {
+    return this.productsService.listVariations(id);
+  }
+
+  @Post(":id/variations")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SELLER, UserRole.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Agregar variación (vendedor dueño o admin)" })
+  async addVariation(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Body() dto: CreateVariationDto,
+    @Request() req: ExpressRequest,
+  ) {
+    await this.assertProductOwner(id, req);
+    return this.productsService.addVariation(id, dto);
+  }
+
+  @Patch(":id/variations/:variationId")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SELLER, UserRole.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Actualizar variación (vendedor dueño o admin)" })
+  async updateVariation(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Param("variationId", new ParseUUIDPipe()) variationId: string,
+    @Body() dto: UpdateVariationDto,
+    @Request() req: ExpressRequest,
+  ) {
+    await this.assertProductOwner(id, req);
+    return this.productsService.updateVariation(variationId, dto);
+  }
+
+  @Delete(":id/variations/:variationId")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SELLER, UserRole.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Eliminar variación (vendedor dueño o admin)" })
+  async removeVariation(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Param("variationId", new ParseUUIDPipe()) variationId: string,
+    @Request() req: ExpressRequest,
+  ) {
+    await this.assertProductOwner(id, req);
+    return this.productsService.removeVariation(variationId);
+  }
+
+  private async assertProductOwner(id: string, req: ExpressRequest) {
+    const product = await this.productsService.findOne(id);
+    const user = req.user as { id: string; role: string };
+    if (user.role !== UserRole.ADMIN && product.sellerId !== user.id) {
+      throw new ForbiddenException(
+        "Solo el vendedor del catálogo o un admin pueden modificarlo",
+      );
+    }
+    return product;
   }
 }

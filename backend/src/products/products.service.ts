@@ -2,7 +2,14 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, In } from "typeorm";
 import { Product, ProductStatus, SellerSecurityTier } from "./product.entity";
-import { CreateProductDto, UpdateProductDto, FilterProductDto } from "./dto";
+import { ProductVariation } from "./product-variation.entity";
+import {
+  CreateProductDto,
+  UpdateProductDto,
+  FilterProductDto,
+  CreateVariationDto,
+  UpdateVariationDto,
+} from "./dto";
 import { Review, ReviewStatus } from "../reviews/review.entity";
 
 interface SellerStats {
@@ -44,6 +51,8 @@ export class ProductsService {
     private readonly productRepository: Repository<Product>,
     @InjectRepository(Review)
     private readonly reviewRepository: Repository<Review>,
+    @InjectRepository(ProductVariation)
+    private readonly variationRepository: Repository<ProductVariation>,
   ) {}
 
   async create(
@@ -88,6 +97,88 @@ export class ProductsService {
       .set({ stock: () => 'stock + 1' })
       .where('id = :id', { id: productId })
       .andWhere('deleted_at IS NULL')
+      .execute();
+  }
+
+  /* ------------------------------ Variaciones ------------------------------ */
+
+  async listVariations(productId: string): Promise<ProductVariation[]> {
+    return this.variationRepository.find({
+      where: { productId },
+      order: { sku: "ASC" },
+    });
+  }
+
+  async addVariation(
+    productId: string,
+    dto: CreateVariationDto,
+  ): Promise<ProductVariation> {
+    const product = await this.findOne(productId);
+    const variation = this.variationRepository.create({
+      productId: product.id,
+      sku: dto.sku.trim().toUpperCase(),
+      attributes: dto.attributes ?? null,
+      stock: dto.stock ?? 0,
+      priceDelta: dto.priceDelta ?? 0,
+    });
+    return this.variationRepository.save(variation);
+  }
+
+  async updateVariation(
+    id: string,
+    dto: UpdateVariationDto,
+  ): Promise<ProductVariation> {
+    const variation = await this.variationRepository.findOne({
+      where: { id },
+    });
+    if (!variation) {
+      throw new NotFoundException("Variación no encontrada");
+    }
+    Object.assign(variation, dto);
+    if (dto.sku) variation.sku = dto.sku.trim().toUpperCase();
+    return this.variationRepository.save(variation);
+  }
+
+  async removeVariation(id: string): Promise<void> {
+    const variation = await this.variationRepository.findOne({
+      where: { id },
+    });
+    if (!variation) {
+      throw new NotFoundException("Variación no encontrada");
+    }
+    await this.variationRepository.remove(variation);
+  }
+
+  /** Descuenta una unidad de una variante (atómico). Null si no hay stock. */
+  async decrementVariationStock(variationId: string): Promise<number | null> {
+    const result = await this.variationRepository
+      .createQueryBuilder()
+      .update(ProductVariation)
+      .set({ stock: () => "stock - 1" })
+      .where("id = :id", { id: variationId })
+      .andWhere("stock > 0")
+      .returning(["stock"])
+      .execute();
+    if (!result.affected || !result.raw?.length) return null;
+    return Number(result.raw[0].stock);
+  }
+
+  async findVariation(id: string): Promise<ProductVariation> {
+    const variation = await this.variationRepository.findOne({
+      where: { id },
+    });
+    if (!variation) {
+      throw new NotFoundException("Variación no encontrada");
+    }
+    return variation;
+  }
+
+  async incrementVariationStock(variationId: string): Promise<void> {
+    await this.variationRepository
+      .createQueryBuilder()
+      .update(ProductVariation)
+      .set({ stock: () => "stock + 1" })
+      .where("id = :id", { id: variationId })
       .execute();
   }
 
@@ -411,7 +502,7 @@ export class ProductsService {
   async findOne(id: string): Promise<ProductWithSecurity> {
     const product = await this.productRepository.findOne({
       where: { id },
-      relations: ["seller", "verifications"],
+      relations: ["seller", "verifications", "variations"],
     });
 
     if (!product) {

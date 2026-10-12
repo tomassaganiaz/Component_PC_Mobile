@@ -672,3 +672,33 @@ export function requestPayout(amount: number): Promise<PayoutItem> {
     body: JSON.stringify({ amount }),
   });
 }
+
+/* ----------------------------- Variaciones ------------------------------ */
+
+export interface ProductVariation {
+  id: string;
+  sku: string;
+  attributes?: Record<string, string> | null;
+  stock: number;
+  priceDelta: number;
+}
+
+export function getProductVariations(productId: string): Promise<ProductVariation[]> {
+  return request<ProductVariation[]>(`/products/${productId}/variations`);
+}
+
+/* -------------------------------- Admin --------------------------------- */
+
+export interface AdminOverview {
+  users: number;
+  products: number;
+  orders: number;
+  deliveredOrders: number;
+  revenue: number;
+  pendingComplaints: number;
+  openReports: number;
+}
+
+export function getAdminOverview(): Promise<AdminOverview> {
+  return request<AdminOverview>('/admin/overview');
+}

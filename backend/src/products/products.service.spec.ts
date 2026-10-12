@@ -8,6 +8,7 @@ import {
   ProductStatus,
 } from "./product.entity";
 import { Review } from "../reviews/review.entity";
+import { ProductVariation } from "./product-variation.entity";
 import { NotFoundException } from "@nestjs/common";
 
 describe("ProductsService", () => {
@@ -33,12 +34,25 @@ describe("ProductsService", () => {
     })),
   };
 
+  const mockVariationRepository = {
+    create: jest.fn(),
+    save: jest.fn(),
+    find: jest.fn(),
+    findOne: jest.fn(),
+    remove: jest.fn(),
+    createQueryBuilder: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProductsService,
         { provide: getRepositoryToken(Product), useValue: mockRepository },
         { provide: getRepositoryToken(Review), useValue: mockReviewRepository },
+        {
+          provide: getRepositoryToken(ProductVariation),
+          useValue: mockVariationRepository,
+        },
       ],
     }).compile();
 
@@ -199,7 +213,7 @@ describe("ProductsService", () => {
       expect(result.sellerStats).toBeDefined();
       expect(mockRepository.findOne).toHaveBeenCalledWith({
         where: { id: "uuid-123" },
-        relations: ["seller", "verifications"],
+        relations: ["seller", "verifications", "variations"],
       });
     });
 

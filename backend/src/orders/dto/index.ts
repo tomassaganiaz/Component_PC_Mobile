@@ -21,6 +21,11 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   couponCode?: string;
+
+  @ApiPropertyOptional({ example: "3f1e2d4c-...-uuid" })
+  @IsOptional()
+  @IsUUID()
+  variationId?: string;
 }
 
 export class UpdateOrderDto {

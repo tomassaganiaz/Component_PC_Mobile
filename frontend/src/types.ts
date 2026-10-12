@@ -10,6 +10,7 @@ export type ScreenName =
   | 'notifications'
   | 'cart'
   | 'wallet'
+  | 'admin'
   | 'analytics';
 
 export interface Route {

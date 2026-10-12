@@ -29,6 +29,9 @@ export class OrderItemEntity {
   @Column({ name: "product_id" })
   productId: string;
 
+  @Column({ type: "uuid", name: "variation_id", nullable: true })
+  variationId: string | null;
+
   @Column({ type: "integer", default: 1 })
   quantity: number;
 

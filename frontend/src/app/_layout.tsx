@@ -64,6 +64,7 @@ function ProtectedRouter() {
       <Stack.Screen name="notifications" />
       <Stack.Screen name="cart" />
       <Stack.Screen name="wallet" />
+      <Stack.Screen name="admin" />
       <Stack.Screen name="analytics" />
       <Stack.Screen name="product/[id]" />
     </Stack>

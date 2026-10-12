@@ -570,6 +570,18 @@ export default function ProfileScreen({
                 </Pressable>
               </>
             ) : null}
+            {profile.role === 'admin' ? (
+              <Pressable
+                onPress={() => nav.go({ name: 'admin' })}
+                className="flex-row items-center gap-3 rounded-xl border border-line bg-panel p-3"
+              >
+                <View className="h-8 w-8 items-center justify-center rounded-lg bg-elevated">
+                  <AppIcon name="admin_panel_settings" size={17} color={colors.primary} />
+                </View>
+                <Text className="flex-1 text-sm text-text-primary">{t('profile.adminPanel')}</Text>
+                <AppIcon name="arrow_forward" size={18} color={colors.textMuted} />
+              </Pressable>
+            ) : null}
             <Pressable
               onPress={() => nav.go({ name: 'inspection' })}
               className="flex-row items-center gap-3 rounded-xl border border-line bg-panel p-3"

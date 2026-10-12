@@ -6,6 +6,9 @@ import {
   IsArray,
   IsBoolean,
   IsInt,
+  IsObject,
+  MinLength,
+  MaxLength,
   Min,
   Max,
 } from "class-validator";
@@ -321,4 +324,57 @@ export class FilterProductDto {
   @Max(100)
   @Type(() => Number)
   limit?: number;
+}
+
+export class CreateVariationDto {
+  @ApiProperty({ example: "RTX3080-16GB" })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(80)
+  sku: string;
+
+  @ApiPropertyOptional({ example: { ram: "16GB", color: "negro" } })
+  @IsOptional()
+  @IsObject()
+  attributes?: Record<string, string>;
+
+  @ApiPropertyOptional({ example: 5 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Type(() => Number)
+  stock?: number;
+
+  @ApiPropertyOptional({ example: 50, description: "Ajuste de precio (+/-)" })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  priceDelta?: number;
+}
+
+export class UpdateVariationDto {
+  @ApiPropertyOptional({ example: "RTX3080-32GB" })
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(80)
+  sku?: string;
+
+  @ApiPropertyOptional({ example: { ram: "32GB" } })
+  @IsOptional()
+  @IsObject()
+  attributes?: Record<string, string>;
+
+  @ApiPropertyOptional({ example: 3 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Type(() => Number)
+  stock?: number;
+
+  @ApiPropertyOptional({ example: 100 })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  priceDelta?: number;
 }

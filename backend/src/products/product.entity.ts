@@ -13,6 +13,7 @@ import {
 import { User } from "../users/user.entity";
 import { Verification } from "../verifications/verification.entity";
 import { Review } from "../reviews/review.entity";
+import { ProductVariation } from "./product-variation.entity";
 
 export enum ProductCondition {
   NEW = "new",
@@ -157,6 +158,9 @@ export class Product {
 
   @OneToMany(() => Review, (review) => review.product)
   reviews: Review[];
+
+  @OneToMany(() => ProductVariation, (variation) => variation.product)
+  variations: ProductVariation[];
 
   @CreateDateColumn({ name: "created_at", type: "timestamptz" })
   createdAt: Date;
