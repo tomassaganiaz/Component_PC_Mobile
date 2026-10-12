@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -15,6 +16,7 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
 } from '../services/api';
+import { initNotifications, presentLocalNotification } from '../services/push';
 import type { AppNotification } from '../services/api';
 
 interface NotificationsContextValue {
@@ -33,6 +35,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<AppNotification[]>([]);
   const [unread, setUnread] = useState(0);
   const [loading, setLoading] = useState(false);
+  const prevUnread = useRef(0);
 
   const refresh = useCallback(async () => {
     if (!session) return;
@@ -54,6 +57,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!session) return;
     let cancelled = false;
+    void initNotifications();
 
     const loadAll = async () => {
       try {
@@ -62,6 +66,10 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
           getUnreadNotifications(),
         ]);
         if (!cancelled) {
+          if (count.count > prevUnread.current && list.length > 0) {
+            await presentLocalNotification(list[0].title, list[0].body);
+          }
+          prevUnread.current = count.count;
           setItems(list);
           setUnread(count.count);
         }

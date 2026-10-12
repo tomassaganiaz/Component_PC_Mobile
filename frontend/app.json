@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Frontend",
-    "slug": "Frontend",
+    "name": "TechShield",
+    "slug": "techshield",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -9,9 +9,11 @@
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#0b1326",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.techshield.app"
     },
     "android": {
+      "package": "com.techshield.app",
       "backgroundColor": "#0b1326",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -46,7 +48,26 @@
       "expo-router",
       "expo-image",
       "expo-asset",
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Permitir a TechShield usar Face ID para iniciar sesión."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permitir a TechShield acceder a tus fotos para publicar productos."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#0b1326"
+        }
+      ]
     ]
   }
 }

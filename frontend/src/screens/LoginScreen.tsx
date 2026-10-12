@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { Link } from 'expo-router';
 
@@ -6,6 +6,8 @@ import AppIcon from './../components/AppIcon';
 import { DividerLabel, PulseDot } from './../components/ui';
 import { useI18n } from '../i18n';
 import { isOtpChallenge, login, requestOtp, verifyOtp } from './../services/api';
+import { authenticateBiometric, biometricSupported } from '../services/biometrics';
+import { getStoredItem, setStoredItem } from '../services/storage';
 import { colors, shadow } from '../theme';
 import type { LoginSuccess } from '../types';
 
@@ -16,6 +18,7 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
   const [showPass, setShowPass] = useState(false);
   const [remember, setRemember] = useState(true);
   const [biometricLoading, setBiometricLoading] = useState(false);
+  const [bioAvailable, setBioAvailable] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,9 +28,59 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
   const [otpError, setOtpError] = useState<string | null>(null);
   const [otpVerifying, setOtpVerifying] = useState(false);
 
-  const handleBiometric = () => {
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ok = await biometricSupported();
+      if (!cancelled) setBioAvailable(ok);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const persistCredentials = async (mail: string, pass: string) => {
+    try {
+      await setStoredItem('bio_email', mail);
+      await setStoredItem('bio_password', pass);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleBiometric = async () => {
     setBiometricLoading(true);
-    setTimeout(() => setBiometricLoading(false), 1200);
+    setError(null);
+    try {
+      const ok = await authenticateBiometric(t('login.biometric'));
+      if (!ok) {
+        setError(t('login.errorBiometric'));
+        return;
+      }
+      const [savedEmail, savedPassword] = await Promise.all([
+        getStoredItem('bio_email'),
+        getStoredItem('bio_password'),
+      ]);
+      if (!savedEmail || !savedPassword) {
+        setError(t('login.errorBiometricNoCreds'));
+        return;
+      }
+      const result = await login(savedEmail, savedPassword);
+      if (isOtpChallenge(result)) {
+        setEmail(savedEmail);
+        setPassword(savedPassword);
+        setOtpToken(result.otpToken);
+        setOtpError(null);
+        const otp = await requestOtp(result.otpToken);
+        setOtpHint(otp.code);
+      } else {
+        onLogin(result);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('login.errorBiometric'));
+    } finally {
+      setBiometricLoading(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -45,6 +98,7 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
         const otp = await requestOtp(result.otpToken);
         setOtpHint(otp.code);
       } else {
+        await persistCredentials(email.trim(), password);
         onLogin(result);
       }
     } catch (err) {
@@ -63,6 +117,7 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
     setOtpError(null);
     try {
       const session = await verifyOtp(otpToken, otpCode);
+      await persistCredentials(email.trim(), password);
       onLogin(session);
     } catch (err) {
       setOtpError(err instanceof Error ? err.message : t('login.errorOtp'));
@@ -126,8 +181,12 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
           {/* Biometric card */}
           <Pressable
             onPress={handleBiometric}
+            disabled={!bioAvailable}
             className="relative w-full rounded-xl bg-surface-container p-4"
-            style={shadow.card}
+            style={{
+              ...shadow.card,
+              ...(bioAvailable ? undefined : { opacity: 0.6 }),
+            }}
           >
             <View className="flex-row items-center justify-between">
               <View className="min-w-0 flex-row items-center gap-4">

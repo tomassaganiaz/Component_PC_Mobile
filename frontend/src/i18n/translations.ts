@@ -48,6 +48,8 @@ export const translations: Record<Locale, Record<string, string>> = {
     'login.errorRequired': 'Ingresá tu correo TechShield y tu clave para continuar.',
     'login.errorOtp': 'No se pudo verificar el código.',
     'login.errorServer': 'No se pudo conectar con el servidor.',
+    'login.errorBiometric': 'No se pudo autenticar con biometría.',
+    'login.errorBiometricNoCreds': 'Activá la biometría iniciando sesión una vez con tu clave.',
 
     'register.title': 'Crear cuenta',
     'register.desc': 'Unite al marketplace verificado de hardware con custodia y auditoría técnica.',
@@ -153,6 +155,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     'publish.fHoursReported': 'Horas declaradas',
     'publish.fUsage': 'Tipo de uso',
     'publish.fPhysical': 'Estado físico',
+    'publish.fPhotos': 'Fotos del producto',
     'publish.submit': 'Publicar y Enviar a Auditoría',
     'publish.submitting': 'Publicando...',
     'publish.terms': 'Al publicar aceptás el envío del componente al centro técnico TechShield para auditoría de pines, telemetría térmica y estrés de silicio.',
@@ -161,6 +164,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     'publish.errStock': 'El stock debe ser un número mayor o igual a 0.',
     'publish.errDesc': 'La descripción debe tener al menos 10 caracteres.',
     'publish.errGeneric': 'No se pudo publicar el producto.',
+    'publish.errPhotos': 'Necesitás dar permiso a la galería para agregar fotos.',
     'publish.successTitle': '¡Publicación enviada!',
     'publish.successDesc': 'Tu producto entró a la cola de auditoría TechShield. Cuando el laboratorio lo chequee, aparecerá con el check verde en el marketplace.',
 
@@ -455,6 +459,8 @@ export const translations: Record<Locale, Record<string, string>> = {
     'login.errorRequired': 'Enter your TechShield email and key to continue.',
     'login.errorOtp': 'Could not verify the code.',
     'login.errorServer': 'Could not connect to the server.',
+    'login.errorBiometric': 'Biometric authentication failed.',
+    'login.errorBiometricNoCreds': 'Enable biometrics by signing in once with your password.',
 
     'register.title': 'Create account',
     'register.desc': 'Join the verified hardware marketplace with escrow and technical audit.',
@@ -560,6 +566,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     'publish.fHoursReported': 'Declared hours',
     'publish.fUsage': 'Usage type',
     'publish.fPhysical': 'Physical condition',
+    'publish.fPhotos': 'Product photos',
     'publish.submit': 'Publish and Send to Audit',
     'publish.submitting': 'Publishing...',
     'publish.terms': 'By publishing you accept sending the component to the TechShield technical center for pin audit, thermal telemetry and silicon stress.',
@@ -568,6 +575,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     'publish.errStock': 'Stock must be a number greater than or equal to 0.',
     'publish.errDesc': 'Description must be at least 10 characters.',
     'publish.errGeneric': 'Could not publish the product.',
+    'publish.errPhotos': 'You need to allow gallery access to add photos.',
     'publish.successTitle': 'Publication sent!',
     'publish.successDesc': 'Your product entered the TechShield audit queue. Once the lab checks it, it will show the green check in the marketplace.',
 

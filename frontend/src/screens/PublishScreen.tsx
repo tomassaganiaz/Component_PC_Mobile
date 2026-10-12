@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 
 import AppHeader from '../components/AppHeader';
 import AppIcon from '../components/AppIcon';
@@ -71,10 +72,34 @@ export default function PublishScreen({ nav }: { nav: Nav }) {
   const [hours, setHours] = useState('');
   const [reportedHours, setReportedHours] = useState('');
   const [physicalState, setPhysicalState] = useState('');
+  const [images, setImages] = useState<string[]>([]);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [publishedId, setPublishedId] = useState<string | null>(null);
+
+  const pickImages = async () => {
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        setError(t('publish.errPhotos'));
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        selectionLimit: 4,
+        quality: 0.7,
+      });
+      if (!result.canceled) {
+        setImages((prev) =>
+          [...prev, ...result.assets.map((a) => a.uri)].slice(0, 4),
+        );
+      }
+    } catch {
+      setError(t('publish.errPhotos'));
+    }
+  };
 
   const handlePublish = async () => {
     setError(null);
@@ -111,6 +136,7 @@ export default function PublishScreen({ nav }: { nav: Nav }) {
         hoursOfUse: hours.trim() ? Number(hours) : undefined,
         reportedHoursOfUse: reportedHours.trim() ? Number(reportedHours) : undefined,
         stock: stock.trim() ? Number(stock) : 1,
+        images: images.length ? images : undefined,
       });
       setPublishedId(created.id);
     } catch (err) {
@@ -258,6 +284,31 @@ export default function PublishScreen({ nav }: { nav: Nav }) {
               placeholder="Rayones, marcas, detalles..."
               multiline
             />
+          </View>
+
+          <View>
+            <FieldLabel>{t('publish.fPhotos')}</FieldLabel>
+            <View className="flex-row flex-wrap gap-2">
+              {images.map((uri) => (
+                <View key={uri} className="relative">
+                  <Image source={{ uri }} style={{ width: 72, height: 72, borderRadius: 12 }} />
+                  <Pressable
+                    onPress={() => setImages((prev) => prev.filter((u) => u !== uri))}
+                    className="absolute -right-1.5 -top-1.5 h-6 w-6 items-center justify-center rounded-full bg-red-500"
+                  >
+                    <AppIcon name="close" size={13} color="#ffffff" />
+                  </Pressable>
+                </View>
+              ))}
+              {images.length < 4 ? (
+                <Pressable
+                  onPress={pickImages}
+                  className="h-[72px] w-[72px] items-center justify-center rounded-xl border border-dashed border-line bg-panel"
+                >
+                  <AppIcon name="photo_camera" size={22} color={colors.textSecondary} />
+                </Pressable>
+              ) : null}
+            </View>
           </View>
 
           {error ? (
