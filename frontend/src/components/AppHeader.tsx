@@ -5,6 +5,7 @@ import AppIcon from './AppIcon';
 import { Avatar, PulseDot } from './ui';
 import { useCart } from '../context/CartContext';
 import { useNotifications } from '../context/NotificationsContext';
+import { useThemeCtx } from '../context/ThemeContext';
 import { IMAGES } from '../data/mock';
 import { colors, shadow } from '../theme';
 
@@ -20,6 +21,7 @@ export default function AppHeader({
   const router = useRouter();
   const { unread } = useNotifications();
   const { count } = useCart();
+  const { theme, toggle } = useThemeCtx();
   const handleNotify = onNotify ?? (() => router.push('/notifications'));
   return (
     <View
@@ -48,6 +50,14 @@ export default function AppHeader({
         ) : null}
       </View>
       <View className="flex-row items-center gap-2">
+        <Pressable
+          onPress={toggle}
+          accessibilityRole="button"
+          accessibilityLabel={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+          className="h-10 w-10 items-center justify-center rounded-lg"
+        >
+          <AppIcon name={theme === 'dark' ? 'light_mode' : 'nightlight'} size={22} color={colors.textSecondary} />
+        </Pressable>
         <Pressable
           onPress={() => router.push('/cart')}
           className="relative h-10 w-10 items-center justify-center rounded-lg"
