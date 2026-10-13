@@ -1,6 +1,8 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, DeepPartial } from "typeorm";
+import * as fs from "fs";
+import { join } from "path";
 import { User, UserRole } from "../users/user.entity";
 import {
   Product,
@@ -22,13 +24,23 @@ const IMAGES = {
     "https://lh3.googleusercontent.com/aida-public/AB6AXuB9MM1vzTy0XpgyZOcNL97t87rg90jgH5QR8mVFHOr9Gd4Tw6dI8ikyVj6-p7er1_2mEt0Jm22Chpfn32QtTgqF66RWMvw2i7aTvGbHKWWFJeimhCHjQlYg4gwa1bEZmpMPv0g2CATtHRNQmEH2vJkbf16FIoNNL95AJJhQtT7giEiTdor4yuFa4AxfBvAwUjShuGosksCZ1GSglJ4EukaqOuPQidGthxGE9n1lc86FNEMn0rzw0bM",
 };
 
+// Imágenes locales servidas por el backend en /static/products/<archivo>.
+// El frontend resuelve la ruta relativa contra la base de la API.
+const PRODUCT_IMAGES: Record<string, string> = {
+  "AMD Ryzen 7 7800X3D": "/static/products/ryzen7-7800x3d.png",
+  "AMD Ryzen 9 7950X Sellado": "/static/products/ryzen9-7950x.png",
+  "AMD Ryzen 5 7600X verificado": "/static/products/ryzen5-7600x.png",
+  "Ryzen 5 5600X": "/static/products/ryzen5-5600x.png",
+  "Intel Core i5-14600K": "/static/products/intel-i5-14600k.png",
+  "Intel Core i5-14600K Sellado": "/static/products/intel-i5-14600k.png",
+  "Intel Core i5-13600K": "/static/products/intel-i5-13600k.png",
+};
+
 interface SeedSeller {
   email: string;
   name: string;
   acceptsTesting: boolean;
-}
-
-const SELLERS: SeedSeller[] = [
+}const SELLERS: SeedSeller[] = [
   { email: "techlab.pro@test.com", name: "TechLab Pro", acceptsTesting: true },
   { email: "cybermundo@test.com", name: "CyberMundo", acceptsTesting: true },
   {
@@ -55,6 +67,7 @@ export class ProductsSeed implements OnModuleInit {
 
   async onModuleInit() {
     await this.ensureNewProducts();
+    await this.ensureProductImages();
     await this.ensureKycAndOtp();
     await this.ensureOpenComplaint();
 
@@ -579,6 +592,27 @@ export class ProductsSeed implements OnModuleInit {
       };
       await this.productRepository.save(this.productRepository.create(data));
       this.logger.log(`Producto agregado: ${spec.title}`);
+    }
+  }
+
+  /** Asigna la imagen local (backend/public) a cada producto, si existe el archivo. */
+  private async ensureProductImages() {
+    for (const [title, image] of Object.entries(PRODUCT_IMAGES)) {
+      const product = await this.productRepository.findOne({
+        where: { title },
+      });
+      if (!product) continue;
+      if (product.images?.[0] === image) continue;
+      // Solo aplica si el archivo local existe (en backend/public).
+      const filePath = join(
+        process.cwd(),
+        "public",
+        image.replace(/^\/static\//, ""),
+      );
+      if (!fs.existsSync(filePath)) continue;
+      product.images = [image];
+      await this.productRepository.save(product);
+      this.logger.log(`Imagen asignada a: ${title}`);
     }
   }
 

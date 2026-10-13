@@ -31,7 +31,7 @@ export default function ProductImage({
 }: Props) {
   const [failed, setFailed] = useState(false);
   const showFallback = !uri || failed;
-  const source = width && uri ? optimizedImageUrl(uri, width) : uri;
+  const source = uri ? optimizedImageUrl(uri, width ?? 400) : uri;
 
   if (showFallback) {
     return (

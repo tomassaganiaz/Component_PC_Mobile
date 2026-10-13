@@ -1,11 +1,13 @@
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe, Logger, RequestMethod } from "@nestjs/common";
+import { NestExpressApplication } from "@nestjs/platform-express";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import { ConfigService } from "@nestjs/config";
+import { join } from "path";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ["error", "warn", "log", "debug", "verbose"],
   });
 
@@ -64,6 +66,9 @@ async function bootstrap() {
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     credentials: true,
   });
+
+  // Imágenes locales de producto (backend/public servido en /static/...)
+  app.useStaticAssets(join(process.cwd(), "public"), { prefix: "/static/" });
 
   // Swagger
   const swaggerConfig = new DocumentBuilder()
