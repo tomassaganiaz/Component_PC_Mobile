@@ -1,11 +1,20 @@
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 /**
- * Inicializa las notificaciones locales. Se cargan de forma dinámica para no
- * romper el bundle web (expo-notifications no está disponible en web).
+ * Expo Go no soporta el push remoto de expo-notifications en Android: importar
+ * el módulo allí lanza un error. Detectamos Expo Go para no cargarlo.
+ */
+function isExpoGo(): boolean {
+  return Constants.executionEnvironment === 'storeClient';
+}
+
+/**
+ * Inicializa las notificaciones locales. Se cargan de forma dinámica y sólo en
+ * builds nativos (se omite en web y en Expo Go).
  */
 export async function initNotifications(): Promise<void> {
-  if (Platform.OS === 'web') return;
+  if (Platform.OS === 'web' || isExpoGo()) return;
   try {
     const N = await import('expo-notifications');
     N.setNotificationHandler({
@@ -32,12 +41,12 @@ export async function initNotifications(): Promise<void> {
   }
 }
 
-/** Muestra una notificación local inmediata. */
+/** Muestra una notificación local inmediata (omite web y Expo Go). */
 export async function presentLocalNotification(
   title: string,
   body: string,
 ): Promise<void> {
-  if (Platform.OS === 'web') return;
+  if (Platform.OS === 'web' || isExpoGo()) return;
   try {
     const N = await import('expo-notifications');
     await N.scheduleNotificationAsync({
