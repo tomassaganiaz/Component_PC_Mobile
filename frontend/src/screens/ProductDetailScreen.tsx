@@ -701,6 +701,12 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
 
         {product.verified ? <CheckedBanner /> : null}
 
+        <SellerSecurity
+          product={product}
+          onReport={product.sellerId ? () => setReportOpen(true) : undefined}
+          onViewReviews={product.sellerId ? openSellerReviews : undefined}
+        />
+
         {knowItems.length > 0 ? (
           <View className="px-4 pt-4">
             <Text className="mb-2 text-base font-semibold text-text-primary">
@@ -899,12 +905,6 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
             </View>
           </View>
         ) : null}
-
-        <SellerSecurity
-          product={product}
-          onReport={product.sellerId ? () => setReportOpen(true) : undefined}
-          onViewReviews={product.sellerId ? openSellerReviews : undefined}
-        />
 
         {/* Seller */}
         {product.seller ? (
