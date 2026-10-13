@@ -506,12 +506,15 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
             className="overflow-hidden rounded-xl border border-line bg-card"
             style={shadow.card}
           >
-            <View className="overflow-hidden bg-inset" style={{ aspectRatio: 4 / 3 }}>
+            <View
+              className="overflow-hidden bg-inset"
+              style={{ aspectRatio: 1, padding: 20 }}
+            >
               <ProductImage
                 uri={activeImage}
                 style={{ width: '100%', height: '100%' }}
                 iconSize={56}
-                contentFit="cover"
+                contentFit="contain"
                 width={800}
                 priority
               />
@@ -535,7 +538,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
                     className="relative h-16 w-16 overflow-hidden rounded-lg bg-card"
                     style={i === galleryIndex ? { borderWidth: 2, borderColor: colors.secondary } : undefined}
                   >
-                    <ProductImage uri={g.uri} style={{ width: '100%', height: '100%' }} iconSize={22} width={128} />
+                    <ProductImage uri={g.uri} style={{ width: '100%', height: '100%' }} iconSize={22} contentFit="contain" width={128} />
                     <View
                       className="absolute inset-x-0 bottom-0 items-center py-0.5"
                       style={{ backgroundColor: colors.surface + 'e6' }}

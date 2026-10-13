@@ -204,7 +204,7 @@ export default function ProductCard({
       {checked ? <PassedCheckBanner /> : null}
       <View className="flex-row gap-3">
         <View className="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl border border-line bg-inset">
-          <ProductImage uri={card.image} style={{ width: '100%', height: '100%' }} iconSize={32} width={256} />
+          <ProductImage uri={card.image} style={{ width: '100%', height: '100%' }} iconSize={32} contentFit="contain" width={256} />
           {card.verified ? <VerifiedBadge /> : null}
           {outOfStock ? (
             <View className="absolute inset-0 z-10 items-center justify-center bg-black/45">
