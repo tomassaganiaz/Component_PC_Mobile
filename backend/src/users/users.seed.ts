@@ -21,11 +21,11 @@ export class UsersSeed implements OnModuleInit {
       where: { email: SEED_EMAIL },
     });
     if (exists) {
-      if (!exists.otpEnabled) {
-        exists.otpEnabled = true;
+      if (exists.otpEnabled) {
+        exists.otpEnabled = false;
         await this.userRepository.save(exists);
         this.logger.log(
-          `OTP habilitado para la cuenta de prueba: ${SEED_EMAIL}`,
+          `OTP deshabilitado para la cuenta de prueba: ${SEED_EMAIL}`,
         );
       } else {
         this.logger.log(`Cuenta de prueba ya existente: ${SEED_EMAIL}`);
@@ -41,7 +41,7 @@ export class UsersSeed implements OnModuleInit {
         password: hashedPassword,
         role: UserRole.ADMIN,
         acceptsTesting: true,
-        otpEnabled: true,
+        otpEnabled: false,
       }),
     );
     this.logger.log(`Cuenta de prueba creada: ${SEED_EMAIL} (owner / admin)`);
