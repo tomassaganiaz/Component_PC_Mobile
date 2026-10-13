@@ -97,6 +97,10 @@ async function main() {
   const buyerPatch = await req('PATCH', `/products/${productId}`, { title: 'hack' }, buyer.access_token);
   ok('comprador NO edita catálogo ajeno → 403', buyerPatch.status === 403);
 
+  // Oculta el producto de prueba para que no aparezca en el marketplace.
+  const drafted = await req('PATCH', `/products/${productId}`, { status: 'draft' }, seller.access_token);
+  ok('producto de prueba oculto (draft)', drafted.status === 200);
+
   console.log(checks.join('\n'));
   const failed = checks.filter((c) => c.startsWith('FAIL')).length;
   console.log(`\nSmoke: ${checks.length - failed}/${checks.length} OK`);
