@@ -27,13 +27,28 @@ const IMAGES = {
 // Imágenes locales servidas por el backend en /static/products/<archivo>.
 // El frontend resuelve la ruta relativa contra la base de la API.
 const PRODUCT_IMAGES: Record<string, string> = {
-  "AMD Ryzen 7 7800X3D": "/static/products/ryzen7-7800x3d.png",
-  "AMD Ryzen 9 7950X Sellado": "/static/products/ryzen9-7950x.png",
-  "AMD Ryzen 5 7600X verificado": "/static/products/ryzen5-7600x.png",
-  "Ryzen 5 5600X": "/static/products/ryzen5-5600x.png",
-  "Intel Core i5-14600K": "/static/products/intel-i5-14600k.png",
-  "Intel Core i5-14600K Sellado": "/static/products/intel-i5-14600k.png",
-  "Intel Core i5-13600K": "/static/products/intel-i5-13600k.png",
+  "AMD Ryzen 7 7800X3D": "/static/products/ryzen7-7800x3d.webp",
+  "AMD Ryzen 9 7950X Sellado": "/static/products/ryzen9-7950x.webp",
+  "AMD Ryzen 5 7600X verificado": "/static/products/ryzen5-7600x.webp",
+  "Ryzen 5 5600X": "/static/products/ryzen5-7600x.webp",
+  "Intel Core i5-14600K": "/static/products/intel-i5-14600k.webp",
+  "Intel Core i5-14600K Sellado": "/static/products/intel-i5-14600k.webp",
+  "Intel Core i5-13600K": "/static/products/intel-i5-14600k.webp",
+  "RTX 3070 Ti Founder Edition": "/static/products/rtx-3070ti.webp",
+  "RTX 3060 12GB": "/static/products/rtx-3060.webp",
+  "NVIDIA RTX 4060 OC Nueva": "/static/products/rtx-4060.webp",
+  "NVIDIA RTX 4070 Super verificada": "/static/products/rtx-4070-super.webp",
+  "RTX 4090 sin factura": "/static/products/rtx-4090.webp",
+  "Samsung Galaxy S23 Ultra": "/static/products/galaxy-s23-ultra.webp",
+  "Samsung Galaxy S24 Ultra Sellado": "/static/products/galaxy-s24-ultra.webp",
+  "Samsung Galaxy S21": "/static/products/galaxy-s21.webp",
+  "Samsung Galaxy S21 128GB": "/static/products/galaxy-s21.webp",
+  "iPhone 13 con detalles en pantalla": "/static/products/iphone13.webp",
+  "Kingston Fury Beast 16GB DDR4 3200MHz":
+    "/static/products/kingston-fury-ddr4.webp",
+  "DDR5 Corsair 32GB 6000MHz": "/static/products/ddr5-corsair.webp",
+  "MacBook Air M3 13 Sellada": "/static/products/macbook-air-m3.webp",
+  "Notebook Gamer Lenovo Legion 5": "/static/products/notebook-legion-5.webp",
 };
 
 interface SeedSeller {
