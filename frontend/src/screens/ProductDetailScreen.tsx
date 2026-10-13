@@ -611,6 +611,79 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
                 </View>
               )}
             </View>
+
+            <View className="mt-3 flex-row items-center gap-1.5">
+              <AppIcon
+                name="inventory_2"
+                size={14}
+                color={outOfStock ? colors.diagnosticRed : colors.accentEmerald}
+              />
+              <Text
+                className="text-xs font-semibold"
+                style={{ color: outOfStock ? colors.diagnosticRed : colors.accentEmerald }}
+              >
+                {outOfStock
+                  ? t('product.outOfStock')
+                  : (product.stock ?? 1) <= 1
+                    ? '¡Última unidad!'
+                    : `${product.stock} disponibles`}
+              </Text>
+            </View>
+
+            {product.sellerName ? (
+              <View className="mt-2 flex-row items-center gap-2">
+                <View className="h-7 w-7 items-center justify-center rounded-full bg-elevated">
+                  <Text className="text-[11px] font-bold" style={{ color: colors.accentCyan }}>
+                    {product.sellerName.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <View className="min-w-0 flex-1">
+                  <Text className="truncate text-xs font-semibold text-text-primary">
+                    {product.sellerName}
+                  </Text>
+                  <Text className="font-mono text-[10px] text-text-secondary">
+                    {product.sellerTier === 'secure'
+                      ? 'Vendedor seguro'
+                      : product.sellerTier === 'not_secure'
+                        ? 'Vendedor no seguro'
+                        : 'Vendedor normal'}
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+
+            {product.warranty ? (
+              <View className="mt-2 flex-row items-center gap-1.5">
+                <AppIcon
+                  name="security"
+                  size={14}
+                  color={product.warranty.extended ? colors.accentCyan : colors.accentEmerald}
+                />
+                <Text className="text-xs text-text-secondary">
+                  {product.warranty.extended
+                    ? `Cobertura extendida · ${product.warranty.days} días`
+                    : `Garantía ${product.warranty.days} días`}
+                </Text>
+              </View>
+            ) : null}
+
+            <View className="mt-2 flex-col gap-1">
+              <View className="flex-row items-center gap-1.5">
+                <AppIcon name="local_shipping" size={14} color={colors.secondary} />
+                <Text className="text-xs text-text-secondary">Envío a todo el país</Text>
+              </View>
+              <View className="flex-row items-center gap-1.5">
+                <AppIcon name="storefront" size={14} color={colors.secondary} />
+                <Text className="text-xs text-text-secondary">Retiro en local</Text>
+              </View>
+            </View>
+
+            <View className="mt-3 flex-row items-start gap-1.5 rounded-lg border border-line/60 bg-inset/60 p-2">
+              <AppIcon name="verified_user" size={15} color={colors.accentEmerald} style={{ marginTop: 1 }} />
+              <Text numberOfLines={3} className="flex-1 text-[11px] leading-relaxed text-text-secondary">
+                Compra protegida con custodia TechShield. El vendedor cobra al confirmar la entrega.
+              </Text>
+            </View>
           </View>
         </View>
 
