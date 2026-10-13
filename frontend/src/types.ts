@@ -178,6 +178,10 @@ export interface Product {
   usageType?: string;
   stressTest?: string;
   conditionGrade?: string;
+  brand?: string;
+  model?: string;
+  averageRating?: number;
+  reviewCount?: number;
   sellerTier?: SellerTier;
   sellerStats?: SellerStats;
   sellerName?: string;

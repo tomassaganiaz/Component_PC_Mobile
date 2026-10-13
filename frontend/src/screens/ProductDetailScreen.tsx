@@ -367,6 +367,17 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
   const activeImage = gallery[galleryIndex]?.uri ?? product.image;
   const marker = gallery[galleryIndex]?.desc ?? 'Inspección macro: Chasis frontal';
 
+  const knowItems = (
+    [
+      ['Marca', product.brand],
+      ['Modelo', product.model],
+      ['Categoría', product.category],
+      ['Tipo de uso', product.usageType],
+      ['Horas verificadas', product.hoursOfUse != null ? `${product.hoursOfUse} h` : null],
+      ['Grado', product.conditionGrade],
+    ] as [string, string | number | null | undefined][]
+  ).filter(([, v]) => v != null && v !== '') as [string, string][];
+
   const handleBuy = () => {
     if (outOfStock) return;
     setCheckoutOpen(true);
@@ -592,10 +603,43 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
 
         {product.verified ? <CheckedBanner /> : null}
 
+        {/* Meta + rating (estilo ML) */}
+        <View className="px-4 pt-3">
+          <View className="flex-row items-center gap-2">
+            <Text className="font-mono text-[11px] font-semibold text-text-secondary">
+              {product.condition === 'new' ? 'Nuevo' : 'Usado'}
+            </Text>
+            <Text className="text-text-muted">·</Text>
+            <Text className="font-mono text-[11px] text-text-muted">
+              {product.reviewCount ? `+${product.reviewCount} vendidos` : 'Publicación verificada'}
+            </Text>
+          </View>
+        </View>
+
         {/* Title */}
-        <View className="px-4 pt-2">
-          <Text className="text-[28px] font-bold leading-tight tracking-tight text-text-primary">{product.title}</Text>
-          <Text className="mt-1 text-sm text-text-secondary">{product.intro}</Text>
+        <View className="px-4 pt-1">
+          <Text className="text-[24px] font-bold leading-snug text-text-primary">{product.title}</Text>
+          {(product.averageRating ?? 0) > 0 ? (
+            <View className="mt-1.5 flex-row items-center gap-1.5">
+              <Text className="text-sm font-semibold text-text-primary">
+                {(product.averageRating ?? 0).toFixed(1)}
+              </Text>
+              <View className="flex-row">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <AppIcon
+                    key={i}
+                    name={(product.averageRating ?? 0) >= i - 0.25 ? 'star' : 'star_border'}
+                    size={15}
+                    color={colors.diagnosticAmber}
+                  />
+                ))}
+              </View>
+              <Text className="font-mono text-[11px] text-text-secondary">
+                ({product.reviewCount ?? 0})
+              </Text>
+            </View>
+          ) : null}
+          <Text className="mt-1.5 text-sm text-text-secondary">{product.intro}</Text>
         </View>
 
         {/* Price */}
@@ -615,6 +659,13 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
                 </View>
               ) : null}
             </View>
+            <View className="pt-1">
+              <Text className="text-sm text-text-primary">
+                en <Text className="font-semibold">6 cuotas</Text> de{' '}
+                <Text className="font-semibold">${(Number(product.price) / 6).toFixed(2)}</Text> sin interés
+              </Text>
+              <Text className="mt-0.5 text-xs font-medium text-sky-400">Ver los medios de pago</Text>
+            </View>
             {product.shipping ? (
               <View className="flex-row items-center gap-2 pt-1">
                 <AppIcon name="local_shipping" size={18} color={colors.secondary} />
@@ -623,6 +674,25 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
             ) : null}
           </View>
         </View>
+
+        {knowItems.length > 0 ? (
+          <View className="px-4 pt-4">
+            <Text className="mb-2 text-base font-semibold text-text-primary">
+              Lo que tenés que saber de este producto
+            </Text>
+            <View className="flex flex-col gap-1.5">
+              {knowItems.map(([label, value]) => (
+                <View key={label} className="flex-row items-start gap-2">
+                  <Text className="text-text-muted">•</Text>
+                  <Text className="flex-1 text-xs leading-relaxed text-text-secondary">
+                    <Text className="text-text-primary">{label}: </Text>
+                    {value}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : null}
 
         {product.priceFlag === 'suspicious' ? (
           <View className="mx-4 mt-3 flex-row items-start gap-2.5 rounded-lg border border-amber-500/50 bg-amber-500/10 p-3">
