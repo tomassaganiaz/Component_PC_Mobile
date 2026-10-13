@@ -186,6 +186,7 @@ export function getProducts(filters: ProductFilters = {}): Promise<PaginatedProd
   const params = new URLSearchParams();
   if (filters.category) params.set('category', filters.category);
   if (filters.condition) params.set('condition', filters.condition);
+  if (filters.conditionGrade) params.set('conditionGrade', filters.conditionGrade);
   if (filters.minPrice !== undefined) params.set('minPrice', String(filters.minPrice));
   if (filters.maxPrice !== undefined) params.set('maxPrice', String(filters.maxPrice));
   if (filters.verified === true) params.set('verified', 'true');

@@ -81,6 +81,7 @@ export interface ProductFilters {
   search?: string;
   category?: string;
   condition?: string;
+  conditionGrade?: string;
   minPrice?: number;
   maxPrice?: number;
   warranty?: 'techshield' | 'extended';

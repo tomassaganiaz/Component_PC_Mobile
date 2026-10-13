@@ -41,6 +41,7 @@ function filterMock(filters: ProductFilters): ExploreCard[] {
     if (filters.sellerTier && p.sellerTier !== filters.sellerTier) return false;
     if (filters.verified === true && p.verified !== true) return false;
     if (filters.condition === 'new' && p.condition !== 'new') return false;
+    if (filters.conditionGrade && (p.conditionGrade ?? '') !== filters.conditionGrade) return false;
     if (filters.warranty === 'extended' && !p.warranty?.extended) return false;
     if (filters.warranty === 'techshield' && (p.warranty?.days ?? 0) < 90) return false;
     if (filters.minPositivity !== undefined && (p.sellerStats?.positivity ?? 0) < filters.minPositivity) return false;
@@ -70,10 +71,15 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
     return () => clearTimeout(timer);
   }, [search]);
 
-  const effectiveFilters: ProductFilters = useMemo(
-    () => ({ ...filters, sellerTier: tierFilter }),
-    [filters, tierFilter],
-  );
+  const effectiveFilters: ProductFilters = useMemo(() => {
+    const conditionFilter: ProductFilters =
+      condition === 1
+        ? { condition: 'new', sealed: true }
+        : condition === 2
+          ? { conditionGrade: 'A+' }
+          : {};
+    return { ...filters, sellerTier: tierFilter, ...conditionFilter };
+  }, [filters, tierFilter, condition]);
   const queryFilters: ProductFilters = useMemo(
     () => ({ ...effectiveFilters, search: debouncedSearch || undefined }),
     [effectiveFilters, debouncedSearch],
@@ -86,6 +92,7 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
       effectiveFilters.category ||
       effectiveFilters.verified ||
       effectiveFilters.condition === 'new' ||
+      effectiveFilters.conditionGrade ||
       effectiveFilters.warranty ||
       effectiveFilters.minPositivity ||
       effectiveFilters.maxHoursOfUse ||
@@ -135,6 +142,12 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
   if (filters.category) {
     const label = CATEGORIES.find((c) => c.value === filters.category)?.label ?? filters.category;
     activeFilterActions.push({ key: 'category', label, onRemove: () => setFilters({ ...filters, category: undefined }) });
+  }
+  if (condition === 1) {
+    activeFilterActions.push({ key: 'condition', label: 'Nuevos sellados', onRemove: () => setCondition(0) });
+  }
+  if (condition === 2) {
+    activeFilterActions.push({ key: 'grade', label: 'Grado A+ certificado', onRemove: () => setCondition(0) });
   }
   if (tierFilter) {
     const label = tierFilter === 'secure' ? 'Vendedor Seguro' : tierFilter === 'normal' ? 'Vendedor Normal' : 'Vendedor No Seguro';
@@ -272,6 +285,13 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
                     CATEGORIES.find((c) => c.value === effectiveFilters.category)?.label ??
                     effectiveFilters.category
                   ).toUpperCase()}
+                </Text>
+              </View>
+            ) : null}
+            {effectiveFilters.conditionGrade ? (
+              <View className="flex-row items-center gap-1 rounded-full border border-secondary/40 bg-secondary/10 px-2.5 py-0.5">
+                <Text className="font-mono text-[10px] font-semibold text-secondary">
+                  GRADO {effectiveFilters.conditionGrade}
                 </Text>
               </View>
             ) : null}

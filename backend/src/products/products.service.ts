@@ -363,6 +363,12 @@ export class ProductsService {
       });
     }
 
+    if (filters?.conditionGrade) {
+      query.andWhere("product.conditionGrade = :conditionGrade", {
+        conditionGrade: filters.conditionGrade,
+      });
+    }
+
     if (filters?.minPrice) {
       query.andWhere("product.price >= :minPrice", {
         minPrice: filters.minPrice,

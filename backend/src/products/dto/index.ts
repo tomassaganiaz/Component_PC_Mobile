@@ -189,6 +189,11 @@ export class FilterProductDto {
   @IsEnum(ProductCondition)
   condition?: ProductCondition;
 
+  @ApiPropertyOptional({ example: "A+", description: "Grado de condición" })
+  @IsOptional()
+  @IsString()
+  conditionGrade?: string;
+
   @ApiPropertyOptional({ example: 100 })
   @IsOptional()
   @IsNumber()
