@@ -386,6 +386,11 @@ export class ProductsSeed implements OnModuleInit {
       price: number;
       category: ProductCategory;
       image: string;
+      condition?: ProductCondition;
+      sealed?: boolean;
+      verified?: boolean;
+      grade?: string;
+      usageType?: string;
       coverageExtended?: boolean;
       warrantyDays?: number;
     }> = [
@@ -438,6 +443,94 @@ export class ProductsSeed implements OnModuleInit {
         price: 980,
         category: ProductCategory.LAPTOP,
         image: "",
+        verified: true,
+        grade: "A",
+      },
+      // --- Nuevos sellados ---
+      {
+        email: SELLERS[0].email,
+        title: "Samsung Galaxy S24 Ultra Sellado",
+        desc: "Nuevo · 256GB · sin abrir, con sello de fábrica.",
+        price: 980,
+        category: ProductCategory.PHONE,
+        image: IMAGES.galaxy,
+        condition: ProductCondition.NEW,
+        sealed: true,
+        verified: true,
+      },
+      {
+        email: SELLERS[0].email,
+        title: "AMD Ryzen 9 7950X Sellado",
+        desc: "Nuevo · 16 núcleos · AM5 · sin abrir, con sello.",
+        price: 540,
+        category: ProductCategory.CPU,
+        image: IMAGES.ryzen,
+        condition: ProductCondition.NEW,
+        sealed: true,
+        verified: true,
+      },
+      {
+        email: SELLERS[1].email,
+        title: "MacBook Air M3 13 Sellada",
+        desc: "Nueva · 8GB · 256GB SSD · sin abrir, con sello.",
+        price: 1090,
+        category: ProductCategory.LAPTOP,
+        image: "",
+        condition: ProductCondition.NEW,
+        sealed: true,
+        verified: true,
+      },
+      // --- Seguros (usados verificados) ---
+      {
+        email: SELLERS[0].email,
+        title: "AMD Ryzen 5 7600X verificado",
+        desc: "Usado verificado · AM5 · excelente estado.",
+        price: 210,
+        category: ProductCategory.CPU,
+        image: IMAGES.ryzen,
+        verified: true,
+        grade: "A+",
+      },
+      {
+        email: SELLERS[1].email,
+        title: "NVIDIA RTX 4070 Super verificada",
+        desc: "Usada verificada · 12GB · sin coil whine.",
+        price: 620,
+        category: ProductCategory.GPU,
+        image: IMAGES.rtx,
+        verified: true,
+        grade: "A",
+      },
+      {
+        email: SELLERS[0].email,
+        title: "DDR5 Corsair 32GB 6000MHz",
+        desc: "RAM DDR5 verificada · test de estabilidad OK.",
+        price: 130,
+        category: ProductCategory.RAM,
+        image: "",
+        verified: true,
+        grade: "A+",
+      },
+      // --- Inseguros (vendedor sin testing / uso intensivo) ---
+      {
+        email: SELLERS[2].email,
+        title: "RTX 4090 sin factura",
+        desc: "Uso intensivo/minería según declaración. Sin factura.",
+        price: 890,
+        category: ProductCategory.GPU,
+        image: IMAGES.rtx,
+        verified: false,
+        usageType: "Minería",
+      },
+      {
+        email: SELLERS[2].email,
+        title: "iPhone 13 con detalles en pantalla",
+        desc: "Pantalla con marcas · batería degradada.",
+        price: 260,
+        category: ProductCategory.PHONE,
+        image: IMAGES.galaxy,
+        verified: false,
+        usageType: "Uso personal",
       },
     ];
 
@@ -458,31 +551,29 @@ export class ProductsSeed implements OnModuleInit {
         where: { email: spec.email },
       });
       if (!seller) continue;
+      const isNew = spec.condition === ProductCondition.NEW;
       const data: DeepPartial<Product> = {
         title: spec.title,
         description: spec.desc,
         price: spec.price,
-        condition: ProductCondition.USED,
+        condition: spec.condition ?? ProductCondition.USED,
         category: spec.category,
         status: ProductStatus.PUBLISHED,
         images: spec.image ? [spec.image] : [],
-        verified: spec.title.includes("14600K") || spec.title.includes("4060"),
-        sealed: spec.title.includes("14600K") || spec.title.includes("4060"),
+        verified: spec.verified ?? false,
+        sealed: spec.sealed ?? false,
+        conditionGrade: spec.grade || undefined,
         coverageExtended: spec.coverageExtended ?? false,
         warrantyDays: spec.warrantyDays ?? 90,
         hoursOfUse: 0,
         reportedHoursOfUse: 0,
         usageType:
-          spec.title.includes("14600K") || spec.title.includes("4060")
-            ? "Nuevo · sin uso"
-            : "Desconocido",
-        stressTest:
-          spec.title.includes("14600K") || spec.title.includes("4060")
-            ? "Sello intacto · sin encendido previo"
-            : "",
-        physicalState:
-          spec.title.includes("14600K") || spec.title.includes("4060")
-            ? "Nuevo, sin uso y sin sacar de la caja"
+          spec.usageType ?? (isNew ? "Nuevo · sin uso" : "Desconocido"),
+        stressTest: spec.verified ? "Auditado por laboratorio TechShield" : "",
+        physicalState: isNew
+          ? "Nuevo, sin uso y sin sacar de la caja"
+          : spec.verified
+            ? "Verificado por laboratorio TechShield"
             : "Sin verificación previa",
         sellerId: seller.id,
       };
