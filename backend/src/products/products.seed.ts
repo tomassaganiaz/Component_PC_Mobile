@@ -415,6 +415,30 @@ export class ProductsSeed implements OnModuleInit {
         category: ProductCategory.PHONE,
         image: IMAGES.galaxy,
       },
+      {
+        email: SELLERS[0].email,
+        title: "Kingston Fury Beast 16GB DDR4 3200MHz",
+        desc: "Memoria RAM verificada con test de integridad.",
+        price: 55,
+        category: ProductCategory.RAM,
+        image: "",
+      },
+      {
+        email: SELLERS[1].email,
+        title: "SSD M.2 NVMe Crucial P3 1TB",
+        desc: "Unidad NVMe · test SMART al 100%.",
+        price: 70,
+        category: ProductCategory.STORAGE,
+        image: "",
+      },
+      {
+        email: SELLERS[0].email,
+        title: "Notebook Gamer Lenovo Legion 5",
+        desc: "Ryzen 7 + RTX 3060 · 16GB · 512GB SSD · verificada.",
+        price: 980,
+        category: ProductCategory.LAPTOP,
+        image: "",
+      },
     ];
 
     for (const spec of specs) {

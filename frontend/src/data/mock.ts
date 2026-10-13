@@ -277,12 +277,12 @@ export const PRODUCTS: ExploreCard[] = [
       : { total: 3, positive: 2, complaints: 0, positivity: 67, identityVerified: false },
 })) as ExploreCard[];
 
-export const CATEGORIES = [
-  { icon: 'memory', label: 'Procesadores', active: true },
-  { icon: 'developer_board', label: 'Tarjetas Gráficas', active: false },
-  { icon: 'smartphone', label: 'Smartphones', active: false },
-  { icon: 'storage', label: 'RAM & M.2 NVMe', active: false },
-  { icon: 'laptop_chromebook', label: 'Laptops Gamer', active: false },
+export const CATEGORIES: { icon: string; label: string; value: string }[] = [
+  { icon: 'memory', label: 'Procesadores', value: 'cpu' },
+  { icon: 'developer_board', label: 'Tarjetas Gráficas', value: 'gpu' },
+  { icon: 'smartphone', label: 'Smartphones', value: 'phone' },
+  { icon: 'storage', label: 'RAM & M.2 NVMe', value: 'ram' },
+  { icon: 'laptop_chromebook', label: 'Laptops', value: 'laptop' },
 ];
 
 export const INSPECTION_STEPS: InspectionStep[] = [

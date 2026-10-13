@@ -83,6 +83,7 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
   const loading = loadedQueryKey !== queryKey;
   const activeSecurity = Boolean(
     effectiveFilters.sellerTier ||
+      effectiveFilters.category ||
       effectiveFilters.verified ||
       effectiveFilters.condition === 'new' ||
       effectiveFilters.warranty ||
@@ -130,6 +131,10 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
   const activeFilterActions: { key: string; label: string; onRemove: () => void }[] = [];
   if (search.trim()) {
     activeFilterActions.push({ key: 'search', label: `Búsqueda "${search.trim()}"`, onRemove: () => setSearch('') });
+  }
+  if (filters.category) {
+    const label = CATEGORIES.find((c) => c.value === filters.category)?.label ?? filters.category;
+    activeFilterActions.push({ key: 'category', label, onRemove: () => setFilters({ ...filters, category: undefined }) });
   }
   if (tierFilter) {
     const label = tierFilter === 'secure' ? 'Vendedor Seguro' : tierFilter === 'normal' ? 'Vendedor Normal' : 'Vendedor No Seguro';
@@ -259,6 +264,17 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
         {/* Active filters strip */}
         {activeSecurity && !offline ? (
           <View className="flex-row flex-wrap items-center gap-2 px-4 pt-2">
+            {effectiveFilters.category ? (
+              <View className="flex-row items-center gap-1 rounded-full border border-primary/40 bg-primary-soft px-2.5 py-0.5">
+                <AppIcon name="grid_view" size={13} color={colors.primary} />
+                <Text className="font-mono text-[10px] font-semibold text-primary">
+                  {(
+                    CATEGORIES.find((c) => c.value === effectiveFilters.category)?.label ??
+                    effectiveFilters.category
+                  ).toUpperCase()}
+                </Text>
+              </View>
+            ) : null}
             {effectiveFilters.sellerTier ? (
               <View className="flex-row items-center gap-1 rounded-full border border-primary/40 bg-primary-soft px-2.5 py-0.5">
                 <AppIcon name="verified_user" size={13} color={colors.primary} />
@@ -341,26 +357,37 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
             <Text className="font-mono text-[11px] font-medium text-primary">Ver todas</Text>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
-            {CATEGORIES.map((cat) =>
-              cat.active ? (
+            {CATEGORIES.map((cat) => {
+              const active = filters.category === cat.value;
+              return (
                 <Pressable
-                  key={cat.label}
-                  className="flex-row items-center gap-1.5 rounded-xl border border-primary/40 bg-primary-soft px-3 py-2"
-                  style={glow(colors.primary, 12, 0.15)}
+                  key={cat.value}
+                  onPress={() =>
+                    setFilters({
+                      ...filters,
+                      category: active ? undefined : cat.value,
+                    })
+                  }
+                  className={`flex-row items-center gap-1.5 rounded-xl border px-3 py-2 ${
+                    active ? 'border-primary/40 bg-primary-soft' : 'border-line bg-card'
+                  }`}
+                  style={active ? glow(colors.primary, 12, 0.15) : undefined}
                 >
-                  <AppIcon name={cat.icon} size={18} color={colors.accentCyan} />
-                  <Text className="text-xs font-semibold text-text-primary">{cat.label}</Text>
+                  <AppIcon
+                    name={cat.icon}
+                    size={18}
+                    color={active ? colors.accentCyan : colors.outline}
+                  />
+                  <Text
+                    className={`text-xs ${
+                      active ? 'font-semibold text-text-primary' : 'font-medium text-text-secondary'
+                    }`}
+                  >
+                    {cat.label}
+                  </Text>
                 </Pressable>
-              ) : (
-                <Pressable
-                  key={cat.label}
-                  className="flex-row items-center gap-1.5 rounded-xl border border-line bg-card px-3 py-2"
-                >
-                  <AppIcon name={cat.icon} size={18} color={colors.outline} />
-                  <Text className="text-xs font-medium text-text-secondary">{cat.label}</Text>
-                </Pressable>
-              ),
-            )}
+              );
+            })}
           </ScrollView>
         </View>
 

@@ -34,6 +34,7 @@ export enum ProductCategory {
   MOUSE = "mouse",
   PHONE = "phone",
   TABLET = "tablet",
+  LAPTOP = "laptop",
   OTHER = "other",
 }
 

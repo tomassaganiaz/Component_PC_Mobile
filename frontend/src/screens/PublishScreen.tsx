@@ -19,6 +19,7 @@ const CATEGORIES: { value: string; label: string; icon: string }[] = [
   { value: 'ram', label: 'RAM', icon: 'memory' },
   { value: 'storage', label: 'Almacenamiento', icon: 'storage' },
   { value: 'monitor', label: 'Monitor', icon: 'screenshot_monitor' },
+  { value: 'laptop', label: 'Laptop', icon: 'laptop_chromebook' },
   { value: 'other', label: 'Otro', icon: 'hardware' },
 ];
 
