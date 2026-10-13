@@ -231,10 +231,9 @@ export class ReviewsService {
     const acceptsTesting = seller?.acceptsTesting ?? false;
 
     let tier: SellerSecurityTier;
+    // Sin historial no se penaliza: queda NORMAL hasta tener evidencia.
     if (totalReviews === 0) {
-      tier = acceptsTesting
-        ? SellerSecurityTier.NORMAL
-        : SellerSecurityTier.NOT_SECURE;
+      tier = SellerSecurityTier.NORMAL;
     } else if (positivity < 50 || complaints >= 3 || !acceptsTesting) {
       tier = SellerSecurityTier.NOT_SECURE;
     } else if (positivity >= 75 && complaints === 0 && acceptsTesting) {

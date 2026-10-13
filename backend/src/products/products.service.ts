@@ -186,10 +186,9 @@ export class ProductsService {
     stats: SellerStats,
     acceptsTesting: boolean,
   ): SellerSecurityTier {
+    // Sin historial no se penaliza: queda NORMAL hasta tener evidencia.
     if (stats.total === 0) {
-      return acceptsTesting
-        ? SellerSecurityTier.NORMAL
-        : SellerSecurityTier.NOT_SECURE;
+      return SellerSecurityTier.NORMAL;
     }
     if (stats.positivity < 50 || stats.complaints >= 3 || !acceptsTesting) {
       return SellerSecurityTier.NOT_SECURE;
