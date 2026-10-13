@@ -365,7 +365,6 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
 
   const gallery = product.gallery ?? [];
   const activeImage = gallery[galleryIndex]?.uri ?? product.image;
-  const marker = gallery[galleryIndex]?.desc ?? 'Inspección macro: Chasis frontal';
 
   const knowItems = (
     [
@@ -511,83 +510,109 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
           </View>
         </View>
 
-        {/* Gallery */}
-        <View className="px-4 pt-1">
-          <View
-            className="overflow-hidden rounded-xl border border-line bg-card"
-            style={shadow.card}
-          >
+        {/* Imagen (izquierda) + datos importantes (derecha) — formato ML */}
+        <View className="flex-row gap-3 px-4 pt-2">
+          <View style={{ width: '46%' }}>
             <View
-              className="overflow-hidden bg-inset"
-              style={{ aspectRatio: 1, padding: 20 }}
+              className="relative overflow-hidden rounded-xl border border-line bg-inset"
+              style={{ aspectRatio: 1, padding: 10 }}
             >
               <ProductImage
                 uri={activeImage}
                 style={{ width: '100%', height: '100%' }}
-                iconSize={56}
+                iconSize={48}
                 contentFit="contain"
-                width={800}
+                width={600}
                 priority
               />
-              <View className="absolute left-3 top-3 flex-row items-center gap-1.5 rounded-full border border-secondary/40 bg-surface/90 px-2.5 py-1">
-                <AppIcon name="verified_user" size={15} color={colors.secondary} />
-                <Text className="font-mono text-[11px] font-semibold tracking-wider text-secondary">
-                  LAB PHOTO #{String(galleryIndex + 1).padStart(2, '0')} • TECHSHIELD CERTIFIED
-                </Text>
-              </View>
-              <View className="absolute bottom-3 right-3 flex-row items-center gap-1.5 rounded-full border border-line bg-surface/90 px-2.5 py-1">
-                <View className="h-2 w-2 rounded-full bg-secondary" />
-                <Text className="font-mono text-[11px] text-text-primary">{marker}</Text>
-              </View>
             </View>
-            {gallery.length > 0 ? (
-              <View className="flex-row items-center gap-2 overflow-hidden border-t border-line/50 bg-inset p-2">
+            {gallery.length > 1 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 6, paddingTop: 6 }}
+              >
                 {gallery.map((g, i) => (
                   <Pressable
                     key={i}
                     onPress={() => setGalleryIndex(i)}
-                    className="relative h-16 w-16 overflow-hidden rounded-lg bg-card"
+                    className="h-12 w-12 overflow-hidden rounded-lg bg-card"
                     style={i === galleryIndex ? { borderWidth: 2, borderColor: colors.secondary } : undefined}
                   >
-                    <ProductImage uri={g.uri} style={{ width: '100%', height: '100%' }} iconSize={22} contentFit="contain" width={128} />
-                    <View
-                      className="absolute inset-x-0 bottom-0 items-center py-0.5"
-                      style={{ backgroundColor: colors.surface + 'e6' }}
-                    >
-                      <Text
-                        className={`font-mono text-[9px] font-medium ${
-                          i === galleryIndex ? 'text-text-primary' : 'text-text-secondary'
-                        }`}
-                      >
-                        {g.label}
-                      </Text>
-                    </View>
+                    <ProductImage uri={g.uri} style={{ width: '100%', height: '100%' }} iconSize={18} contentFit="contain" width={96} />
                   </Pressable>
                 ))}
-              </View>
+              </ScrollView>
             ) : null}
           </View>
-        </View>
 
-        {/* Badges */}
-        <View className="flex-row flex-wrap items-center gap-2 px-4 pt-4">
-          <View className="flex-row items-center gap-1.5 rounded-full border border-secondary/35 bg-secondary/15 px-3 py-1">
-            <AppIcon name="verified" size={16} color={colors.secondary} />
-            <Text className="font-mono text-[11px] font-semibold tracking-wide text-secondary">
-              USADO - {product.grade}
-            </Text>
+          {/* Datos importantes del producto */}
+          <View className="flex-1">
+            <View className="flex-row items-center gap-2">
+              <Text className="font-mono text-[11px] font-semibold text-text-secondary">
+                {product.condition === 'new' ? 'Nuevo' : 'Usado'}
+              </Text>
+              <Text className="text-text-muted">·</Text>
+              <Text className="font-mono text-[11px] text-text-muted">
+                {product.reviewCount ? `+${product.reviewCount} vendidos` : 'Verificado'}
+              </Text>
+            </View>
+
+            <Text className="mt-1 text-lg font-bold leading-snug text-text-primary">{product.title}</Text>
+
+            {(product.averageRating ?? 0) > 0 ? (
+              <View className="mt-1 flex-row items-center gap-1.5">
+                <Text className="text-xs font-semibold text-text-primary">
+                  {(product.averageRating ?? 0).toFixed(1)}
+                </Text>
+                <View className="flex-row">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <AppIcon
+                      key={i}
+                      name={(product.averageRating ?? 0) >= i - 0.25 ? 'star' : 'star_border'}
+                      size={13}
+                      color={colors.diagnosticAmber}
+                    />
+                  ))}
+                </View>
+                <Text className="font-mono text-[10px] text-text-secondary">
+                  ({product.reviewCount ?? 0})
+                </Text>
+              </View>
+            ) : null}
+
+            <View className="mt-2">
+              <Text className="text-[26px] font-bold text-text-primary">
+                ${product.price}
+                <Text className="ml-1 font-mono text-[11px] font-semibold text-text-secondary"> {product.currency}</Text>
+              </Text>
+              <Text className="mt-1 text-xs text-text-primary">
+                en <Text className="font-semibold">6 cuotas</Text> de{' '}
+                <Text className="font-semibold">${(Number(product.price) / 6).toFixed(2)}</Text>
+              </Text>
+              <Text className="mt-0.5 text-xs font-medium text-sky-400">Ver los medios de pago</Text>
+            </View>
+
+            <View className="mt-2 flex-row flex-wrap items-center gap-1.5">
+              {product.verified ? (
+                <View className="flex-row items-center gap-1 rounded-full border border-secondary/35 bg-secondary/15 px-2 py-0.5">
+                  <AppIcon name="verified" size={12} color={colors.secondary} />
+                  <Text className="font-mono text-[9px] font-semibold text-secondary">CHECKEADO</Text>
+                </View>
+              ) : null}
+              {product.condition === 'new' ? (
+                <View className="flex-row items-center gap-1 rounded-full border border-sky-400/60 bg-info-soft px-2 py-0.5">
+                  <AppIcon name="inventory_2" size={12} color="#7dd3fc" />
+                  <Text className="font-mono text-[9px] font-bold text-sky-300">NUEVO</Text>
+                </View>
+              ) : (
+                <View className="flex-row items-center gap-1 rounded-full border border-line bg-elevated px-2 py-0.5">
+                  <Text className="font-mono text-[9px] text-text-secondary">{product.grade}</Text>
+                </View>
+              )}
+            </View>
           </View>
-{product.condition === 'new' ? (
-          <View className="flex-row items-center gap-1.5 rounded-full border border-sky-400/60 bg-info-soft px-3 py-1">
-            <AppIcon name="inventory_2" size={15} color="#7dd3fc" />
-            <Text className="font-mono text-[11px] font-bold tracking-wide text-sky-300">NUEVO · SIN USO · SIN ABRIR</Text>
-          </View>
-        ) : null}
-        <View className="flex-row items-center gap-1.5 rounded-full border border-line bg-elevated px-3 py-1">
-          <AppIcon name="inventory_2" size={15} color={colors.primary} />
-          <Text className="font-mono text-[11px] text-on-surface-variant">CAJA ORIGINAL + ACCESORIOS</Text>
         </View>
-      </View>
 
         {outOfStock ? (
           <View className="mx-4 mt-3 flex-row items-start gap-2.5 rounded-lg border border-red-500/50 bg-red-500/10 p-3">
@@ -602,78 +627,6 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
         ) : null}
 
         {product.verified ? <CheckedBanner /> : null}
-
-        {/* Meta + rating (estilo ML) */}
-        <View className="px-4 pt-3">
-          <View className="flex-row items-center gap-2">
-            <Text className="font-mono text-[11px] font-semibold text-text-secondary">
-              {product.condition === 'new' ? 'Nuevo' : 'Usado'}
-            </Text>
-            <Text className="text-text-muted">·</Text>
-            <Text className="font-mono text-[11px] text-text-muted">
-              {product.reviewCount ? `+${product.reviewCount} vendidos` : 'Publicación verificada'}
-            </Text>
-          </View>
-        </View>
-
-        {/* Title */}
-        <View className="px-4 pt-1">
-          <Text className="text-[24px] font-bold leading-snug text-text-primary">{product.title}</Text>
-          {(product.averageRating ?? 0) > 0 ? (
-            <View className="mt-1.5 flex-row items-center gap-1.5">
-              <Text className="text-sm font-semibold text-text-primary">
-                {(product.averageRating ?? 0).toFixed(1)}
-              </Text>
-              <View className="flex-row">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <AppIcon
-                    key={i}
-                    name={(product.averageRating ?? 0) >= i - 0.25 ? 'star' : 'star_border'}
-                    size={15}
-                    color={colors.diagnosticAmber}
-                  />
-                ))}
-              </View>
-              <Text className="font-mono text-[11px] text-text-secondary">
-                ({product.reviewCount ?? 0})
-              </Text>
-            </View>
-          ) : null}
-          <Text className="mt-1.5 text-sm text-text-secondary">{product.intro}</Text>
-        </View>
-
-        {/* Price */}
-        <View className="px-4 pt-3">
-          <View className="flex flex-col gap-1 rounded-xl border border-line bg-card p-4" style={shadow.panel}>
-            <View className="flex-row items-baseline justify-between">
-              <View className="flex-row items-baseline gap-2">
-                <Text className="text-[28px] font-bold text-text-primary">${product.price}</Text>
-                <Text className="font-mono text-[11px] font-semibold text-text-secondary">{product.currency}</Text>
-                {product.originalPrice ? (
-                  <Text className="ml-1 text-xs text-text-muted line-through">${product.originalPrice} nuevo</Text>
-                ) : null}
-              </View>
-              {product.saving ? (
-                <View className="rounded-full border border-secondary/40 bg-secondary/20 px-2.5 py-0.5">
-                  <Text className="font-mono text-[11px] font-bold text-secondary">{product.saving}</Text>
-                </View>
-              ) : null}
-            </View>
-            <View className="pt-1">
-              <Text className="text-sm text-text-primary">
-                en <Text className="font-semibold">6 cuotas</Text> de{' '}
-                <Text className="font-semibold">${(Number(product.price) / 6).toFixed(2)}</Text> sin interés
-              </Text>
-              <Text className="mt-0.5 text-xs font-medium text-sky-400">Ver los medios de pago</Text>
-            </View>
-            {product.shipping ? (
-              <View className="flex-row items-center gap-2 pt-1">
-                <AppIcon name="local_shipping" size={18} color={colors.secondary} />
-                <Text className="text-xs font-medium text-secondary">{product.shipping}</Text>
-              </View>
-            ) : null}
-          </View>
-        </View>
 
         {knowItems.length > 0 ? (
           <View className="px-4 pt-4">
