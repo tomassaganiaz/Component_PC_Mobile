@@ -624,9 +624,9 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
               >
                 {outOfStock
                   ? t('product.outOfStock')
-                  : (product.stock ?? 1) <= 1
-                    ? '¡Última unidad!'
-                    : `${product.stock} disponibles`}
+                  : (product.stock ?? 1) === 1
+                    ? 'Stock: 1 unidad · producto único'
+                    : `Stock: ${product.stock} unidades`}
               </Text>
             </View>
 

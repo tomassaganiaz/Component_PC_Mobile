@@ -264,6 +264,31 @@ export default function ProductCard({
       ) : null}
 
       <View className="flex-row flex-wrap items-center gap-1.5">
+        {typeof card.stock === 'number' ? (
+          <View
+            className="flex-row items-center gap-1 rounded border px-1.5 py-0.5"
+            style={{
+              borderColor: (outOfStock ? colors.diagnosticRed : colors.accentEmerald) + '66',
+              backgroundColor: outOfStock ? colors.dangerSoft : colors.successSoft,
+            }}
+          >
+            <AppIcon
+              name="inventory_2"
+              size={12}
+              color={outOfStock ? colors.diagnosticRed : colors.accentEmerald}
+            />
+            <Text
+              className="font-mono text-[9px] font-semibold tracking-wider"
+              style={{ color: outOfStock ? colors.diagnosticRed : colors.accentEmerald }}
+            >
+              {outOfStock
+                ? 'SIN STOCK'
+                : card.stock === 1
+                  ? 'ÚNICA UNIDAD'
+                  : `${card.stock} UNIDADES`}
+            </Text>
+          </View>
+        ) : null}
         {card.warranty ? (
           <View
             className="flex-row items-center gap-1 rounded border px-1.5 py-0.5"
