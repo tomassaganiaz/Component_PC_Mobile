@@ -9,7 +9,7 @@ import { Repository } from "typeorm";
 import { Order, OrderStatus } from "./order.entity";
 import { CreateOrderDto, UpdateOrderDto } from "./dto";
 import { ProductsService, ProductWithSecurity } from "../products/products.service";
-import { ProductStatus } from "../products/product.entity";
+import { ProductStatus, BrokenTag } from "../products/product.entity";
 import { NotificationsService } from "../notifications/notifications.service";
 import { NotificationType } from "../notifications/notification.entity";
 import { CouponsService } from "../coupons/coupons.service";
@@ -62,6 +62,26 @@ export class OrdersService {
       unitPrice = Number(product.price) + Number(variation.priceDelta);
     }
 
+    // Reparación opcional de producto roto "reparable": sube el precio.
+    let repairFee = 0;
+    const wantsRepair =
+      createOrderDto.repairRequested === true &&
+      product.broken === true &&
+      product.brokenTag === BrokenTag.REPARABLE &&
+      product.repairPrice != null;
+    if (wantsRepair) {
+      repairFee = Number(product.repairPrice);
+      unitPrice += repairFee;
+    } else if (
+      createOrderDto.repairRequested === true &&
+      product.broken === true &&
+      product.brokenTag !== BrokenTag.REPARABLE
+    ) {
+      throw new BadRequestException(
+        "Este producto es de 'Repuestos': no admite reparación.",
+      );
+    }
+
     // Cupón (opcional): se valida ANTES de reservar stock.
     let total = unitPrice;
     let discount = 0;
@@ -91,6 +111,8 @@ export class OrdersService {
         total,
         discount,
         couponCode,
+        repairRequested: wantsRepair,
+        repairFee,
         status: OrderStatus.PENDING,
         productId: product.id,
         items: [

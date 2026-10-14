@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEnum, IsUUID } from "class-validator";
+import { IsString, IsOptional, IsEnum, IsUUID, IsBoolean } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { OrderStatus } from "../order.entity";
 
@@ -26,6 +26,14 @@ export class CreateOrderDto {
   @IsOptional()
   @IsUUID()
   variationId?: string;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: "Solicitar reparación (solo productos rotos 'reparables')",
+  })
+  @IsOptional()
+  @IsBoolean()
+  repairRequested?: boolean;
 }
 
 export class UpdateOrderDto {

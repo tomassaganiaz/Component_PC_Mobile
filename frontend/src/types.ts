@@ -56,6 +56,9 @@ export interface ApiProduct {
   verified: boolean;
   sealed?: boolean;
   stock?: number;
+  broken?: boolean;
+  brokenTag?: 'reparable' | 'parts';
+  repairPrice?: number;
   escrowProtected?: boolean;
   coverageExtended?: boolean;
   warranty?: { days: number; extended: boolean; remainingDays: number; label: string };
@@ -165,6 +168,9 @@ export interface Product {
   condition?: 'new' | 'used';
   sealed?: boolean;
   stock?: number;
+  broken?: boolean;
+  brokenTag?: 'reparable' | 'parts';
+  repairPrice?: number;
   verified?: boolean;
   escrowProtected?: boolean;
   warranty?: { days: number; extended: boolean; remainingDays: number; label: string };

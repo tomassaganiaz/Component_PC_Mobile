@@ -72,6 +72,20 @@ export class Order {
   })
   discount: number;
 
+  /** El cliente pidió reparar un producto roto "reparable". */
+  @Column({ type: "boolean", default: false, name: "repair_requested" })
+  repairRequested: boolean;
+
+  /** Costo de reparación cobrado (0 si no aplica). */
+  @Column({
+    type: "decimal",
+    precision: 10,
+    scale: 2,
+    default: 0,
+    name: "repair_fee",
+  })
+  repairFee: number;
+
   // Relations
   @ManyToOne(() => User, (user) => user.orders, { onDelete: "CASCADE" })
   @JoinColumn({ name: "buyer_id" })

@@ -19,6 +19,7 @@ import {
   ProductCategory,
   ProductStatus,
   SellerSecurityTier,
+  BrokenTag,
 } from "../product.entity";
 
 export class CreateProductDto {
@@ -90,6 +91,28 @@ export class CreateProductDto {
   @IsOptional()
   @IsString()
   model?: string;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: "Producto roto (repuestos o reparable)",
+  })
+  @IsOptional()
+  @IsBoolean()
+  broken?: boolean;
+
+  @ApiPropertyOptional({ enum: BrokenTag, description: "reparable | parts" })
+  @IsOptional()
+  @IsEnum(BrokenTag)
+  brokenTag?: BrokenTag;
+
+  @ApiPropertyOptional({
+    example: 80,
+    description: "Costo de reparación (solo si brokenTag=reparable)",
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  repairPrice?: number;
 }
 
 export class UpdateProductDto {
@@ -176,6 +199,22 @@ export class UpdateProductDto {
   @IsOptional()
   @IsString()
   physicalState?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  broken?: boolean;
+
+  @ApiPropertyOptional({ enum: BrokenTag })
+  @IsOptional()
+  @IsEnum(BrokenTag)
+  brokenTag?: BrokenTag;
+
+  @ApiPropertyOptional({ example: 80 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  repairPrice?: number;
 }
 
 export class FilterProductDto {
@@ -229,9 +268,20 @@ export class FilterProductDto {
   @Type(() => Boolean)
   sealed?: boolean;
 
+  @ApiPropertyOptional({ example: true, description: "Solo productos rotos" })
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  broken?: boolean;
+
+  @ApiPropertyOptional({ enum: BrokenTag, description: "reparable | parts" })
+  @IsOptional()
+  @IsEnum(BrokenTag)
+  brokenTag?: BrokenTag;
+
   @ApiPropertyOptional({
     example: true,
-    description: "Solo productos con custodia/escrow habilitada",
+    description: "Solo productos con custodia / escrow",
   })
   @IsOptional()
   @IsBoolean()

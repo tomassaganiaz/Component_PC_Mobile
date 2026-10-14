@@ -225,6 +225,9 @@ export interface CreateProductInput {
   brand?: string;
   model?: string;
   stock?: number;
+  broken?: boolean;
+  brokenTag?: 'reparable' | 'parts';
+  repairPrice?: number;
 }
 
 export function createProduct(input: CreateProductInput): Promise<ApiProduct> {
@@ -409,6 +412,8 @@ export interface CreateOrderInput {
   shippingAddress?: string;
   paymentMethod?: string;
   couponCode?: string;
+  variationId?: string;
+  repairRequested?: boolean;
 }
 
 export interface OrderProtection {

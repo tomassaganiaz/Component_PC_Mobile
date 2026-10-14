@@ -36,7 +36,7 @@ describe("Fase 4 (e2e): envíos y tracking", () => {
 
     it("el envío estándar es gratis sobre el umbral", async () => {
       const res = await request(app.getHttpServer()).get(
-        "/api/shipping/quote?subtotal=60000",
+        "/api/shipping/quote?subtotal=300000",
       );
       const standard = res.body.options.find(
         (o: { service: string }) => o.service === "standard",

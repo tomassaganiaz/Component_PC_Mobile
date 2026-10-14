@@ -47,9 +47,15 @@ export enum ProductStatus {
 }
 
 export enum SellerSecurityTier {
-  SECURE = "secure",
-  NORMAL = "normal",
-  NOT_SECURE = "not_secure",
+  SECURE = 'secure',
+  NORMAL = 'normal',
+  NOT_SECURE = 'not_secure',
+}
+
+/** Etiquetas para productos rotos. No se permiten pérdidas totales. */
+export enum BrokenTag {
+  REPARABLE = 'reparable',
+  PARTS = 'parts',
 }
 
 @Entity("products")
@@ -110,6 +116,24 @@ export class Product {
 
   @Column({ type: "integer", default: 1 })
   stock: number;
+
+  /** Producto roto: se vende barato para repuestos o reparación. */
+  @Column({ type: "boolean", default: false })
+  broken: boolean;
+
+  /** Etiqueta del producto roto (reparable | parts). Null si no es roto. */
+  @Column({ type: "enum", enum: BrokenTag, nullable: true, name: "broken_tag" })
+  brokenTag: BrokenTag | null;
+
+  /** Costo extra si el cliente pide reparación (solo "reparable"). */
+  @Column({
+    type: "decimal",
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    name: "repair_price",
+  })
+  repairPrice: number | null;
 
   @Column({ type: "integer", default: 90, name: "warranty_days" })
   warrantyDays: number;

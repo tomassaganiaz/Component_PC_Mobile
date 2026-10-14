@@ -327,6 +327,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
   const [couponApplied, setCouponApplied] = useState<CouponValidation | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponApplying, setCouponApplying] = useState(false);
+  const [repairRequested, setRepairRequested] = useState(false);
   const [variations, setVariations] = useState<ProductVariation[]>([]);
 
   useEffect(() => {
@@ -426,6 +427,10 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
         shippingAddress: shippingAddress.trim(),
         paymentMethod,
         couponCode: couponApplied?.code,
+        repairRequested:
+          product.broken && product.brokenTag === 'reparable'
+            ? repairRequested
+            : undefined,
       });
       // Pago: intención + confirmación (mock). Si falla, la orden queda pendiente.
       let paid = order;
@@ -612,6 +617,41 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
               )}
             </View>
 
+            {product.broken ? (
+              <View className="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2">
+                <View className="flex-row items-center gap-1.5">
+                  <AppIcon name="build" size={14} color={colors.diagnosticAmber} />
+                  <Text className="font-mono text-[10px] font-bold tracking-wider text-amber-400">
+                    {product.brokenTag === 'parts' ? 'REPUESTOS' : 'REPARABLE'}
+                  </Text>
+                </View>
+                <Text className="mt-1 text-[10px] leading-relaxed text-amber-200/90">
+                  {product.brokenTag === 'parts'
+                    ? 'Roto · algunos componentes pueden reutilizarse. No admite reparación.'
+                    : 'Roto · revisado. Podés solicitar reparación antes del envío.'}
+                </Text>
+                {product.brokenTag === 'reparable' && product.repairPrice ? (
+                  <Pressable
+                    onPress={() => setRepairRequested((v) => !v)}
+                    className="mt-2 flex-row items-center gap-2 rounded-lg border px-2 py-1.5"
+                    style={{
+                      borderColor: repairRequested ? colors.accentEmerald : colors.line,
+                      backgroundColor: colors.panel,
+                    }}
+                  >
+                    <AppIcon
+                      name={repairRequested ? 'check_circle' : 'add'}
+                      size={16}
+                      color={repairRequested ? colors.accentEmerald : colors.textSecondary}
+                    />
+                    <Text className="flex-1 text-[11px] font-semibold text-text-primary">
+                      Solicitar reparación (+${Number(product.repairPrice).toFixed(2)})
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            ) : null}
+
             <View className="mt-3 flex-row items-center gap-1.5">
               <AppIcon
                 name="inventory_2"
@@ -670,7 +710,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
             <View className="mt-2 flex-col gap-1">
               <View className="flex-row items-center gap-1.5">
                 <AppIcon name="local_shipping" size={14} color={colors.secondary} />
-                <Text className="text-xs text-text-secondary">Envío a todo el país</Text>
+                <Text className="text-xs text-text-secondary">Envío gratis desde $250.000</Text>
               </View>
               <View className="flex-row items-center gap-1.5">
                 <AppIcon name="storefront" size={14} color={colors.secondary} />

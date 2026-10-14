@@ -34,7 +34,7 @@ export interface ShipmentTracking {
   updatedAt: string;
 }
 
-const FREE_SHIPPING_THRESHOLD = 50000;
+const FREE_SHIPPING_THRESHOLD = 250000;
 
 // Depósito (origen) simulado en Buenos Aires.
 const WAREHOUSE = { lat: -34.635, lng: -58.46 };

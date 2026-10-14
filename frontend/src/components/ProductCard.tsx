@@ -289,6 +289,14 @@ export default function ProductCard({
             </Text>
           </View>
         ) : null}
+        {card.broken ? (
+          <View className="flex-row items-center gap-1 rounded border border-amber-500/50 bg-amber-500/10 px-1.5 py-0.5">
+            <AppIcon name="build" size={12} color={colors.diagnosticAmber} />
+            <Text className="font-mono text-[9px] font-semibold tracking-wider text-amber-400">
+              {card.brokenTag === 'parts' ? 'REPUESTOS' : 'REPARABLE'}
+            </Text>
+          </View>
+        ) : null}
         {card.warranty ? (
           <View
             className="flex-row items-center gap-1 rounded border px-1.5 py-0.5"

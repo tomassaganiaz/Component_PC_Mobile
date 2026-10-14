@@ -9,6 +9,7 @@ import {
   ProductCondition,
   ProductCategory,
   ProductStatus,
+  BrokenTag,
 } from "./product.entity";
 import { Order, OrderStatus } from "../orders/order.entity";
 import { Review, ReviewType, ReviewStatus } from "../reviews/review.entity";
@@ -419,6 +420,9 @@ export class ProductsSeed implements OnModuleInit {
       verified?: boolean;
       grade?: string;
       usageType?: string;
+      broken?: boolean;
+      brokenTag?: BrokenTag;
+      repairPrice?: number;
       coverageExtended?: boolean;
       warrantyDays?: number;
     }> = [
@@ -560,6 +564,32 @@ export class ProductsSeed implements OnModuleInit {
         verified: false,
         usageType: "Uso personal",
       },
+      // --- Productos ROTOS ---
+      {
+        email: SELLERS[0].email,
+        title: "Placa madre B450 rota (reparable)",
+        desc: "Rota · revisada por laboratorio. Se puede reparar a pedido.",
+        price: 40,
+        category: ProductCategory.MOTHERBOARD,
+        image: "",
+        verified: true,
+        broken: true,
+        brokenTag: BrokenTag.REPARABLE,
+        repairPrice: 60,
+        usageType: "Roto · revisado",
+      },
+      {
+        email: SELLERS[1].email,
+        title: "RTX 1060 rota (repuestos)",
+        desc: "Rota · se vende para repuestos de componentes reutilizables.",
+        price: 25,
+        category: ProductCategory.GPU,
+        image: IMAGES.rtx,
+        verified: true,
+        broken: true,
+        brokenTag: BrokenTag.PARTS,
+        usageType: "Roto · solo repuestos",
+      },
     ];
 
     for (const spec of specs) {
@@ -591,6 +621,9 @@ export class ProductsSeed implements OnModuleInit {
         verified: spec.verified ?? false,
         sealed: spec.sealed ?? false,
         conditionGrade: spec.grade || undefined,
+        broken: spec.broken ?? false,
+        brokenTag: spec.brokenTag ?? null,
+        repairPrice: spec.repairPrice ?? null,
         coverageExtended: spec.coverageExtended ?? false,
         warrantyDays: spec.warrantyDays ?? 90,
         hoursOfUse: 0,

@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, In } from "typeorm";
-import { Product, ProductStatus, SellerSecurityTier } from "./product.entity";
+import { Product, ProductStatus, SellerSecurityTier, BrokenTag } from "./product.entity";
 import { ProductVariation } from "./product-variation.entity";
 import {
   CreateProductDto,
@@ -59,10 +59,31 @@ export class ProductsService {
     createProductDto: CreateProductDto,
     sellerId: string,
   ): Promise<Product> {
+    // Reglas de productos rotos: etiqueta obligatoria (no hay pérdida total)
+    // y los "repuestos" no admiten reparación.
+    if (createProductDto.broken) {
+      if (!createProductDto.brokenTag) {
+        throw new BadRequestException(
+          "Los productos rotos deben indicar una etiqueta: 'Reparable' o 'Repuestos' (no se permiten pérdidas totales).",
+        );
+      }
+      if (
+        createProductDto.brokenTag === BrokenTag.PARTS &&
+        createProductDto.repairPrice
+      ) {
+        throw new BadRequestException(
+          "Los productos de 'Repuestos' no admiten reparación.",
+        );
+      }
+    }
+
     const product = this.productRepository.create({
       ...createProductDto,
       sellerId,
-      status: ProductStatus.PUBLISHED,
+      // Los productos rotos requieren revisión obligatoria (no se publican al instante).
+      status: createProductDto.broken
+        ? ProductStatus.PENDING
+        : ProductStatus.PUBLISHED,
     });
     return this.productRepository.save(product);
   }
@@ -394,6 +415,16 @@ export class ProductsService {
 
     if (filters?.inStock === true) {
       query.andWhere("product.stock > 0");
+    }
+
+    if (filters?.broken === true) {
+      query.andWhere("product.broken = true");
+    }
+
+    if (filters?.brokenTag) {
+      query.andWhere("product.brokenTag = :brokenTag", {
+        brokenTag: filters.brokenTag,
+      });
     }
 
     if (filters?.warranty === "extended") {

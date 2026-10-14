@@ -68,6 +68,9 @@ export default function PublishScreen({ nav }: { nav: Nav }) {
   const [condition, setCondition] = useState(0);
   const [price, setPrice] = useState('');
   const [stock, setStock] = useState('1');
+  const [broken, setBroken] = useState(false);
+  const [brokenTag, setBrokenTag] = useState<'reparable' | 'parts'>('reparable');
+  const [repairPrice, setRepairPrice] = useState('');
   const [description, setDescription] = useState('');
   const [usageType, setUsageType] = useState('');
   const [hours, setHours] = useState('');
@@ -138,6 +141,12 @@ export default function PublishScreen({ nav }: { nav: Nav }) {
         reportedHoursOfUse: reportedHours.trim() ? Number(reportedHours) : undefined,
         stock: stock.trim() ? Number(stock) : 1,
         images: images.length ? images : undefined,
+        broken: broken || undefined,
+        brokenTag: broken ? brokenTag : undefined,
+        repairPrice:
+          broken && brokenTag === 'reparable' && repairPrice.trim()
+            ? Number(repairPrice)
+            : undefined,
       });
       setPublishedId(created.id);
     } catch (err) {
@@ -249,6 +258,59 @@ export default function PublishScreen({ nav }: { nav: Nav }) {
               <FieldLabel>{t('publish.fStock')}</FieldLabel>
               <Input value={stock} onChangeText={setStock} placeholder="Ej: 1" numeric />
             </View>
+          </View>
+
+          <View>
+            <Pressable
+              onPress={() => setBroken((v) => !v)}
+              className="flex-row items-center gap-2 rounded-xl border border-line bg-panel px-3 py-2.5"
+            >
+              <AppIcon
+                name={broken ? 'check_circle' : 'add'}
+                size={18}
+                color={broken ? colors.diagnosticAmber : colors.textSecondary}
+              />
+              <Text className="flex-1 text-sm text-text-primary">{t('publish.fBroken')}</Text>
+            </Pressable>
+            {broken ? (
+              <View className="mt-2 flex-col gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3">
+                <Text className="font-mono text-[10px] uppercase tracking-wider text-amber-300">
+                  {t('publish.brokenTag')}
+                </Text>
+                <View className="flex-row gap-2">
+                  {(['reparable', 'parts'] as const).map((tag) => {
+                    const active = brokenTag === tag;
+                    return (
+                      <Pressable
+                        key={tag}
+                        onPress={() => setBrokenTag(tag)}
+                        className={`flex-1 items-center rounded-lg border px-3 py-2 ${
+                          active ? 'border-amber-500/60 bg-amber-500/20' : 'border-line bg-panel'
+                        }`}
+                      >
+                        <Text
+                          className={`text-xs font-semibold ${
+                            active ? 'text-amber-300' : 'text-text-secondary'
+                          }`}
+                        >
+                          {tag === 'reparable' ? t('publish.tagReparable') : t('publish.tagParts')}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                {brokenTag === 'reparable' ? (
+                  <View>
+                    <Text className="mb-1 font-mono text-[10px] uppercase tracking-wider text-amber-300">
+                      {t('publish.repairPrice')}
+                    </Text>
+                    <Input value={repairPrice} onChangeText={setRepairPrice} placeholder="Ej: 80" numeric />
+                  </View>
+                ) : (
+                  <Text className="text-[11px] text-amber-200/90">{t('publish.partsHint')}</Text>
+                )}
+              </View>
+            ) : null}
           </View>
 
           <View>
