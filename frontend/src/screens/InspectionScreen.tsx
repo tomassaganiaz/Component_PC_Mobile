@@ -187,7 +187,7 @@ function OrderTracking({
   useEffect(() => {
     if (!order?.id) return;
     let cancelled = false;
-    (async () => {
+    const fetchTracking = async () => {
       try {
         const [data, track] = await Promise.all([
           getOrderShipment(order.id),
@@ -200,9 +200,13 @@ function OrderTracking({
       } catch {
         // sin envío registrado
       }
-    })();
+    };
+    void fetchTracking();
+    // Refresca la ubicación/ETA cada 20s (seguimiento "en vivo").
+    const timer = setInterval(fetchTracking, 20000);
     return () => {
       cancelled = true;
+      clearInterval(timer);
     };
   }, [order?.id, order?.status]);
 
