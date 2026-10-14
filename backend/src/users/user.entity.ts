@@ -37,6 +37,9 @@ export class User {
   @Column({ type: "varchar", length: 20, nullable: true })
   phone: string;
 
+  @Column({ type: "varchar", length: 500, nullable: true, name: "push_token" })
+  pushToken: string;
+
   @Column({ type: "varchar", length: 500, nullable: true })
   avatar: string;
 
@@ -63,6 +66,25 @@ export class User {
 
   @Column({ type: "timestamptz", nullable: true, name: "otp_expires_at" })
   otpExpiresAt: Date | null;
+
+  // Location (seller address / warehouse)
+  @Column({ type: "varchar", length: 500, nullable: true, name: "address" })
+  address: string;
+
+  @Column({ type: "decimal", precision: 10, scale: 7, nullable: true, name: "lat" })
+  lat: number | null;
+
+  @Column({ type: "decimal", precision: 10, scale: 7, nullable: true, name: "lng" })
+  lng: number | null;
+
+  @Column({ type: "varchar", length: 100, nullable: true, name: "city" })
+  city: string;
+
+  @Column({ type: "varchar", length: 100, nullable: true, name: "province" })
+  province: string;
+
+  @Column({ type: "varchar", length: 20, nullable: true, name: "postal_code" })
+  postalCode: string;
 
   // Relations
   @OneToMany(() => Product, (product) => product.seller)

@@ -22,6 +22,8 @@ import { WalletsModule } from "./wallets/wallet.module";
 import { ShippingModule } from "./shipping/shipping.module";
 import { AdminModule } from "./admin/admin.module";
 import { MercadoLibreModule } from "./mercadolibre/mercadolibre.module";
+import { GoogleMapsModule } from "./googlemaps/googlemaps.module";
+import { DeliveryPlanningModule } from "./delivery-planning/delivery-planning.module";
 import { ThrottlerUserGuard } from "./common/throttler-user.guard";
 
 @Module({
@@ -108,6 +110,8 @@ import { ThrottlerUserGuard } from "./common/throttler-user.guard";
     ShippingModule,
     AdminModule,
     MercadoLibreModule,
+    GoogleMapsModule,
+    DeliveryPlanningModule,
   ],
   controllers: [AppController],
   providers: [

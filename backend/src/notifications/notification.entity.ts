@@ -18,6 +18,18 @@ export enum NotificationType {
   ORDER_CANCELLED = "order_cancelled",
   REVIEW = "review",
   SYSTEM = "system",
+  DELIVERY_ASSIGNED = "delivery_assigned",
+  DELIVERY_STARTED = "delivery_started",
+  DELIVERY_APPROACHING = "delivery_approaching",
+  DELIVERY_COMPLETED = "delivery_completed",
+  DELIVERY_FAILED = "delivery_failed",
+}
+
+export enum NotificationChannel {
+  IN_APP = "in_app",
+  PUSH = "push",
+  EMAIL = "email",
+  SMS = "sms",
 }
 
 @Entity("notifications")
@@ -37,6 +49,9 @@ export class Notification {
 
   @Column({ type: "boolean", default: false })
   read: boolean;
+
+  @Column({ type: "enum", enum: NotificationChannel, default: NotificationChannel.IN_APP })
+  channel: NotificationChannel;
 
   @Column({ type: "jsonb", nullable: true })
   metadata: Record<string, unknown> | null;
