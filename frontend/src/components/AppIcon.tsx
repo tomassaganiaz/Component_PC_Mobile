@@ -89,6 +89,7 @@ const MAP: Record<string, MIconName> = {
   map: 'map',
   place: 'place',
   build: 'build',
+  edit: 'edit',
 };
 
 interface Props {

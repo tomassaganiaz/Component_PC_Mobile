@@ -7,7 +7,7 @@ import AppIcon from '../components/AppIcon';
 import BottomNav from '../components/BottomNav';
 import { Segmented } from '../components/ui';
 import { useI18n } from '../i18n';
-import { createProduct } from '../services/api';
+import { createProduct, uploadImage } from '../services/api';
 import { colors, glow, shadow } from '../theme';
 import type { Nav } from '../types';
 
@@ -127,6 +127,20 @@ export default function PublishScreen({ nav }: { nav: Nav }) {
 
     setSubmitting(true);
     try {
+      // Sube las fotos al backend (quedan servidas en /static/uploads).
+      let uploadedImages: string[] | undefined;
+      if (images.length) {
+        uploadedImages = [];
+        for (const uri of images) {
+          try {
+            const { url } = await uploadImage(uri);
+            uploadedImages.push(url);
+          } catch {
+            uploadedImages.push(uri);
+          }
+        }
+      }
+
       const created = await createProduct({
         title: title.trim(),
         description: description.trim(),
@@ -140,7 +154,7 @@ export default function PublishScreen({ nav }: { nav: Nav }) {
         hoursOfUse: hours.trim() ? Number(hours) : undefined,
         reportedHoursOfUse: reportedHours.trim() ? Number(reportedHours) : undefined,
         stock: stock.trim() ? Number(stock) : 1,
-        images: images.length ? images : undefined,
+        images: uploadedImages,
         broken: broken || undefined,
         brokenTag: broken ? brokenTag : undefined,
         repairPrice:

@@ -497,6 +497,85 @@ export function disconnectML(): Promise<{ success: boolean }> {
   return request<{ success: boolean }>('/mercadolibre', { method: 'DELETE' });
 }
 
+/* --------------------------- Media / upload ------------------------------ */
+
+export async function uploadImage(uri: string): Promise<{ url: string }> {
+  const name = uri.split('/').pop() ?? 'photo.jpg';
+  const ext = (name.split('.').pop() ?? 'jpg').toLowerCase();
+  const type = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+  const form = new FormData();
+  // React Native acepta { uri, name, type } en FormData.
+  form.append('file', { uri, name, type } as any);
+  const res = await fetch(`${API_URL}/media/upload`, {
+    method: 'POST',
+    headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+    body: form,
+  });
+  if (!res.ok) {
+    throw new ApiError(res.status, 'No se pudo subir la imagen');
+  }
+  return (await res.json()) as { url: string };
+}
+
+/* ------------------------------ Moderación ------------------------------- */
+
+export interface PendingReview {
+  id: string;
+  rating: number;
+  type: string;
+  status: string;
+  comment?: string;
+  complaintReason?: string;
+  buyer?: { id: string; name: string };
+  product?: ApiProduct;
+  createdAt: string;
+}
+
+export function getComplaints(limit = 50): Promise<{ data: PendingReview[]; total: number }> {
+  return request<{ data: PendingReview[]; total: number }>(
+    `/reviews?type=complaint&status=pending&limit=${limit}`,
+  );
+}
+
+export function resolveReview(
+  id: string,
+  status: 'approved' | 'rejected' | 'resolved',
+  resolutionNotes?: string,
+): Promise<PendingReview> {
+  return request<PendingReview>(`/reviews/${id}/resolve`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status, resolutionNotes }),
+  });
+}
+
+export interface ReportItem {
+  id: string;
+  reason: string;
+  details?: string;
+  status: string;
+  targetType: string;
+  reporter?: { id: string; name: string };
+  reported?: { id: string; name: string };
+  createdAt: string;
+}
+
+export function getReports(status = 'pending', limit = 50): Promise<{ data: ReportItem[]; total: number }> {
+  return request<{ data: ReportItem[]; total: number }>(
+    `/reports?status=${status}&limit=${limit}`,
+  );
+}
+
+export function resolveReport(
+  id: string,
+  status: 'resolved' | 'rejected',
+  resolutionNotes?: string,
+): Promise<ReportItem> {
+  return request<ReportItem>(`/reports/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status, resolutionNotes }),
+  });
+}
+
 export function getOrder(id: string): Promise<OrderItem> {
   return request<OrderItem>(`/orders/${id}`);
 }

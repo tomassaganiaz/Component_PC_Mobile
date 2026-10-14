@@ -132,7 +132,10 @@ export class ReviewsService {
       .createQueryBuilder("review")
       .leftJoinAndSelect("review.buyer", "buyer")
       .leftJoinAndSelect("review.product", "product")
-      .where("review.status = :status", { status: ReviewStatus.APPROVED });
+      .where("review.status = :status", {
+        // Por defecto solo aprobadas; el admin puede pedir otros estados.
+        status: filters?.status ?? ReviewStatus.APPROVED,
+      });
 
     if (filters?.sellerId) {
       query.andWhere("review.sellerId = :sellerId", {

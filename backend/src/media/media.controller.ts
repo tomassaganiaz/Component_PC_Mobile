@@ -1,12 +1,32 @@
-import { Controller, Get, Query, Res } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Query,
+  Res,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import { Response } from "express";
-import { ApiTags, ApiOperation } from "@nestjs/swagger";
+import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { MediaService } from "./media.service";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
 @ApiTags("Media")
 @Controller("media")
 export class MediaController {
   constructor(private readonly mediaService: MediaService) {}
+
+  @Post("upload")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @UseInterceptors(FileInterceptor("file"))
+  @ApiOperation({ summary: "Subir imagen de producto (multipart)" })
+  upload(@UploadedFile() file: any) {
+    return this.mediaService.saveUpload(file);
+  }
 
   @Get("image")
   @ApiOperation({

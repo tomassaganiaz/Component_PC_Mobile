@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import AppHeader from '../components/AppHeader';
 import AppIcon from '../components/AppIcon';
@@ -13,6 +13,7 @@ import {
   getMyOrders,
   getProductsBySeller,
   getProfile,
+  updateProduct,
   verifyIdentity,
   verifyPhone,
 } from '../services/api';
@@ -68,6 +69,11 @@ export default function ProfileScreen({
   const [listingsError, setListingsError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<ApiProduct | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editItem, setEditItem] = useState<ApiProduct | null>(null);
+  const [editPrice, setEditPrice] = useState('');
+  const [editStock, setEditStock] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   const refreshProfile = useCallback(async () => {
     try {
@@ -157,6 +163,54 @@ export default function ProfileScreen({
       setListingsError(err instanceof Error ? err.message : 'No se pudo eliminar el producto.');
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const openEdit = (item: ApiProduct) => {
+    setEditItem(item);
+    setEditPrice(String(item.price));
+    setEditStock(String(item.stock ?? 1));
+    setEditError(null);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editItem) return;
+    const priceNum = Number(editPrice);
+    const stockNum = Number(editStock);
+    if (!editPrice.trim() || Number.isNaN(priceNum) || priceNum <= 0) {
+      setEditError('Precio inválido.');
+      return;
+    }
+    if (Number.isNaN(stockNum) || stockNum < 0) {
+      setEditError('Stock inválido.');
+      return;
+    }
+    setSavingEdit(true);
+    setEditError(null);
+    try {
+      const updated = await updateProduct(editItem.id, { price: priceNum, stock: stockNum });
+      setListings((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)));
+      setEditItem(null);
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : 'No se pudo guardar.');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const togglePause = async () => {
+    if (!editItem) return;
+    const next = editItem.status === 'published' ? 'draft' : 'published';
+    setSavingEdit(true);
+    setEditError(null);
+    try {
+      const updated = await updateProduct(editItem.id, { status: next });
+      setEditItem((prev) => (prev ? { ...prev, ...updated } : prev));
+      setListings((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)));
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : 'No se pudo cambiar el estado.');
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -453,21 +507,34 @@ export default function ProfileScreen({
                       <Text className="font-mono text-[11px] text-text-muted">
                         {t('profile.stockLabel')}: {item.stock ?? 0}
                       </Text>
-                      {isSold ? (
-                        <Pressable
-                          onPress={() => setConfirmDelete(item)}
-                          disabled={deleting}
-                          className="flex-row items-center gap-1.5 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-1.5"
-                          style={deleting ? { opacity: 0.6 } : undefined}
-                        >
-                          {deleting ? (
-                            <ActivityIndicator size="small" color={colors.diagnosticRed} />
-                          ) : (
-                            <AppIcon name="delete" size={15} color={colors.diagnosticRed} />
-                          )}
-                          <Text className="text-xs font-semibold text-red-400">{t('profile.deleteListing')}</Text>
-                        </Pressable>
-                      ) : null}
+                      <View className="flex-row items-center gap-2">
+                        {!isSold ? (
+                          <Pressable
+                            onPress={() => openEdit(item)}
+                            className="flex-row items-center gap-1.5 rounded-lg border border-line bg-elevated px-3 py-1.5"
+                          >
+                            <AppIcon name="edit" size={15} color={colors.primary} />
+                            <Text className="text-xs font-semibold text-primary">
+                              {t('profile.editListing')}
+                            </Text>
+                          </Pressable>
+                        ) : null}
+                        {isSold ? (
+                          <Pressable
+                            onPress={() => setConfirmDelete(item)}
+                            disabled={deleting}
+                            className="flex-row items-center gap-1.5 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-1.5"
+                            style={deleting ? { opacity: 0.6 } : undefined}
+                          >
+                            {deleting ? (
+                              <ActivityIndicator size="small" color={colors.diagnosticRed} />
+                            ) : (
+                              <AppIcon name="delete" size={15} color={colors.diagnosticRed} />
+                            )}
+                            <Text className="text-xs font-semibold text-red-400">{t('profile.deleteListing')}</Text>
+                          </Pressable>
+                        ) : null}
+                      </View>
                     </View>
                   </View>
                 );
@@ -524,6 +591,84 @@ export default function ProfileScreen({
                     <AppIcon name="delete" size={16} color="#ffffff" />
                   )}
                   <Text className="text-sm font-semibold text-white">{t('profile.deleteListing')}</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Edit listing */}
+        <Modal visible={!!editItem} transparent animationType="fade" onRequestClose={() => setEditItem(null)}>
+          <View className="flex-1 items-center justify-center bg-black/70 px-6">
+            <View className="w-full rounded-2xl border border-line bg-panel p-5" style={shadow.card}>
+              <View className="flex-row items-center gap-2">
+                <AppIcon name="edit" size={20} color={colors.primary} />
+                <Text className="text-lg font-semibold text-text-primary">{t('profile.editListing')}</Text>
+              </View>
+              {editItem ? (
+                <Text className="mt-1 truncate text-xs text-text-secondary">{editItem.title}</Text>
+              ) : null}
+
+              <Text className="mb-1.5 mt-4 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+                {t('publish.fPrice')}
+              </Text>
+              <TextInput
+                value={editPrice}
+                onChangeText={setEditPrice}
+                keyboardType="numeric"
+                placeholderTextColor={colors.textMuted}
+                className="w-full rounded-xl border border-line bg-surface-low px-3 py-2.5 text-sm text-text-primary"
+              />
+
+              <Text className="mb-1.5 mt-3 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+                {t('profile.stockLabel')}
+              </Text>
+              <TextInput
+                value={editStock}
+                onChangeText={setEditStock}
+                keyboardType="numeric"
+                placeholderTextColor={colors.textMuted}
+                className="w-full rounded-xl border border-line bg-surface-low px-3 py-2.5 text-sm text-text-primary"
+              />
+
+              {editItem ? (
+                <Pressable
+                  onPress={togglePause}
+                  disabled={savingEdit}
+                  className="mt-3 flex-row items-center justify-center gap-2 rounded-xl border border-line bg-elevated py-2.5"
+                >
+                  <AppIcon
+                    name={editItem.status === 'published' ? 'visibility_off' : 'visibility'}
+                    size={16}
+                    color={colors.textSecondary}
+                  />
+                  <Text className="text-xs font-semibold text-text-secondary">
+                    {editItem.status === 'published' ? t('profile.pauseListing') : t('profile.activateListing')}
+                  </Text>
+                </Pressable>
+              ) : null}
+
+              {editError ? <Text className="mt-2 text-xs text-diagnostic-red">{editError}</Text> : null}
+
+              <View className="mt-4 flex-row gap-2">
+                <Pressable
+                  onPress={() => setEditItem(null)}
+                  className="flex-1 items-center justify-center rounded-xl border border-line bg-elevated py-3"
+                >
+                  <Text className="text-sm font-semibold text-text-secondary">{t('common.cancel')}</Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleSaveEdit}
+                  disabled={savingEdit}
+                  className="flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-secondary py-3"
+                  style={savingEdit ? { opacity: 0.7 } : undefined}
+                >
+                  {savingEdit ? (
+                    <ActivityIndicator size="small" color={colors.onSecondary} />
+                  ) : (
+                    <AppIcon name="check" size={16} color={colors.onSecondary} />
+                  )}
+                  <Text className="text-sm font-semibold text-on-secondary">{t('common.save')}</Text>
                 </Pressable>
               </View>
             </View>

@@ -1,4 +1,7 @@
 import { Injectable, BadRequestException } from "@nestjs/common";
+import * as fs from "fs";
+import { join } from "path";
+import { randomUUID } from "crypto";
 import sharp from "sharp";
 
 interface CacheEntry {
@@ -88,5 +91,31 @@ export class MediaService {
     };
     this.remember(key, entry);
     return { buffer, contentType: entry.contentType };
+  }
+
+  /** Guarda una imagen subida y devuelve su URL relativa (/static/uploads/..). */
+  async saveUpload(file: {
+    originalname?: string;
+    mimetype?: string;
+    buffer?: Buffer;
+  }): Promise<{ url: string }> {
+    if (!file?.buffer?.length) {
+      throw new BadRequestException("Archivo faltante");
+    }
+    if (file.mimetype && !file.mimetype.startsWith("image/")) {
+      throw new BadRequestException("Solo se permiten imágenes");
+    }
+
+    const dir = join(process.cwd(), "public", "uploads");
+    await fs.promises.mkdir(dir, { recursive: true });
+
+    const rawExt = (file.originalname?.split(".").pop() ?? "jpg")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+    const ext = rawExt || "jpg";
+    const name = `${randomUUID()}.${ext}`;
+    await fs.promises.writeFile(join(dir, name), file.buffer);
+
+    return { url: `/static/uploads/${name}` };
   }
 }

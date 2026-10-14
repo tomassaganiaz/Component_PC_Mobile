@@ -11,7 +11,7 @@ import {
   ValidateIf,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { ReviewType } from "../review.entity";
+import { ReviewType, ReviewStatus } from "../review.entity";
 
 export class CreateReviewDto {
   @ApiProperty({ description: "ID del producto comprado" })
@@ -102,6 +102,14 @@ export class FilterReviewDto {
   @IsOptional()
   @IsEnum(ReviewType)
   type?: ReviewType;
+
+  @ApiPropertyOptional({
+    enum: ReviewStatus,
+    description: "Filtrar por estado (para moderación admin)",
+  })
+  @IsOptional()
+  @IsEnum(ReviewStatus)
+  status?: ReviewStatus;
 
   @ApiPropertyOptional({ description: "Página", default: 1 })
   @IsOptional()

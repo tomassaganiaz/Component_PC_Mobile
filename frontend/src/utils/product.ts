@@ -32,6 +32,11 @@ export function toExploreCard(api: ApiProduct): ExploreCard {
     currency: 'USD',
     escrow: 'Garantía Escrow',
     image: api.images?.[0] ?? '',
+    gallery: (api.images ?? []).map((uri, i) => ({
+      uri,
+      label: `Foto ${i + 1}`,
+      desc: `Imagen ${i + 1} del producto`,
+    })),
     intro: api.description,
     condition: api.condition,
     sealed: api.sealed,
