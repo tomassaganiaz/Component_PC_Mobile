@@ -21,6 +21,7 @@ import { PaymentsModule } from "./payments/payments.module";
 import { WalletsModule } from "./wallets/wallet.module";
 import { ShippingModule } from "./shipping/shipping.module";
 import { AdminModule } from "./admin/admin.module";
+import { MercadoLibreModule } from "./mercadolibre/mercadolibre.module";
 import { ThrottlerUserGuard } from "./common/throttler-user.guard";
 
 @Module({
@@ -106,6 +107,7 @@ import { ThrottlerUserGuard } from "./common/throttler-user.guard";
     WalletsModule,
     ShippingModule,
     AdminModule,
+    MercadoLibreModule,
   ],
   controllers: [AppController],
   providers: [

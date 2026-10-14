@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import AppHeader from '../components/AppHeader';
 import AppIcon from '../components/AppIcon';
 import BottomNav from '../components/BottomNav';
 import { useI18n } from '../i18n';
-import { getMySales } from '../services/api';
-import type { SellerSale } from '../services/api';
+import { getMLAuthUrl, getMLSales, getMLStatus } from '../services/api';
+import type { MLSalesSource, MLStatus, SellerSale } from '../services/api';
 import { colors, shadow } from '../theme';
 import type { Nav } from '../types';
 
@@ -25,14 +25,19 @@ const REFUNDED = new Set(['cancelled', 'refunded']);
 export default function SalesScreen({ nav }: { nav: Nav }) {
   const { t } = useI18n();
   const [sales, setSales] = useState<SellerSale[]>([]);
+  const [source, setSource] = useState<MLSalesSource>('mock');
+  const [status, setStatus] = useState<MLStatus | null>(null);
+  const [connecting, setConnecting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const data = await getMySales();
-      setSales(data);
+      const [result, st] = await Promise.all([getMLSales(), getMLStatus()]);
+      setSales(result.sales);
+      setSource(result.source);
+      setStatus(st);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('sales.errLoad'));
@@ -46,9 +51,11 @@ export default function SalesScreen({ nav }: { nav: Nav }) {
     let cancelled = false;
     (async () => {
       try {
-        const data = await getMySales();
+        const [result, st] = await Promise.all([getMLSales(), getMLStatus()]);
         if (!cancelled) {
-          setSales(data);
+          setSales(result.sales);
+          setSource(result.source);
+          setStatus(st);
           setError(null);
         }
       } catch (err) {
@@ -65,6 +72,23 @@ export default function SalesScreen({ nav }: { nav: Nav }) {
   const onRefresh = () => {
     setRefreshing(true);
     void load();
+  };
+
+  const handleConnect = async () => {
+    setConnecting(true);
+    setError(null);
+    try {
+      const { url, configured } = await getMLAuthUrl();
+      if (!configured) {
+        setError(t('sales.mlNotConfigured'));
+        return;
+      }
+      await Linking.openURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('sales.errLoad'));
+    } finally {
+      setConnecting(false);
+    }
   };
 
   const paidSales = sales.filter((s) => !REFUNDED.has(s.status));
@@ -86,6 +110,60 @@ export default function SalesScreen({ nav }: { nav: Nav }) {
         <View className="px-4 pb-2 pt-3">
           <Text className="text-2xl font-bold text-text-primary">{t('sales.title')}</Text>
           <Text className="mt-1 text-xs leading-relaxed text-text-secondary">{t('sales.desc')}</Text>
+        </View>
+
+        {/* Mercado Libre */}
+        <View
+          className="mx-4 mt-1 flex-row items-center gap-2.5 rounded-xl border p-3"
+          style={{
+            borderColor:
+              source === 'mercadolibre'
+                ? colors.accentEmerald + '55'
+                : source === 'not_connected'
+                  ? colors.diagnosticAmber + '55'
+                  : colors.line,
+            backgroundColor: colors.panel,
+          }}
+        >
+          <AppIcon
+            name="storefront"
+            size={18}
+            color={
+              source === 'mercadolibre'
+                ? colors.accentEmerald
+                : source === 'not_connected'
+                  ? colors.diagnosticAmber
+                  : colors.accentCyan
+            }
+          />
+          <View className="flex-1">
+            <Text className="text-xs font-semibold text-text-primary">
+              {source === 'mercadolibre'
+                ? t('sales.mlConnected')
+                : source === 'not_connected'
+                  ? t('sales.mlNotConnected')
+                  : t('sales.mlMock')}
+            </Text>
+            <Text className="text-[11px] text-text-secondary">
+              {source === 'mercadolibre'
+                ? t('sales.mlConnectedDesc')
+                : source === 'not_connected'
+                  ? t('sales.mlNotConnectedDesc')
+                  : t('sales.mlMockDesc')}
+            </Text>
+          </View>
+          {source === 'not_connected' && status?.configured ? (
+            <Pressable
+              onPress={handleConnect}
+              disabled={connecting}
+              className="rounded-lg bg-secondary px-3 py-1.5"
+              style={connecting ? { opacity: 0.7 } : undefined}
+            >
+              <Text className="text-[11px] font-semibold text-on-secondary">
+                {t('sales.mlConnect')}
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
 
         {/* Summary */}

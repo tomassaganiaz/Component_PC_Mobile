@@ -458,7 +458,38 @@ export interface SellerSale {
 }
 
 export function getMySales(): Promise<SellerSale[]> {
-  return request<SellerSale[]>('/orders/sales');
+  return getMLSales().then((r) => r.sales);
+}
+
+/* ----------------------------- Mercado Libre ----------------------------- */
+
+export type MLSalesSource = 'mercadolibre' | 'mock' | 'not_connected';
+
+export interface MLSalesResult {
+  source: MLSalesSource;
+  sales: SellerSale[];
+}
+
+export interface MLStatus {
+  configured: boolean;
+  connected: boolean;
+  mlUserId: string | null;
+}
+
+export function getMLSales(): Promise<MLSalesResult> {
+  return request<MLSalesResult>('/mercadolibre/sales');
+}
+
+export function getMLStatus(): Promise<MLStatus> {
+  return request<MLStatus>('/mercadolibre/status');
+}
+
+export function getMLAuthUrl(): Promise<{ url: string; configured: boolean }> {
+  return request<{ url: string; configured: boolean }>('/mercadolibre/auth-url');
+}
+
+export function disconnectML(): Promise<{ success: boolean }> {
+  return request<{ success: boolean }>('/mercadolibre', { method: 'DELETE' });
 }
 
 export function getOrder(id: string): Promise<OrderItem> {
