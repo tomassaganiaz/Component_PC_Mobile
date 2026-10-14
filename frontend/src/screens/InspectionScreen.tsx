@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Linking, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import AppHeader from '../components/AppHeader';
@@ -9,6 +9,7 @@ import ProductImage from '../components/ProductImage';
 import { Pill, ProgressBar, PulseDot } from '../components/ui';
 import { useI18n } from '../i18n';
 import {
+  advanceOrderFulfillment,
   cancelOrder,
   chatSafetyCheck,
   deliverOrder,
@@ -41,52 +42,36 @@ const STATUS_TONE: Record<string, string> = {
   refunded: colors.diagnosticRed,
 };
 
-function statusSteps(status: string) {
+function statusSteps(status: string, fulfillmentStage?: OrderItem['fulfillmentStage']) {
   const base = INSPECTION_STEPS.map((s) => ({ ...s }));
   const set = (idx: number, state: 'done' | 'active' | 'pending') => {
     base[idx].state = state;
   };
-  switch (status) {
-    case 'pending':
-      set(0, 'active');
-      set(1, 'pending');
-      set(2, 'pending');
-      set(3, 'pending');
-      set(4, 'pending');
-      break;
-    case 'paid':
-    case 'in_custody':
-      set(0, 'done');
-      set(1, 'active');
-      set(2, 'pending');
-      set(3, 'pending');
-      set(4, 'pending');
-      break;
-    case 'shipped':
-      set(0, 'done');
-      set(1, 'done');
-      set(2, 'active');
-      set(3, 'pending');
-      set(4, 'pending');
-      break;
-    case 'delivered':
-      set(0, 'done');
-      set(1, 'done');
-      set(2, 'done');
-      set(3, 'done');
-      set(4, 'done');
-      break;
-    case 'refunded':
-    case 'cancelled':
-      set(0, 'done');
-      set(1, 'pending');
-      set(2, 'pending');
-      set(3, 'pending');
-      set(4, 'pending');
-      break;
-    default:
-      break;
+  if (status === 'pending') {
+    set(0, 'active');
+    return base;
   }
+
+  if (status === 'delivered') {
+    base.forEach((_, idx) => set(idx, 'done'));
+    return base;
+  }
+
+  if (status === 'cancelled' || status === 'refunded') {
+    set(0, 'done');
+    return base;
+  }
+
+  const stage = fulfillmentStage ?? (status === 'shipped' ? 'dispatch' : 'center_reception');
+  const activeIndex: Record<NonNullable<OrderItem['fulfillmentStage']>, number> = {
+    awaiting_payment: 0,
+    center_reception: 1,
+    technical_inspection: 2,
+    secure_packaging: 3,
+    dispatch: 4,
+  };
+  const current = activeIndex[stage];
+  base.forEach((_, idx) => set(idx, idx < current ? 'done' : idx === current ? 'active' : 'pending'));
   return base;
 }
 
@@ -118,11 +103,11 @@ function OrderTracking({
   const [verification, setVerification] = useState<VerificationItem | null>(null);
   const [shipment, setShipment] = useState<ShipmentInfo | null>(null);
   const [tracking, setTracking] = useState<ShipmentTracking | null>(null);
-  const [action, setAction] = useState<'pay' | 'ship' | 'deliver' | 'cancel' | null>(null);
+  const [action, setAction] = useState<'pay' | 'ship' | 'deliver' | 'cancel' | 'advance' | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const runAction = async (
-    kind: 'pay' | 'ship' | 'deliver' | 'cancel',
+    kind: 'pay' | 'ship' | 'deliver' | 'cancel' | 'advance',
     fn: (id: string) => Promise<OrderItem>,
   ) => {
     if (!order) return;
@@ -239,7 +224,9 @@ function OrderTracking({
 
   const tone = STATUS_TONE[order.status] ?? colors.accentCyan;
   const statusLabel = t(`inspection.status.${order.status}`);
-  const steps = statusSteps(order.status);
+  const steps = statusSteps(order.status, order.fulfillmentStage);
+  const activeStepIndex = steps.findIndex((step) => step.state === 'active');
+  const displayedStep = activeStepIndex >= 0 ? activeStepIndex + 1 : steps.filter((step) => step.state === 'done').length;
   const product = order.product;
   const title = product?.title ?? `Orden #${order.id.slice(0, 8).toUpperCase()}`;
 
@@ -248,12 +235,15 @@ function OrderTracking({
   const isBuyer = !!userId && order.buyerId === userId;
   const isSeller = !!userId && product?.sellerId === userId;
   const s = order.status;
+  const fulfillmentStage = order.fulfillmentStage ?? (s === 'shipped' ? 'dispatch' : 'center_reception');
   const showPay = (isBuyer || isAdmin) && s === 'pending';
-  const showShip = (isSeller || isAdmin) && (s === 'paid' || s === 'in_custody');
+  const showAdvanceStage = isAdmin && (s === 'paid' || s === 'in_custody') && fulfillmentStage !== 'dispatch';
+  const showShip = (isSeller || isAdmin) && (s === 'paid' || s === 'in_custody') && fulfillmentStage === 'dispatch';
   const showDeliver = (isBuyer || isAdmin) && s === 'shipped';
   const showCancel = (isBuyer || isSeller || isAdmin) && (s === 'pending' || s === 'paid');
-  const showActions = showPay || showShip || showDeliver || showCancel;
-  const awaitingShipment = isBuyer && (s === 'paid' || s === 'in_custody');
+  const showActions = showPay || showAdvanceStage || showShip || showDeliver || showCancel;
+  const awaitingCenter = isBuyer && (s === 'paid' || s === 'in_custody') && fulfillmentStage !== 'dispatch';
+  const awaitingShipment = isBuyer && (s === 'paid' || s === 'in_custody') && fulfillmentStage === 'dispatch';
   const awaitingDelivery = isBuyer && s === 'shipped';
   const returnableStatus = ['paid', 'in_custody', 'delivered'].includes(s);
 
@@ -333,9 +323,31 @@ function OrderTracking({
               </View>
             ) : null}
 
+            {awaitingCenter ? (
+              <View className="mb-3 flex-row items-start gap-2 rounded-lg border border-line bg-inset p-2.5">
+                <AppIcon name="biotech" size={16} color={colors.accentCyan} />
+                <Text className="flex-1 text-xs leading-relaxed text-slate-400">
+                  {t('inspection.awaitingCenter')}
+                </Text>
+              </View>
+            ) : null}
+
             {actionError ? <Text className="mb-2 text-xs text-red-400">{actionError}</Text> : null}
 
             <View className="flex flex-col gap-2">
+              {showAdvanceStage ? (
+                <Pressable
+                  onPress={() => runAction('advance', advanceOrderFulfillment)}
+                  disabled={!!action}
+                  className="flex-row items-center justify-center gap-2 rounded-xl bg-blue-600 py-3"
+                  style={action ? { opacity: 0.7 } : glow('#2563eb', 16, 0.3)}
+                >
+                  <AppIcon name={action === 'advance' ? 'sync' : 'task_alt'} size={18} color="#ffffff" />
+                  <Text className="text-sm font-semibold text-white">
+                    {t(`inspection.advance.${fulfillmentStage}`)}
+                  </Text>
+                </Pressable>
+              ) : null}
               {showPay ? (
                 <Pressable
                   onPress={() => runAction('pay', payOrder)}
@@ -427,6 +439,16 @@ function OrderTracking({
                     <Text className="mt-1 text-[11px] text-text-muted">
                       Mapa no disponible (configurá GOOGLE_MAPS_API_KEY)
                     </Text>
+                    <Pressable
+                      onPress={() =>
+                        void Linking.openURL(
+                          `https://www.google.com/maps/search/?api=1&query=${tracking.courier.lat},${tracking.courier.lng}`,
+                        )
+                      }
+                      className="mt-2 rounded-lg border border-cyan-500/40 bg-cyan-950/40 px-3 py-2"
+                    >
+                      <Text className="text-xs font-semibold text-cyan-300">{t('tracking.openGoogleMaps')}</Text>
+                    </Pressable>
                   </View>
                 )}
                 <View className="mt-3 flex-row items-center justify-between">
@@ -462,7 +484,7 @@ function OrderTracking({
           </View>
           <View className="rounded border border-line bg-elevated px-2 py-0.5">
             <Text className="font-mono text-[11px] text-cyan-300">
-              Fase {steps.findIndex((s) => s.state === 'active') + 1 || 5} de {steps.length}
+              Fase {displayedStep} de {steps.length}
             </Text>
           </View>
         </View>
@@ -513,23 +535,48 @@ function OrderTracking({
                 <Text className="text-xl font-semibold text-slate-100">{t('inspection.protection')}</Text>
               </View>
             </View>
+            {protection.pendingPayment ? (
+              <View className="mb-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2.5">
+                <Text className="text-xs font-semibold text-amber-300">
+                  Pendiente de pago
+                  {typeof protection.paymentMinutesLeft === 'number'
+                    ? ` · te quedan ${protection.paymentMinutesLeft} min para pagar`
+                    : ''}
+                </Text>
+                <Text className="mt-0.5 text-[11px] leading-relaxed text-slate-400">
+                  La protección de 10/45 días empieza a contar recién cuando pagues. Si no pagás, la orden expira y se libera el producto.
+                </Text>
+              </View>
+            ) : null}
             <View className="flex-row gap-2">
               <View className="flex-1 rounded-lg border border-line bg-inset p-2.5">
                 <Text className="block font-mono text-[10px] uppercase text-slate-400">{t('inspection.return')}</Text>
                 <Text className="text-xl font-bold text-emerald-400">
-                  {protection.returnWindowOpen ? `${protection.returnDaysLeft} días` : 'Vencida'}
+                  {protection.pendingPayment
+                    ? 'Pendiente'
+                    : protection.returnWindowOpen
+                      ? `${protection.returnDaysLeft} días`
+                      : 'Vencida'}
                 </Text>
                 <Text className="mt-0.5 block text-[11px] text-slate-400">
-                  {t('inspection.until', { date: formatDate(protection.escrowUntil) })}
+                  {protection.escrowUntil
+                    ? t('inspection.until', { date: formatDate(protection.escrowUntil) })
+                    : 'Corre desde el pago'}
                 </Text>
               </View>
               <View className="flex-1 rounded-lg border border-line bg-inset p-2.5">
                 <Text className="block font-mono text-[10px] uppercase text-slate-400">{t('inspection.coverage')}</Text>
                 <Text className="text-xl font-bold text-slate-100">
-                  {protection.coverageActive ? `${protection.coverageDaysLeft} días` : 'Vencida'}
+                  {protection.pendingPayment
+                    ? 'Pendiente'
+                    : protection.coverageActive
+                      ? `${protection.coverageDaysLeft} días`
+                      : 'Vencida'}
                 </Text>
                 <Text className="mt-0.5 block text-[11px] text-slate-400">
-                  {t('inspection.until', { date: formatDate(protection.coverageUntil) })}
+                  {protection.coverageUntil
+                    ? t('inspection.until', { date: formatDate(protection.coverageUntil) })
+                    : 'Corre desde el pago'}
                 </Text>
               </View>
             </View>
@@ -796,6 +843,22 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
     };
   }, [orderId, t]);
 
+  useEffect(() => {
+    if (!orderId) return;
+    let cancelled = false;
+    const timer = setInterval(() => {
+      void getOrder(orderId)
+        .then((current) => {
+          if (!cancelled) setOrder(current);
+        })
+        .catch(() => undefined);
+    }, 15000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [orderId]);
+
   const handleChatCheck = async () => {
     if (!chatText.trim()) return;
     setChatChecking(true);
@@ -808,6 +871,13 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
       setChatChecking(false);
     }
   };
+
+  // Demo mode (sin orderId): pasos estáticos para el tracker de la vista de muestra.
+  // Sin esto, `steps` / `displayedStep` usados en el JSX de abajo lanzan "steps is not defined".
+  const steps = statusSteps(order?.status ?? 'in_custody', order?.fulfillmentStage ?? 'technical_inspection');
+  const demoActiveIndex = steps.findIndex((step) => step.state === 'active');
+  const displayedStep =
+    demoActiveIndex >= 0 ? demoActiveIndex + 1 : steps.filter((step) => step.state === 'done').length || steps.length;
 
   return (
     <View className="flex-1 bg-surface">
@@ -908,12 +978,12 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
               <Text className="text-xl font-semibold text-slate-100">{t('inspection.trace')}</Text>
             </View>
             <View className="rounded border border-line bg-elevated px-2 py-0.5">
-              <Text className="font-mono text-[11px] text-cyan-300">Fase 3 de 5</Text>
+              <Text className="font-mono text-[11px] text-cyan-300">Fase {displayedStep} de {steps.length}</Text>
             </View>
           </View>
 
           <View className="flex flex-col gap-4 rounded-xl border border-line bg-panel p-4" style={shadow.panel}>
-            {INSPECTION_STEPS.map((step, i) => (
+            {steps.map((step, i) => (
               <View key={step.title} className="flex-row gap-3">
                 <View className="flex flex-col items-center">
                   <StepNode state={step.state} />

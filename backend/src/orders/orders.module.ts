@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { ScheduleModule } from "@nestjs/schedule";
 import { OrdersService } from "./orders.service";
 import { OrdersController } from "./orders.controller";
 import { Order } from "./order.entity";
@@ -12,6 +13,7 @@ import { ShippingModule } from "../shipping/shipping.module";
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     TypeOrmModule.forFeature([Order]),
     ProductsModule,
     NotificationsModule,

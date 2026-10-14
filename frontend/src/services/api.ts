@@ -393,6 +393,7 @@ export interface OrderItem {
   id: string;
   total: number;
   status: string;
+  fulfillmentStage?: 'awaiting_payment' | 'center_reception' | 'technical_inspection' | 'secure_packaging' | 'dispatch';
   shippingAddress?: string;
   paymentMethod?: string;
   custodyStartDate?: string;
@@ -420,8 +421,12 @@ export interface OrderProtection {
   orderId: string;
   status: string;
   total: number;
-  escrowUntil: string;
-  coverageUntil: string;
+  pendingPayment?: boolean;
+  expiresAt?: string | null;
+  paymentMinutesLeft?: number;
+  paidAt?: string | null;
+  escrowUntil: string | null;
+  coverageUntil: string | null;
   returnWindowOpen: boolean;
   returnDaysLeft: number;
   coverageActive: boolean;
@@ -586,6 +591,10 @@ export function payOrder(id: string): Promise<OrderItem> {
 
 export function shipOrder(id: string): Promise<OrderItem> {
   return request<OrderItem>(`/orders/${id}/ship`, { method: 'POST' });
+}
+
+export function advanceOrderFulfillment(id: string): Promise<OrderItem> {
+  return request<OrderItem>(`/orders/${id}/advance-fulfillment`, { method: 'POST' });
 }
 
 export function deliverOrder(id: string): Promise<OrderItem> {

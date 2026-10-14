@@ -10,9 +10,17 @@ import {
   ProductCondition,
   ProductStatus,
 } from "../products/product.entity";
-import { Order, OrderStatus } from "../orders/order.entity";
+import {
+  Order,
+  OrderFulfillmentStage,
+  OrderStatus,
+} from "../orders/order.entity";
 import { OrderItemEntity } from "../orders/order-item.entity";
-import { MercadoLibreService, MlSale, MlSaleItem } from "./mercadolibre.service";
+import {
+  MercadoLibreService,
+  MlSale,
+  MlSaleItem,
+} from "./mercadolibre.service";
 
 /** Marca que identifica los productos espejo creados por la importación. */
 const ML_PRODUCT_MARKER = "[ML-IMPORT:";
@@ -68,7 +76,9 @@ export class MlImportService {
           imported++;
         }
       } catch (err) {
-        this.logger.warn(`No se pudo importar la venta ${sale.id}: ${String(err)}`);
+        this.logger.warn(
+          `No se pudo importar la venta ${sale.id}: ${String(err)}`,
+        );
         skipped++;
       }
     }
@@ -97,15 +107,26 @@ export class MlImportService {
       });
     }
 
-    const total = Number(sale.total) || orderItems.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
+    const total =
+      Number(sale.total) ||
+      orderItems.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
     if (await this.orderExists(buyer.id, orderItems, total)) {
       return true;
     }
 
+    const status = this.mapStatus(sale.status);
+    // Las ventas de ML ya están pagadas: si el estado es distinto de PENDING,
+    // la protección debe correr desde ahora (si no, getProtection las trata
+    // como "pendiente de pago" y el cron de expiración las cancelaría).
+    const isPaid = status !== OrderStatus.PENDING;
     const order = this.orderRepository.create({
       buyerId: buyer.id,
       total,
-      status: this.mapStatus(sale.status),
+      status,
+      fulfillmentStage: isPaid
+        ? OrderFulfillmentStage.CENTER_RECEPTION
+        : OrderFulfillmentStage.AWAITING_PAYMENT,
+      custodyStartDate: isPaid ? new Date() : undefined,
       shippingAddress: sale.shippingAddress,
       paymentMethod: sale.paymentMethod,
       productId: orderItems[0]?.productId ?? null,
@@ -133,7 +154,9 @@ export class MlImportService {
   }
 
   private buyerAlias(mlBuyerId: string): string {
-    const safe = String(mlBuyerId).replace(/[^a-zA-Z0-9._-]/g, "").slice(0, 80);
+    const safe = String(mlBuyerId)
+      .replace(/[^a-zA-Z0-9._-]/g, "")
+      .slice(0, 80);
     return `ml-buyer-${safe}@${IMPORT_ALIAS_DOMAIN}`;
   }
 
@@ -196,7 +219,9 @@ export class MlImportService {
     total: number,
   ): string {
     const parts = items
-      .map((i) => `${i.productId}:${i.quantity}:${Number(i.unitPrice).toFixed(2)}`)
+      .map(
+        (i) => `${i.productId}:${i.quantity}:${Number(i.unitPrice).toFixed(2)}`,
+      )
       .sort();
     return `${parts.join("|")}#${total.toFixed(2)}`;
   }

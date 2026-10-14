@@ -1,7 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { OrdersService } from "./orders.service";
-import { Order, OrderStatus } from "./order.entity";
+import { Order, OrderFulfillmentStage, OrderStatus } from "./order.entity";
 import { ProductsService } from "../products/products.service";
 import { ProductStatus } from "../products/product.entity";
 import { NotificationsService } from "../notifications/notifications.service";
@@ -29,9 +29,12 @@ describe("OrdersService", () => {
 
   const mockProductsService = {
     findOne: jest.fn(),
+    findVariation: jest.fn(),
     update: jest.fn(),
     decrementStock: jest.fn(),
     incrementStock: jest.fn(),
+    decrementVariationStock: jest.fn(),
+    incrementVariationStock: jest.fn(),
   };
 
   const mockNotifications = {
@@ -87,11 +90,12 @@ describe("OrdersService", () => {
       paymentMethod: "credit_card",
     };
 
-    it("should create an order successfully", async () => {
+    it("should create a PENDING order without reserving stock", async () => {
       const mockProduct = {
         id: "product-uuid",
         price: 450,
         status: "published",
+        stock: 5,
         sellerId: "seller-uuid",
       };
 
@@ -105,29 +109,26 @@ describe("OrdersService", () => {
       };
 
       mockProductsService.findOne.mockResolvedValue(mockProduct);
-      mockProductsService.decrementStock.mockResolvedValue(0);
       mockRepository.create.mockReturnValue(savedOrder);
       mockRepository.save.mockResolvedValue(savedOrder);
-      mockProductsService.update.mockResolvedValue({});
 
       const result = await service.create(createOrderDto, "buyer-uuid");
 
       expect(result).toEqual(savedOrder);
-      expect(mockProductsService.decrementStock).toHaveBeenCalledWith(
-        "product-uuid",
-      );
-      expect(mockProductsService.update).toHaveBeenCalledWith("product-uuid", {
-        status: "sold",
-      });
+      // La reserva se difiere a pay(): crear no debe tocar stock ni avisar al vendedor.
+      expect(mockProductsService.decrementStock).not.toHaveBeenCalled();
+      expect(mockProductsService.update).not.toHaveBeenCalled();
+      expect(mockNotifications.create).not.toHaveBeenCalled();
+      expect(mockRepository.save).toHaveBeenCalled();
     });
 
-    it("should reject when there is no stock (atomic reserve)", async () => {
+    it("should reject when there is no stock available", async () => {
       mockProductsService.findOne.mockResolvedValue({
         id: "product-uuid",
         price: 450,
         status: "published",
+        stock: 0,
       });
-      mockProductsService.decrementStock.mockResolvedValue(null);
 
       await expect(
         service.create(createOrderDto, "buyer-uuid"),
@@ -209,7 +210,9 @@ describe("OrdersService", () => {
         name: "Buyer One",
         email: "buyer@test.com",
       });
-      expect((result[0].buyer as Record<string, unknown>).password).toBeUndefined();
+      expect(
+        (result[0].buyer as Record<string, unknown>).password,
+      ).toBeUndefined();
     });
   });
 
@@ -238,20 +241,28 @@ describe("OrdersService", () => {
   });
 
   describe("update", () => {
-    it("should update an order", async () => {
+    it("should update the shipping address", async () => {
       const existingOrder = {
         id: "order-uuid",
         status: OrderStatus.PENDING,
+        shippingAddress: "vieja",
       };
 
-      const updateDto = { status: OrderStatus.PAID };
+      const updateDto = { shippingAddress: "nueva" };
 
       mockRepository.findOne.mockResolvedValue(existingOrder);
       mockRepository.save.mockResolvedValue({ ...existingOrder, ...updateDto });
 
       const result = await service.update("order-uuid", updateDto);
 
-      expect(result.status).toEqual(OrderStatus.PAID);
+      expect(result.shippingAddress).toEqual("nueva");
+    });
+
+    it("should reject direct status changes (use pay/ship/deliver/cancel)", async () => {
+      await expect(
+        service.update("order-uuid", { status: OrderStatus.PAID }),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockRepository.save).not.toHaveBeenCalled();
     });
 
     it("should throw NotFoundException if order not found", async () => {
@@ -264,12 +275,35 @@ describe("OrdersService", () => {
   });
 
   describe("cancel", () => {
-    it("should cancel a pending order and restore stock", async () => {
+    it("should cancel a pending order WITHOUT restoring stock (nothing reserved yet)", async () => {
       const existingOrder = {
         id: "order-uuid",
         status: OrderStatus.PENDING,
         productId: "product-uuid",
         buyerId: "buyer-uuid",
+        product: { id: "product-uuid", sellerId: "seller-uuid" },
+      };
+
+      mockRepository.findOne.mockResolvedValue(existingOrder);
+      mockRepository.save.mockResolvedValue({
+        ...existingOrder,
+        status: OrderStatus.CANCELLED,
+      });
+
+      const result = await service.cancel("order-uuid", "buyer-uuid");
+
+      expect(result.status).toEqual(OrderStatus.CANCELLED);
+      expect(mockProductsService.incrementStock).not.toHaveBeenCalled();
+      expect(mockProductsService.update).not.toHaveBeenCalled();
+    });
+
+    it("should cancel a paid order and restore stock", async () => {
+      const existingOrder = {
+        id: "order-uuid",
+        status: OrderStatus.PAID,
+        productId: "product-uuid",
+        buyerId: "buyer-uuid",
+        items: [{ productId: "product-uuid", variationId: null, quantity: 1 }],
         product: { id: "product-uuid", sellerId: "seller-uuid" },
       };
 
@@ -292,9 +326,6 @@ describe("OrdersService", () => {
       expect(mockProductsService.incrementStock).toHaveBeenCalledWith(
         "product-uuid",
       );
-      expect(mockProductsService.update).toHaveBeenCalledWith("product-uuid", {
-        status: ProductStatus.PUBLISHED,
-      });
     });
 
     it("should forbid cancelling someone else's order", async () => {
@@ -328,9 +359,9 @@ describe("OrdersService", () => {
     it("should throw NotFoundException if order not found", async () => {
       mockRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.cancel("nonexistent-id", "buyer-uuid")).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.cancel("nonexistent-id", "buyer-uuid"),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -341,17 +372,59 @@ describe("OrdersService", () => {
       product: { id: "product-uuid", sellerId: "seller-uuid" },
     };
 
-    it("pay: buyer confirms payment", async () => {
+    it("pay: buyer confirms payment and reserves stock atomically", async () => {
       mockRepository.findOne.mockResolvedValue({
         ...baseOrder,
         status: OrderStatus.PENDING,
+        createdAt: new Date(),
+        items: [{ productId: "product-uuid", variationId: null, quantity: 1 }],
       });
+      mockProductsService.decrementStock.mockResolvedValue(4);
       mockRepository.save.mockImplementation((o) => Promise.resolve(o));
 
       const result = await service.pay("order-uuid", "buyer-uuid");
 
       expect(result.status).toEqual(OrderStatus.PAID);
+      expect(result.fulfillmentStage).toEqual(
+        OrderFulfillmentStage.CENTER_RECEPTION,
+      );
       expect(result.custodyStartDate).toBeInstanceOf(Date);
+      expect(mockProductsService.decrementStock).toHaveBeenCalledWith(
+        "product-uuid",
+      );
+      // El vendedor se notifica recién en el pago, no al crear la PENDING.
+      expect(mockNotifications.create).toHaveBeenCalled();
+    });
+
+    it("pay: rejects an expired pending order", async () => {
+      mockRepository.findOne.mockResolvedValue({
+        ...baseOrder,
+        status: OrderStatus.PENDING,
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+        items: [],
+      });
+      mockRepository.save.mockImplementation((o) => Promise.resolve(o));
+
+      await expect(service.pay("order-uuid", "buyer-uuid")).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(mockProductsService.decrementStock).not.toHaveBeenCalled();
+    });
+
+    it("admin advances each technical-center stage in order", async () => {
+      mockRepository.findOne.mockResolvedValue({
+        ...baseOrder,
+        status: OrderStatus.PAID,
+        fulfillmentStage: OrderFulfillmentStage.CENTER_RECEPTION,
+      });
+      mockRepository.save.mockImplementation((order) => Promise.resolve(order));
+
+      const inspection = await service.advanceFulfillmentStage("order-uuid");
+
+      expect(inspection.fulfillmentStage).toBe(
+        OrderFulfillmentStage.TECHNICAL_INSPECTION,
+      );
+      expect(inspection.status).toBe(OrderStatus.IN_CUSTODY);
     });
 
     it("pay: rejects a non-owner", async () => {
@@ -369,6 +442,7 @@ describe("OrdersService", () => {
       mockRepository.findOne.mockResolvedValue({
         ...baseOrder,
         status: OrderStatus.PAID,
+        fulfillmentStage: OrderFulfillmentStage.DISPATCH,
       });
       mockRepository.save.mockImplementation((o) => Promise.resolve(o));
 
@@ -399,6 +473,59 @@ describe("OrdersService", () => {
 
       expect(result.status).toEqual(OrderStatus.DELIVERED);
       expect(result.custodyEndDate).toBeInstanceOf(Date);
+    });
+  });
+
+  describe("expirePendingOrders / getProtection", () => {
+    it("expirePendingOrders: cancels expired PENDING without touching stock", async () => {
+      const expired = {
+        id: "order-uuid",
+        status: OrderStatus.PENDING,
+        buyerId: "buyer-uuid",
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+      };
+      mockRepository.find.mockResolvedValue([expired]);
+      mockRepository.save.mockImplementation((o) => Promise.resolve(o));
+
+      const count = await service.expirePendingOrders();
+
+      expect(count).toEqual(1);
+      expect(mockRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: OrderStatus.CANCELLED }),
+      );
+      expect(mockProductsService.incrementStock).not.toHaveBeenCalled();
+    });
+
+    it("getProtection: pending order has no protection window", async () => {
+      mockRepository.findOne.mockResolvedValue({
+        id: "order-uuid",
+        status: OrderStatus.PENDING,
+        total: 100,
+        createdAt: new Date(),
+        custodyStartDate: null,
+      });
+
+      const protection = await service.getProtection("order-uuid");
+
+      expect(protection.pendingPayment).toEqual(true);
+      expect(protection.returnWindowOpen).toEqual(false);
+      expect(protection.coverageActive).toEqual(false);
+    });
+
+    it("getProtection: paid order counts windows from custodyStartDate", async () => {
+      const paidAt = new Date();
+      mockRepository.findOne.mockResolvedValue({
+        id: "order-uuid",
+        status: OrderStatus.PAID,
+        total: 100,
+        createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
+        custodyStartDate: paidAt,
+      });
+
+      const protection = await service.getProtection("order-uuid");
+
+      expect(protection.pendingPayment).toEqual(false);
+      expect(protection.returnWindowOpen).toEqual(true);
     });
   });
 });
