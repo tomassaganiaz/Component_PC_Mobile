@@ -28,4 +28,14 @@ export class ShippingController {
   getByOrder(@Param("orderId", new ParseUUIDPipe()) orderId: string) {
     return this.shippingService.getByOrder(orderId);
   }
+
+  @Get("order/:orderId/tracking")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Ubicación del paquete y ETA (Google Maps / simulado)",
+  })
+  getTracking(@Param("orderId", new ParseUUIDPipe()) orderId: string) {
+    return this.shippingService.getTracking(orderId);
+  }
 }

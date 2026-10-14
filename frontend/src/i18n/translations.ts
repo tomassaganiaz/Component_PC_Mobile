@@ -349,6 +349,12 @@ export const translations: Record<Locale, Record<string, string>> = {
     'shipment.status.delivered': 'Entregado',
     'shipment.eta': 'Entrega en ~{n} días',
 
+    'tracking.eta': 'Llega en',
+    'tracking.remaining': '{km} km restantes',
+    'tracking.origin': 'Depósito',
+    'tracking.courier': 'Camión',
+    'tracking.destination': 'Destino',
+
     'inspection.loading': 'Cargando seguimiento...',
     'inspection.notFound': 'No se pudo cargar la orden',
     'inspection.backMarketplace': 'Volver al Marketplace',
@@ -767,6 +773,12 @@ export const translations: Record<Locale, Record<string, string>> = {
     'shipment.status.in_transit': 'In transit',
     'shipment.status.delivered': 'Delivered',
     'shipment.eta': 'Delivery in ~{n} days',
+
+    'tracking.eta': 'Arrives in',
+    'tracking.remaining': '{km} km left',
+    'tracking.origin': 'Warehouse',
+    'tracking.courier': 'Truck',
+    'tracking.destination': 'Destination',
 
     'inspection.loading': 'Loading tracking...',
     'inspection.notFound': 'Could not load the order',

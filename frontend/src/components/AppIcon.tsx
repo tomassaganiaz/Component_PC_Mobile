@@ -86,6 +86,8 @@ const MAP: Record<string, MIconName> = {
   info: 'info-outline',
   admin_panel_settings: 'admin-panel-settings',
   tune: 'tune',
+  map: 'map',
+  place: 'place',
 };
 
 interface Props {

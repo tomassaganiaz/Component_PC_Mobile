@@ -6,7 +6,7 @@ import AppHeader from '../components/AppHeader';
 import AppIcon from '../components/AppIcon';
 import BottomNav from '../components/BottomNav';
 import ProductImage from '../components/ProductImage';
-import { Pill, PulseDot } from '../components/ui';
+import { Pill, ProgressBar, PulseDot } from '../components/ui';
 import { useI18n } from '../i18n';
 import {
   cancelOrder,
@@ -15,6 +15,7 @@ import {
   getOrder,
   getOrderProtection,
   getOrderShipment,
+  getOrderTracking,
   getProductVerifications,
   payOrder,
   requestOrderCoverage,
@@ -24,7 +25,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { IMAGES, INSPECTION_STEPS } from '../data/mock';
 import { colors, glow, shadow } from '../theme';
-import type { ChatSafetyResult, OrderItem, OrderProtection, ShipmentInfo, VerificationItem } from '../services/api';
+import type { ChatSafetyResult, OrderItem, OrderProtection, ShipmentInfo, ShipmentTracking, VerificationItem } from '../services/api';
 import type { Nav } from '../types';
 
 const BUNDLE_IMAGE =
@@ -116,6 +117,7 @@ function OrderTracking({
   const [coverageResult, setCoverageResult] = useState<{ ticketId: string; message: string } | null>(null);
   const [verification, setVerification] = useState<VerificationItem | null>(null);
   const [shipment, setShipment] = useState<ShipmentInfo | null>(null);
+  const [tracking, setTracking] = useState<ShipmentTracking | null>(null);
   const [action, setAction] = useState<'pay' | 'ship' | 'deliver' | 'cancel' | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -187,8 +189,14 @@ function OrderTracking({
     let cancelled = false;
     (async () => {
       try {
-        const data = await getOrderShipment(order.id);
-        if (!cancelled) setShipment(data ?? null);
+        const [data, track] = await Promise.all([
+          getOrderShipment(order.id),
+          getOrderTracking(order.id),
+        ]);
+        if (!cancelled) {
+          setShipment(data ?? null);
+          setTracking(track ?? null);
+        }
       } catch {
         // sin envío registrado
       }
@@ -398,6 +406,45 @@ function OrderTracking({
                 {t('shipment.eta', { n: shipment.estimatedDays })}
               </Text>
             </View>
+
+            {tracking ? (
+              <View className="mt-3 border-t border-line/50 pt-3">
+                {tracking.mapUrl ? (
+                  <View className="overflow-hidden rounded-lg border border-line/60 bg-inset">
+                    <Image
+                      source={{ uri: tracking.mapUrl }}
+                      style={{ width: '100%', height: 170 }}
+                      resizeMode="cover"
+                    />
+                  </View>
+                ) : (
+                  <View className="items-center justify-center rounded-lg border border-dashed border-line/60 bg-inset py-6">
+                    <AppIcon name="map" size={26} color={colors.textMuted} />
+                    <Text className="mt-1 text-[11px] text-text-muted">
+                      Mapa no disponible (configurá GOOGLE_MAPS_API_KEY)
+                    </Text>
+                  </View>
+                )}
+                <View className="mt-3 flex-row items-center justify-between">
+                  <View className="flex-row items-center gap-1.5">
+                    <AppIcon name="local_shipping" size={16} color={colors.accentCyan} />
+                    <Text className="text-xs text-slate-400">{t('tracking.eta')}</Text>
+                    <Text className="text-sm font-bold text-slate-100">{tracking.etaText}</Text>
+                  </View>
+                  <Text className="font-mono text-[11px] text-slate-400">
+                    {t('tracking.remaining', { km: tracking.distanceRemainingKm })}
+                  </Text>
+                </View>
+                <View className="mt-2">
+                  <ProgressBar percent={Math.round(tracking.progress * 100)} height={6} />
+                  <View className="mt-1 flex-row justify-between">
+                    <Text className="font-mono text-[10px] text-text-muted">{t('tracking.origin')}</Text>
+                    <Text className="font-mono text-[10px] text-accent-cyan">{t('tracking.courier')}</Text>
+                    <Text className="font-mono text-[10px] text-text-muted">{t('tracking.destination')}</Text>
+                  </View>
+                </View>
+              </View>
+            ) : null}
           </View>
         </View>
       ) : null}

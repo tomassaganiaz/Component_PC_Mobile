@@ -751,3 +751,24 @@ export interface ShipmentInfo {
 export function getOrderShipment(orderId: string): Promise<ShipmentInfo | null> {
   return request<ShipmentInfo | null>(`/shipping/order/${orderId}`);
 }
+
+export interface ShipmentTracking {
+  orderId: string;
+  status: string;
+  carrier: string;
+  trackingCode: string;
+  origin: { lat: number; lng: number };
+  destination: { lat: number; lng: number };
+  courier: { lat: number; lng: number };
+  progress: number;
+  totalKm: number;
+  distanceRemainingKm: number;
+  etaMinutes: number;
+  etaText: string;
+  mapUrl: string | null;
+  updatedAt: string;
+}
+
+export function getOrderTracking(orderId: string): Promise<ShipmentTracking | null> {
+  return request<ShipmentTracking | null>(`/shipping/order/${orderId}/tracking`);
+}
