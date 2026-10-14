@@ -1,262 +1,1435 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Image,
-  TouchableOpacity,
-  ActivityIndicator,
-  Alert,
-} from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useProduct } from '../../hooks/useProducts';
-import { productService } from '../../services/productService';
-import { useAuth } from '../../context/AuthContext';
-import { Verification, ProductCondition, VerificationResult } from '../../types';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
-export default function ProductDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
-  const { isAuthenticated } = useAuth();
-  const { product, isLoading, error } = useProduct(id);
-  const [verifications, setVerifications] = useState<Verification[]>([]);
-  const [selectedImage, setSelectedImage] = useState(0);
+import AppIcon from '../components/AppIcon';
+import ProductImage from '../components/ProductImage';
+import { Avatar, ProgressBar } from '../components/ui';
+import { useI18n } from '../i18n';
+import { useCart } from '../context/CartContext';
+import { confirmPayment, createOrder, createPaymentIntent, createReport, getProductVariations, getSellerReputation, getSellerReviews, getTrustBadge, validateCoupon } from '../services/api';
+import type { CouponValidation, OrderItem, ProductVariation, ReviewItem, SecurityProfile, SellerReputation } from '../services/api';
+import ReputationMeter from '../components/ReputationMeter';
+import { useTrack } from '../hooks/useTrack';
+import { IMAGES } from '../data/mock';
+import { colors, glow, shadow } from '../theme';
+import type { ExploreCard, Nav, SellerTier } from '../types';
 
-  useEffect(() => {
-    if (product?.condition === ProductCondition.USED) {
-      loadVerifications();
-    }
-  }, [product]);
+const tierMeta: Record<SellerTier, { label: string; cls: string; dot: string }> = {
+  secure: {
+    label: 'VENDEDOR SEGURO',
+    cls: 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300',
+    dot: colors.accentEmerald,
+  },
+  normal: {
+    label: 'VENDEDOR NORMAL',
+    cls: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300',
+    dot: colors.accentCyan,
+  },
+  not_secure: {
+    label: 'VENDEDOR NO SEGURO',
+    cls: 'border-red-500/40 bg-red-500/10 text-red-400',
+    dot: colors.diagnosticRed,
+  },
+};
 
-  const loadVerifications = async () => {
-    try {
-      const data = await productService.getVerifications(id);
-      setVerifications(data);
-    } catch (err) {
-      console.error('Error loading verifications:', err);
-    }
-  };
+function CheckedBanner() {
+  const { t } = useI18n();
+  return (
+    <View
+      className="flex-row items-center gap-2.5 rounded-xl border border-secondary/40 bg-secondary/10 p-3"
+      style={glow(colors.secondary, 12, 0.2)}
+    >
+      <View className="h-9 w-9 items-center justify-center rounded-lg bg-secondary/20">
+        <AppIcon name="verified" size={20} color={colors.accentEmerald} />
+      </View>
+      <View className="flex-1">
+        <Text className="text-sm font-bold uppercase tracking-wide text-emerald-300">{t('product.checkedBanner')}</Text>
+        <Text className="mt-0.5 text-xs text-text-secondary">
+          {t('product.checkedDesc')}
+        </Text>
+      </View>
+    </View>
+  );
+}
 
-  const handleBuy = () => {
-    if (!isAuthenticated) {
-      Alert.alert('Iniciar sesión', 'Debes iniciar sesión para comprar', [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Iniciar sesión', onPress: () => router.push('/login') },
-      ]);
-      return;
-    }
-    router.push(`/checkout/${id}`);
-  };
-
-  if (isLoading) {
+function VerificationData({ product }: { product: ExploreCard }) {
+  const { t } = useI18n();
+  const { verified } = product;
+  if (!verified) {
     return (
-      <View className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" color="#3b82f6" />
+      <View className="px-4 pt-4">
+        <View className="flex-row items-start gap-3 rounded-xl border border-line bg-panel p-4">
+          <AppIcon name="science" size={22} color={colors.diagnosticAmber} style={{ marginTop: 2 }} />
+          <View className="flex-1">
+            <Text className="text-sm font-semibold text-text-primary">{t('product.pending')}</Text>
+            <Text className="mt-0.5 text-xs leading-relaxed text-text-secondary">
+              {t('product.pendingDesc')}
+            </Text>
+          </View>
+        </View>
       </View>
     );
   }
 
-  if (error || !product) {
-    return (
-      <View className="flex-1 justify-center items-center px-4">
-        <Text className="text-red-500 text-center">{error || 'Producto no encontrado'}</Text>
-      </View>
-    );
-  }
-
-  const isVerified = verifications.some((v) => v.result === VerificationResult.PASS);
+  const real = product.hoursOfUse;
+  const reported = product.reportedHoursOfUse;
+  const hasComparison = real != null && reported != null;
+  const diff =
+    hasComparison && real !== null && reported !== null
+      ? Math.abs(real - reported)
+      : 0;
+  const match = hasComparison && diff <= Math.max(20, (reported ?? 0) * 0.2);
+  const variancePct =
+    hasComparison && real !== null && reported !== null && reported > 0
+      ? Math.round((diff / reported) * 100)
+      : 0;
 
   return (
-    <View className="flex-1 bg-white">
-      <ScrollView>
-        <View className="bg-gray-100">
-          {product.images && product.images.length > 0 ? (
-            <Image
-              source={{ uri: product.images[selectedImage] }}
-              className="w-full h-80"
-              resizeMode="contain"
-            />
-          ) : (
-            <View className="w-full h-80 justify-center items-center bg-gray-200">
-              <Ionicons name="image-outline" size={64} color="#9ca3af" />
-              <Text className="text-gray-500 mt-2">Sin imagen</Text>
-            </View>
-          )}
-
-          {product.images && product.images.length > 1 && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              className="px-4 py-3"
-            >
-              {product.images.map((image, index) => (
-                <TouchableOpacity
-                  key={index}
-                  onPress={() => setSelectedImage(index)}
-                  className={`mr-2 border-2 rounded-lg overflow-hidden ${
-                    selectedImage === index ? 'border-blue-500' : 'border-transparent'
-                  }`}
-                >
-                  <Image source={{ uri: image }} className="w-16 h-16" resizeMode="cover" />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          )}
+    <View className="px-4 pt-4">
+      <View className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4" style={shadow.panel}>
+        <View className="flex-row items-center gap-2">
+          <AppIcon name="hardware" size={20} color={colors.accentCyan} />
+          <Text className="text-lg font-semibold text-text-primary">{t('product.realData')}</Text>
         </View>
 
-        <View className="p-4">
-          <View className="flex-row justify-between items-start mb-2">
-            <Text className="text-2xl font-bold text-gray-900 flex-1 mr-2">
-              {product.title}
-            </Text>
+        {hasComparison ? (
+          <View className="flex-col gap-1.5 rounded-lg border border-line/60 bg-elevated p-2.5">
+            <View className="flex-row items-center justify-between">
+              <Text className="text-xs text-text-secondary">{t('product.hoursVerified')}</Text>
+              <Text className="font-mono text-sm font-bold text-secondary">
+                {real != null ? `${real} h` : '—'}
+              </Text>
+            </View>
+            <View className="flex-row items-center justify-between">
+              <Text className="text-xs text-text-secondary">{t('product.hoursReported')}</Text>
+              <Text className="font-mono text-xs text-text-primary">{reported != null ? `${reported} h` : '—'}</Text>
+            </View>
             <View
-              className={`px-3 py-1 rounded-full ${
-                product.condition === ProductCondition.NEW ? 'bg-green-100' : 'bg-orange-100'
-              }`}
+              className="mt-1 flex-row items-center justify-between rounded border px-2 py-1"
+              style={{
+                borderColor: match ? colors.secondary + '66' : colors.diagnosticAmber + '66',
+                backgroundColor: match ? colors.successSoft : colors.warningSoft,
+              }}
             >
-              <Text
-                className={`font-semibold ${
-                  product.condition === ProductCondition.NEW
-                    ? 'text-green-700'
-                    : 'text-orange-700'
-                }`}
+              <Text className="font-mono text-[10px] font-bold uppercase tracking-wider" style={{ color: match ? colors.accentEmerald : colors.diagnosticAmber }}>
+                {match ? t('product.matches') : t('product.discrepancy', { pct: variancePct })}
+              </Text>
+              <AppIcon name={match ? 'check_circle' : 'notifications_active'} size={14} color={match ? colors.accentEmerald : colors.diagnosticAmber} />
+            </View>
+          </View>
+        ) : null}
+
+        <View className="flex-row flex-wrap gap-2">
+          {product.usageType ? (
+            <View className="flex-1 min-w-[45%] flex-col gap-1 rounded-lg border border-line/60 bg-surface p-2.5">
+              <Text className="font-mono text-[10px] uppercase text-text-muted">{t('product.usageType')}</Text>
+              <Text className="text-xs font-semibold text-text-primary">{product.usageType}</Text>
+            </View>
+          ) : null}
+          {product.conditionGrade ? (
+            <View className="flex-1 min-w-[45%] flex-col gap-1 rounded-lg border border-line/60 bg-surface p-2.5">
+              <Text className="font-mono text-[10px] uppercase text-text-muted">{t('product.grade')}</Text>
+              <Text className="text-xs font-semibold text-secondary">{product.conditionGrade}</Text>
+            </View>
+          ) : null}
+        </View>
+
+        {product.stressTest ? (
+          <View className="flex-col gap-1 rounded-lg border border-line/60 bg-surface p-2.5">
+            <Text className="font-mono text-[10px] uppercase text-text-muted">{t('product.stress')}</Text>
+            <Text className="text-xs leading-relaxed text-text-secondary">{product.stressTest}</Text>
+          </View>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+const badgeMeta: Record<SecurityProfile['badge'], { label: string; cls: string; dot: string }> = {
+  safe: {
+    label: 'VENDEDOR SEGURO',
+    cls: 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300',
+    dot: colors.accentEmerald,
+  },
+  intermediate: {
+    label: 'VENDEDOR NORMAL',
+    cls: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300',
+    dot: colors.accentCyan,
+  },
+  unsafe: {
+    label: 'VENDEDOR NO SEGURO',
+    cls: 'border-red-500/40 bg-red-500/10 text-red-400',
+    dot: colors.diagnosticRed,
+  },
+};
+
+function SellerSecurity({
+  product,
+  onReport,
+  onViewReviews,
+}: {
+  product: ExploreCard;
+  onReport?: () => void;
+  onViewReviews?: () => void;
+}) {
+  const { t } = useI18n();
+  const [badge, setBadge] = useState<SecurityProfile | null>(null);
+  const [reputation, setReputation] = useState<SellerReputation | null>(null);
+
+  useEffect(() => {
+    if (!product.sellerId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [b, rep] = await Promise.all([
+          getTrustBadge(product.sellerId!),
+          getSellerReputation(product.sellerId!).catch(() => null),
+        ]);
+        if (!cancelled) {
+          setBadge(b);
+          setReputation(rep);
+        }
+      } catch {
+        // conservar fallback con sellerStats del producto
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [product.sellerId]);
+
+  const fallbackTier = product.sellerTier;
+  const meta = badge ? badgeMeta[badge.badge] : fallbackTier ? tierMeta[fallbackTier] : null;
+  if (!meta) return null;
+
+  const stats = badge
+    ? {
+        positivity: badge.positivity,
+        complaints: badge.complaints,
+        total: badge.totalReviews,
+        identityVerified: badge.identityVerified,
+        acceptsTesting: badge.acceptsTesting,
+      }
+    : {
+        positivity: product.sellerStats?.positivity ?? 0,
+        complaints: product.sellerStats?.complaints ?? 0,
+        total: product.sellerStats?.total ?? 0,
+        identityVerified: product.identityVerified ?? false,
+        acceptsTesting: fallbackTier === 'secure',
+      };
+
+  const breakdown = badge?.breakdown;
+  const maxBreakdown = breakdown ? Math.max(1, breakdown.positive, breakdown.neutral, breakdown.complaint) : 1;
+
+  return (
+    <View className="px-4 pt-4">
+      <View className="flex flex-col gap-2 rounded-xl border border-line bg-card p-4" style={shadow.panel}>
+        <View className="flex-row items-center gap-2">
+          <AppIcon name="verified_user" size={20} color={meta.dot} />
+          <Text className="text-lg font-semibold text-text-primary">{t('product.sellerSecurity')}</Text>
+        </View>
+        <View className="flex-row flex-wrap items-center gap-1.5">
+          <View className={`flex-row items-center gap-1.5 rounded border px-2.5 py-1 ${meta.cls}`}>
+            <View className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: meta.dot }} />
+            <Text className="font-mono text-[11px] font-bold tracking-wider">{meta.label}</Text>
+          </View>
+          {stats.identityVerified ? (
+            <View className="flex-row items-center gap-1 rounded border border-sky-500/40 bg-sky-950/50 px-2 py-1">
+              <AppIcon name="badge" size={13} color="#7dd3fc" />
+              <Text className="font-mono text-[11px] font-bold tracking-wider text-sky-300">ID VERIFICADO</Text>
+            </View>
+          ) : null}
+        </View>
+
+        {badge ? (
+          <View className="mt-1 flex-row items-center gap-3">
+            <View className="flex-row items-center gap-1">
+              <AppIcon name="star" size={18} color={colors.diagnosticAmber} />
+              <Text className="text-lg font-bold text-text-primary">{badge.averageRating.toFixed(1)}</Text>
+            </View>
+            <Text className="font-mono text-[11px] text-text-secondary">
+              {badge.totalReviews} reseñas · {badge.positivity}% positivas · {badge.complaintRate}% quejas
+            </Text>
+          </View>
+        ) : null}
+
+        <Text className="text-xs leading-relaxed text-text-secondary">
+          {product.sellerName ?? 'Vendedor'} · positividad{' '}
+          <Text className="font-bold text-text-primary">{stats.positivity}%</Text> · {stats.total} reseñas ·{' '}
+          {stats.complaints} quejas.
+        </Text>
+
+        {breakdown ? (
+          <View className="mt-1 flex flex-col gap-1.5">
+            <View className="h-1.5 w-full flex-row overflow-hidden rounded-full bg-elevated">
+              <View className="h-full bg-emerald-500" style={{ flex: breakdown.positive / maxBreakdown }} />
+              <View className="h-full bg-amber-500" style={{ flex: breakdown.neutral / maxBreakdown }} />
+              <View className="h-full bg-red-500" style={{ flex: breakdown.complaint / maxBreakdown }} />
+            </View>
+            <View className="flex-row justify-between">
+              <Text className="font-mono text-[10px] text-emerald-400">
+                {breakdown.positive} positivas
+              </Text>
+              <Text className="font-mono text-[10px] text-amber-400">{breakdown.neutral} neutrales</Text>
+              <Text className="font-mono text-[10px] text-red-400">{breakdown.complaint} quejas</Text>
+            </View>
+          </View>
+        ) : null}
+
+        <Text className="text-xs leading-relaxed text-text-secondary">
+          {stats.acceptsTesting
+            ? 'Acepta todas las revisiones y testeos del producto antes de venderlo.'
+            : 'Acepta pocas o ninguna revisión y testeo antes de vender.'}
+        </Text>
+        {reputation ? <ReputationMeter reputation={reputation} /> : null}
+        {onViewReviews ? (
+          <Pressable
+            onPress={onViewReviews}
+            className="mt-1 flex-row items-center justify-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 py-2.5"
+          >
+            <AppIcon name="star" size={16} color={colors.diagnosticAmber} />
+            <Text className="text-xs font-semibold text-amber-400">{t('product.viewReviews')}</Text>
+          </Pressable>
+        ) : null}
+        {onReport ? (
+          <Pressable
+            onPress={onReport}
+            className="mt-1 flex-row items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/10 py-2.5"
+          >
+            <AppIcon name="report" size={16} color={colors.diagnosticRed} />
+            <Text className="text-xs font-semibold text-red-400">{t('product.report')}</Text>
+          </Pressable>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+export default function ProductDetailScreen({ nav, product }: { nav: Nav; product: ExploreCard }) {
+  const trackEvent = useTrack();
+  const { t } = useI18n();
+  const { add: addToCart } = useCart();
+  const outOfStock = (product.stock ?? 1) <= 0;
+  const [addedToCart, setAddedToCart] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportSending, setReportSending] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
+
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [shippingAddress, setShippingAddress] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('credit_card');
+  const [placing, setPlacing] = useState(false);
+  const [orderError, setOrderError] = useState<string | null>(null);
+  const [createdOrder, setCreatedOrder] = useState<OrderItem | null>(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponApplied, setCouponApplied] = useState<CouponValidation | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponApplying, setCouponApplying] = useState(false);
+  const [repairRequested, setRepairRequested] = useState(false);
+  const [variations, setVariations] = useState<ProductVariation[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await getProductVariations(product.id);
+        if (!cancelled) setVariations(list);
+      } catch {
+        // sin variaciones
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [product.id]);
+
+  const [reviewsOpen, setReviewsOpen] = useState(false);
+  const [sellerReviews, setSellerReviews] = useState<ReviewItem[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsError, setReviewsError] = useState<string | null>(null);
+
+  const openSellerReviews = async () => {
+    if (!product.sellerId) return;
+    setReviewsOpen(true);
+    setReviewsLoading(true);
+    setReviewsError(null);
+    try {
+      setSellerReviews(await getSellerReviews(product.sellerId));
+    } catch (err) {
+      setReviewsError(err instanceof Error ? err.message : 'No se pudieron cargar las reseñas.');
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const gallery = product.gallery ?? [];
+  const activeImage = gallery[galleryIndex]?.uri ?? product.image;
+
+  const knowItems = (
+    [
+      ['Marca', product.brand],
+      ['Modelo', product.model],
+      ['Categoría', product.category],
+      ['Tipo de uso', product.usageType],
+      ['Horas verificadas', product.hoursOfUse != null ? `${product.hoursOfUse} h` : null],
+      ['Grado', product.conditionGrade],
+    ] as [string, string | number | null | undefined][]
+  ).filter(([, v]) => v != null && v !== '') as [string, string][];
+
+  const handleBuy = () => {
+    if (outOfStock) return;
+    setCheckoutOpen(true);
+    setOrderError(null);
+    setCreatedOrder(null);
+    setCouponCode('');
+    setCouponApplied(null);
+    setCouponError(null);
+  };
+
+  const handleAddToCart = async () => {
+    if (outOfStock) return;
+    try {
+      await addToCart(product.id, 1);
+      setAddedToCart(true);
+      setTimeout(() => setAddedToCart(false), 1500);
+    } catch {
+      // sin carrito
+    }
+  };
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponApplying(true);
+    setCouponError(null);
+    try {
+      const res = await validateCoupon(couponCode.trim(), Number(product.price));
+      setCouponApplied(res);
+    } catch (err) {
+      setCouponApplied(null);
+      setCouponError(err instanceof Error ? err.message : t('product.checkout.couponError'));
+    } finally {
+      setCouponApplying(false);
+    }
+  };
+
+  const handlePlaceOrder = async () => {
+    if (!shippingAddress.trim()) {
+      setOrderError(t('product.checkout.errAddress'));
+      return;
+    }
+    setPlacing(true);
+    setOrderError(null);
+    try {
+      const order = await createOrder({
+        productId: product.id,
+        shippingAddress: shippingAddress.trim(),
+        paymentMethod,
+        couponCode: couponApplied?.code,
+        repairRequested:
+          product.broken && product.brokenTag === 'reparable'
+            ? repairRequested
+            : undefined,
+      });
+      // Pago: intención + confirmación (mock). Si falla, la orden queda pendiente.
+      let paid = order;
+      try {
+        await createPaymentIntent(order.id);
+        await confirmPayment(order.id);
+        paid = { ...order, status: 'paid' };
+      } catch {
+        /* queda pendiente */
+      }
+      setCreatedOrder(paid);
+      trackEvent('purchase', {
+        orderId: order.id,
+        productId: product.id,
+        metadata: { total: Number(order.total), paymentMethod },
+      });
+    } catch (err) {
+      setOrderError(err instanceof Error ? err.message : t('product.checkout.errOrder'));
+    } finally {
+      setPlacing(false);
+    }
+  };
+
+  const handleReport = async () => {
+    if (!product.sellerId || reportReason.trim().length < 10) {
+      setReportError('Escribí un motivo de al menos 10 caracteres.');
+      return;
+    }
+    setReportSending(true);
+    setReportError(null);
+    try {
+      await createReport(product.sellerId, 'seller', reportReason.trim());
+      setReportReason('');
+      setTimeout(() => setReportOpen(false), 900);
+    } catch (err) {
+      setReportError(err instanceof Error ? err.message : 'No se pudo enviar el reporte.');
+    } finally {
+      setReportSending(false);
+    }
+  };
+
+  return (
+    <View className="flex-1 bg-surface">
+      {/* Header */}
+      <View
+        className="flex-row items-center justify-between bg-surface px-4 py-2.5"
+        style={{ borderBottomWidth: 1, borderBottomColor: colors.line, ...shadow.top }}
+      >
+        <View className="flex-row items-center gap-2">
+          <Pressable onPress={nav.back} className="h-10 w-10 items-center justify-center rounded-lg">
+            <AppIcon name="arrow_back" size={22} color={colors.onSurface} />
+          </Pressable>
+          <View className="h-7 w-7 items-center justify-center overflow-hidden rounded-lg">
+            <ProductImage uri={IMAGES.logo} style={{ width: 28, height: 28 }} iconSize={16} contentFit="contain" />
+          </View>
+          <Text className="ml-1 truncate text-base font-semibold text-text-primary">Hardware Diagnostic Detail</Text>
+        </View>
+        <View className="flex-row items-center gap-1">
+          <View className="flex-row items-center gap-1.5 rounded-full border border-secondary/30 bg-secondary/10 px-2.5 py-1">
+            <AppIcon name="verified" size={14} color={colors.secondary} />
+            <Text className="font-mono text-[11px] tracking-wide text-secondary">TECHSHIELD</Text>
+          </View>
+          <Avatar uri={IMAGES.profile} size={32} ringColor={colors.secondary + '66'} />
+        </View>
+      </View>
+
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: 110 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Breadcrumb */}
+        <View className="flex-row items-center justify-between px-4 pb-1 pt-2">
+          <View className="flex-row items-center gap-1.5">
+            <Text className="font-mono text-[11px] text-text-secondary">{product.category}</Text>
+            <Text className="font-mono text-[11px] text-text-secondary">/</Text>
+            <Text className="font-mono text-[11px] font-semibold text-primary">{product.breadcrumb}</Text>
+          </View>
+          <View className="flex-row items-center gap-1.5 rounded-full border border-secondary/30 bg-secondary/10 px-2.5 py-0.5">
+            <AppIcon name="verified" size={14} color={colors.secondary} />
+            <Text className="font-mono text-[11px] font-semibold text-secondary">AUDITORÍA ACTIVA</Text>
+          </View>
+        </View>
+
+        {/* Imagen (izquierda) + datos importantes (derecha) — formato ML */}
+        <View className="flex-row gap-3 px-4 pt-2">
+          <View style={{ width: '46%' }}>
+            <View
+              className="relative overflow-hidden rounded-xl border border-line bg-inset"
+              style={{ aspectRatio: 1, padding: 10 }}
+            >
+              <ProductImage
+                uri={activeImage}
+                style={{ width: '100%', height: '100%' }}
+                iconSize={48}
+                contentFit="contain"
+                width={600}
+                priority
+              />
+            </View>
+            {gallery.length > 1 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 6, paddingTop: 6 }}
               >
-                {product.condition === ProductCondition.NEW ? 'Nuevo' : 'Usado'}
+                {gallery.map((g, i) => (
+                  <Pressable
+                    key={i}
+                    onPress={() => setGalleryIndex(i)}
+                    className="h-12 w-12 overflow-hidden rounded-lg bg-card"
+                    style={i === galleryIndex ? { borderWidth: 2, borderColor: colors.secondary } : undefined}
+                  >
+                    <ProductImage uri={g.uri} style={{ width: '100%', height: '100%' }} iconSize={18} contentFit="contain" width={96} />
+                  </Pressable>
+                ))}
+              </ScrollView>
+            ) : null}
+          </View>
+
+          {/* Datos importantes del producto */}
+          <View className="flex-1">
+            <View className="flex-row items-center gap-2">
+              <Text className="font-mono text-[11px] font-semibold text-text-secondary">
+                {product.condition === 'new' ? 'Nuevo' : 'Usado'}
+              </Text>
+              <Text className="text-text-muted">·</Text>
+              <Text className="font-mono text-[11px] text-text-muted">
+                {product.reviewCount ? `+${product.reviewCount} vendidos` : 'Verificado'}
+              </Text>
+            </View>
+
+            <Text className="mt-1 text-lg font-bold leading-snug text-text-primary">{product.title}</Text>
+
+            {(product.averageRating ?? 0) > 0 ? (
+              <View className="mt-1 flex-row items-center gap-1.5">
+                <Text className="text-xs font-semibold text-text-primary">
+                  {(product.averageRating ?? 0).toFixed(1)}
+                </Text>
+                <View className="flex-row">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <AppIcon
+                      key={i}
+                      name={(product.averageRating ?? 0) >= i - 0.25 ? 'star' : 'star_border'}
+                      size={13}
+                      color={colors.diagnosticAmber}
+                    />
+                  ))}
+                </View>
+                <Text className="font-mono text-[10px] text-text-secondary">
+                  ({product.reviewCount ?? 0})
+                </Text>
+              </View>
+            ) : null}
+
+            <View className="mt-2">
+              <Text className="text-[26px] font-bold text-text-primary">
+                ${product.price}
+                <Text className="ml-1 font-mono text-[11px] font-semibold text-text-secondary"> {product.currency}</Text>
+              </Text>
+              <Text className="mt-1 text-xs text-text-primary">
+                en <Text className="font-semibold">6 cuotas</Text> de{' '}
+                <Text className="font-semibold">${(Number(product.price) / 6).toFixed(2)}</Text>
+              </Text>
+              <Text className="mt-0.5 text-xs font-medium text-sky-400">Ver los medios de pago</Text>
+            </View>
+
+            <View className="mt-2 flex-row flex-wrap items-center gap-1.5">
+              {product.verified ? (
+                <View className="flex-row items-center gap-1 rounded-full border border-secondary/35 bg-secondary/15 px-2 py-0.5">
+                  <AppIcon name="verified" size={12} color={colors.secondary} />
+                  <Text className="font-mono text-[9px] font-semibold text-secondary">CHECKEADO</Text>
+                </View>
+              ) : null}
+              {product.condition === 'new' ? (
+                <View className="flex-row items-center gap-1 rounded-full border border-sky-400/60 bg-info-soft px-2 py-0.5">
+                  <AppIcon name="inventory_2" size={12} color="#7dd3fc" />
+                  <Text className="font-mono text-[9px] font-bold text-sky-300">NUEVO</Text>
+                </View>
+              ) : (
+                <View className="flex-row items-center gap-1 rounded-full border border-line bg-elevated px-2 py-0.5">
+                  <Text className="font-mono text-[9px] text-text-secondary">{product.grade}</Text>
+                </View>
+              )}
+            </View>
+
+            {product.broken ? (
+              <View className="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2">
+                <View className="flex-row items-center gap-1.5">
+                  <AppIcon name="build" size={14} color={colors.diagnosticAmber} />
+                  <Text className="font-mono text-[10px] font-bold tracking-wider text-amber-400">
+                    {product.brokenTag === 'parts' ? 'REPUESTOS' : 'REPARABLE'}
+                  </Text>
+                </View>
+                <Text className="mt-1 text-[10px] leading-relaxed text-amber-200/90">
+                  {product.brokenTag === 'parts'
+                    ? 'Roto · algunos componentes pueden reutilizarse. No admite reparación.'
+                    : 'Roto · revisado. Podés solicitar reparación antes del envío.'}
+                </Text>
+                {product.brokenTag === 'reparable' && product.repairPrice ? (
+                  <Pressable
+                    onPress={() => setRepairRequested((v) => !v)}
+                    className="mt-2 flex-row items-center gap-2 rounded-lg border px-2 py-1.5"
+                    style={{
+                      borderColor: repairRequested ? colors.accentEmerald : colors.line,
+                      backgroundColor: colors.panel,
+                    }}
+                  >
+                    <AppIcon
+                      name={repairRequested ? 'check_circle' : 'add'}
+                      size={16}
+                      color={repairRequested ? colors.accentEmerald : colors.textSecondary}
+                    />
+                    <Text className="flex-1 text-[11px] font-semibold text-text-primary">
+                      Solicitar reparación (+${Number(product.repairPrice).toFixed(2)})
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            ) : null}
+
+            <View className="mt-3 flex-row items-center gap-1.5">
+              <AppIcon
+                name="inventory_2"
+                size={14}
+                color={outOfStock ? colors.diagnosticRed : colors.accentEmerald}
+              />
+              <Text
+                className="text-xs font-semibold"
+                style={{ color: outOfStock ? colors.diagnosticRed : colors.accentEmerald }}
+              >
+                {outOfStock
+                  ? t('product.outOfStock')
+                  : (product.stock ?? 1) === 1
+                    ? 'Stock: 1 unidad · producto único'
+                    : `Stock: ${product.stock} unidades`}
+              </Text>
+            </View>
+
+            {product.sellerName ? (
+              <View className="mt-2 flex-row items-center gap-2">
+                <View className="h-7 w-7 items-center justify-center rounded-full bg-elevated">
+                  <Text className="text-[11px] font-bold" style={{ color: colors.accentCyan }}>
+                    {product.sellerName.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <View className="min-w-0 flex-1">
+                  <Text className="truncate text-xs font-semibold text-text-primary">
+                    {product.sellerName}
+                  </Text>
+                  <Text className="font-mono text-[10px] text-text-secondary">
+                    {product.sellerTier === 'secure'
+                      ? 'Vendedor seguro'
+                      : product.sellerTier === 'not_secure'
+                        ? 'Vendedor no seguro'
+                        : 'Vendedor normal'}
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+
+            {product.warranty ? (
+              <View className="mt-2 flex-row items-center gap-1.5">
+                <AppIcon
+                  name="security"
+                  size={14}
+                  color={product.warranty.extended ? colors.accentCyan : colors.accentEmerald}
+                />
+                <Text className="text-xs text-text-secondary">
+                  {product.warranty.extended
+                    ? `Cobertura extendida · ${product.warranty.days} días`
+                    : `Garantía ${product.warranty.days} días`}
+                </Text>
+              </View>
+            ) : null}
+
+            <View className="mt-2 flex-col gap-1">
+              <View className="flex-row items-center gap-1.5">
+                <AppIcon name="local_shipping" size={14} color={colors.secondary} />
+                <Text className="text-xs text-text-secondary">Envío gratis desde $250.000</Text>
+              </View>
+              <View className="flex-row items-center gap-1.5">
+                <AppIcon name="storefront" size={14} color={colors.secondary} />
+                <Text className="text-xs text-text-secondary">Retiro en local</Text>
+              </View>
+            </View>
+
+            <View className="mt-3 flex-row items-start gap-1.5 rounded-lg border border-line/60 bg-inset/60 p-2">
+              <AppIcon name="verified_user" size={15} color={colors.accentEmerald} style={{ marginTop: 1 }} />
+              <Text numberOfLines={3} className="flex-1 text-[11px] leading-relaxed text-text-secondary">
+                Compra protegida con custodia TechShield. El vendedor cobra al confirmar la entrega.
               </Text>
             </View>
           </View>
+        </View>
 
-          <Text className="text-3xl font-bold text-blue-600 mb-4">
-            ${product.price.toLocaleString()}
-          </Text>
-
-          {product.condition === ProductCondition.USED && isVerified && (
-            <View className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4 flex-row items-center">
-              <Ionicons name="checkmark-circle" size={24} color="#16a34a" />
-              <Text className="text-green-700 font-semibold ml-2">
-                Producto Verificado por ERS
+        {outOfStock ? (
+          <View className="mx-4 mt-3 flex-row items-start gap-2.5 rounded-lg border border-red-500/50 bg-red-500/10 p-3">
+            <AppIcon name="block" size={18} color={colors.diagnosticRed} />
+            <View className="flex-1">
+              <Text className="text-xs font-bold uppercase tracking-wide text-red-300">{t('product.outOfStock')}</Text>
+              <Text className="mt-0.5 text-xs leading-relaxed text-red-200/90">
+                {t('product.outOfStockDesc')}
               </Text>
             </View>
-          )}
+          </View>
+        ) : null}
 
-          {product.brand && (
-            <View className="flex-row items-center mb-2">
-              <Text className="text-gray-500 w-20">Marca:</Text>
-              <Text className="text-gray-900 font-medium">{product.brand}</Text>
-            </View>
-          )}
+        {product.verified ? <CheckedBanner /> : null}
 
-          {product.model && (
-            <View className="flex-row items-center mb-2">
-              <Text className="text-gray-500 w-20">Modelo:</Text>
-              <Text className="text-gray-900 font-medium">{product.model}</Text>
-            </View>
-          )}
+        <SellerSecurity
+          product={product}
+          onReport={product.sellerId ? () => setReportOpen(true) : undefined}
+          onViewReviews={product.sellerId ? openSellerReviews : undefined}
+        />
 
-          {product.condition === ProductCondition.USED && product.hoursOfUse && (
-            <View className="flex-row items-center mb-2">
-              <Text className="text-gray-500 w-24">Horas de uso:</Text>
-              <Text className="text-gray-900 font-medium">{product.hoursOfUse}h</Text>
-            </View>
-          )}
-
-          {product.condition === ProductCondition.USED && product.physicalState && (
-            <View className="flex-row items-center mb-4">
-              <Text className="text-gray-500 w-24">Estado físico:</Text>
-              <Text className="text-gray-900 font-medium">{product.physicalState}</Text>
-            </View>
-          )}
-
-          <Text className="text-lg font-semibold text-gray-900 mb-2">Descripción</Text>
-          <Text className="text-gray-700 leading-6 mb-6">{product.description}</Text>
-
-          {product.condition === ProductCondition.USED && verifications.length > 0 && (
-            <View className="mb-6">
-              <Text className="text-lg font-semibold text-gray-900 mb-3">
-                Informe de Verificación
-              </Text>
-              {verifications.map((verification) => (
-                <View
-                  key={verification.id}
-                  className="bg-gray-50 rounded-xl p-4 mb-3 border border-gray-200"
-                >
-                  <View className="flex-row items-center mb-2">
-                    <Ionicons
-                      name={
-                        verification.result === VerificationResult.PASS
-                          ? 'checkmark-circle'
-                          : verification.result === VerificationResult.FAIL
-                          ? 'close-circle'
-                          : 'alert-circle'
-                      }
-                      size={20}
-                      color={
-                        verification.result === VerificationResult.PASS
-                          ? '#16a34a'
-                          : verification.result === VerificationResult.FAIL
-                          ? '#dc2626'
-                          : '#f59e0b'
-                      }
-                    />
-                    <Text className="ml-2 font-semibold">
-                      {verification.result === VerificationResult.PASS
-                        ? 'Aprobado'
-                        : verification.result === VerificationResult.FAIL
-                        ? 'Rechazado'
-                        : 'Condicional'}
-                    </Text>
-                  </View>
-                  <Text className="text-gray-700">{verification.notes}</Text>
-                  {verification.functionalTest && (
-                    <Text className="text-gray-600 mt-1">
-                      Prueba funcional: {verification.functionalTest}
-                    </Text>
-                  )}
-                  {verification.cosmeticGrade && (
-                    <Text className="text-gray-600 mt-1">
-                      Grado cosmético: {verification.cosmeticGrade}
-                    </Text>
-                  )}
+        {knowItems.length > 0 ? (
+          <View className="px-4 pt-4">
+            <Text className="mb-2 text-base font-semibold text-text-primary">
+              Lo que tenés que saber de este producto
+            </Text>
+            <View className="flex flex-col gap-1.5">
+              {knowItems.map(([label, value]) => (
+                <View key={label} className="flex-row items-start gap-2">
+                  <Text className="text-text-muted">•</Text>
+                  <Text className="flex-1 text-xs leading-relaxed text-text-secondary">
+                    <Text className="text-text-primary">{label}: </Text>
+                    {value}
+                  </Text>
                 </View>
               ))}
             </View>
-          )}
+          </View>
+        ) : null}
 
-          <View className="bg-gray-50 rounded-xl p-4 mb-6">
-            <Text className="text-lg font-semibold text-gray-900 mb-2">Vendedor</Text>
-            <View className="flex-row items-center">
-              <View className="w-10 h-10 bg-blue-500 rounded-full justify-center items-center">
-                <Text className="text-white font-bold">
-                  {product.seller.name.charAt(0).toUpperCase()}
+        {product.priceFlag === 'suspicious' ? (
+          <View className="mx-4 mt-3 flex-row items-start gap-2.5 rounded-lg border border-amber-500/50 bg-amber-500/10 p-3">
+            <AppIcon name="notifications_active" size={18} color={colors.diagnosticAmber} />
+            <View className="flex-1">
+              <Text className="text-xs font-bold uppercase tracking-wide text-amber-300">Precio sospechoso</Text>
+              <Text className="mt-0.5 text-xs leading-relaxed text-amber-200/90">
+                Está un {Math.abs(product.priceDiffPct ?? 0)}% por debajo del promedio de mercado ($
+                {product.marketAveragePrice}). Verificá bien antes de comprar.
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
+        {product.warranty ? (
+          <View className="px-4 pt-4">
+            <View className="flex flex-col gap-2 rounded-xl border border-line bg-card p-4" style={shadow.panel}>
+              <View className="flex-row items-center gap-2">
+                <AppIcon
+                  name="security"
+                  size={20}
+                  color={product.warranty.extended ? colors.accentCyan : colors.accentEmerald}
+                />
+                <Text className="text-lg font-semibold text-text-primary">Garantía / Cobertura</Text>
+              </View>
+              <View
+                className={`self-start flex-row items-center gap-1.5 rounded border px-2.5 py-1 ${
+                  product.warranty.extended ? 'border-cyan-500/40 bg-cyan-950/40' : 'border-emerald-500/40 bg-emerald-500/10'
+                }`}
+              >
+                <AppIcon
+                  name="verified"
+                  size={13}
+                  color={product.warranty.extended ? colors.accentCyan : colors.accentEmerald}
+                />
+                <Text
+                  className="font-mono text-[11px] font-bold tracking-wider"
+                  style={{ color: product.warranty.extended ? '#67e8f9' : colors.accentEmerald }}
+                >
+                  {product.warranty.extended
+                    ? 'COBERTURA EXTENDIDA'
+                    : `GARANTÍA TECHSHIELD ${product.warranty.days} DÍAS`}
                 </Text>
               </View>
-              <View className="ml-3">
-                <Text className="font-medium text-gray-900">{product.seller.name}</Text>
-                <Text className="text-gray-500 text-sm">
-                  Miembro desde {new Date(product.seller.createdAt).toLocaleDateString()}
+              <Text className="text-xs leading-relaxed text-text-secondary">
+                {product.warranty.label}. Cobertura de la empresa hasta 45 días desde la compra: un técnico de
+                TechShield puede revisar o reparar el producto.
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
+        <VerificationData product={product} />
+
+        {variations.length > 0 ? (
+          <View className="px-4 pt-4">
+            <View className="flex flex-col gap-2 rounded-xl border border-line bg-card p-4" style={shadow.panel}>
+              <View className="flex-row items-center gap-2">
+                <AppIcon name="tune" size={20} color={colors.accentCyan} />
+                <Text className="text-lg font-semibold text-text-primary">{t('variations.title')}</Text>
+              </View>
+              {variations.map((v) => (
+                <View
+                  key={v.id}
+                  className="flex-row items-center justify-between rounded-lg border border-line/60 bg-surface p-2.5"
+                >
+                  <View className="min-w-0 flex-1">
+                    <Text className="text-sm font-semibold text-text-primary">{v.sku}</Text>
+                    {v.attributes ? (
+                      <Text className="text-xs text-text-secondary">
+                        {Object.entries(v.attributes)
+                          .map(([k, val]) => `${k}: ${val}`)
+                          .join(' · ')}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <View className="items-end">
+                    {Number(v.priceDelta) !== 0 ? (
+                      <Text className="font-mono text-xs text-text-secondary">
+                        {Number(v.priceDelta) > 0 ? '+' : ''}
+                        {Number(v.priceDelta).toFixed(2)}
+                      </Text>
+                    ) : null}
+                    <Text
+                      className="font-mono text-[11px] font-semibold"
+                      style={{ color: v.stock > 0 ? colors.accentEmerald : colors.diagnosticRed }}
+                    >
+                      {v.stock > 0 ? t('variations.stock', { n: v.stock }) : t('variations.out')}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : null}
+
+        {/* Report */}
+        {product.report ? (
+          <View className="px-4 pt-4">
+            <View className="flex flex-col gap-4 rounded-xl border border-line bg-card p-4" style={shadow.panel}>
+              {/* Report header */}
+              <View
+                className="-m-4 mb-0 flex-row items-start justify-between gap-2 rounded-t-xl border-b border-line bg-elevated/70 p-4"
+              >
+                <View className="flex-row items-center gap-3">
+                  <View
+                    className="h-10 w-10 shrink-0 items-center justify-center rounded-full border border-secondary/40 bg-secondary/20"
+                    style={shadow.panel}
+                  >
+                    <AppIcon name="task_alt" size={24} color={colors.secondary} />
+                  </View>
+                  <View>
+                    <Text className="text-xl font-semibold text-text-primary">Reporte Técnico Oficial</Text>
+                    <Text className="font-mono text-[11px] text-text-secondary">{product.report.code}</Text>
+                  </View>
+                </View>
+                <View className="rounded-full border border-line bg-surface px-2.5 py-1">
+                  <Text className="font-mono text-[10px] font-semibold tracking-wider text-tertiary">
+                    {product.report.tests}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Battery */}
+              {product.report.battery ? (
+                <View className="flex flex-col gap-2 rounded-lg border border-line/70 bg-elevated p-2.5">
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center gap-1.5">
+                      <AppIcon name="battery_charging_full" size={18} color={colors.secondary} />
+                      <Text className="font-mono text-[11px] font-semibold text-text-primary">
+                        {product.report.battery.label}
+                      </Text>
+                    </View>
+                    <Text className="font-mono text-base font-bold tracking-wide text-secondary">
+                      {product.report.battery.value}
+                    </Text>
+                  </View>
+                  <ProgressBar percent={product.report.battery.percent} height={10} />
+                  <View className="flex-row items-center justify-between">
+                    <Text className="font-mono text-[11px] text-text-secondary">
+                      {product.report.battery.subLeft}
+                    </Text>
+                    <Text className="font-mono text-[11px] text-text-secondary">
+                      {product.report.battery.subRight}
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
+
+              {/* Checklist */}
+              {product.report.checklist ? (
+                <View className="flex flex-col gap-2.5">
+                  {product.report.checklist.map((item) => (
+                    <View key={item.title} className="flex-row items-start gap-3 rounded-lg border border-line/60 bg-elevated p-2.5">
+                      <AppIcon name={item.icon} size={20} color={colors.secondary} style={{ marginTop: 2 }} />
+                      <View className="min-w-0 flex-1">
+                        <View className="flex-row items-center justify-between">
+                          <Text className="text-sm font-semibold text-text-primary">{item.title}</Text>
+                          <View className="rounded border border-secondary/30 bg-secondary/10 px-2 py-0.5">
+                            <Text className="font-mono text-[11px] font-bold text-secondary">{item.status}</Text>
+                          </View>
+                        </View>
+                        <Text className="mt-0.5 text-xs text-text-secondary">{item.desc}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+
+              {/* Hash */}
+              <View className="flex-row items-center justify-between pt-1">
+                <Text className="font-mono text-[11px] text-text-muted">{product.report.hash}</Text>
+                <Pressable className="flex-row items-center gap-0.5">
+                  <Text className="text-[11px] font-semibold text-primary">Ver informe PDF</Text>
+                  <AppIcon name="open_in_new" size={14} color={colors.primary} />
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        ) : null}
+
+        {/* Seller */}
+        {product.seller ? (
+          <View className="px-4 pt-4">
+            <View className="flex-row items-center justify-between gap-3 rounded-xl border border-line bg-card p-4" style={shadow.panel}>
+              <View className="flex-row items-center gap-3">
+                <View className="relative">
+                  <Avatar uri={product.seller.avatar} size={48} ringColor={colors.line} />
+                  <View className="absolute -bottom-1 -right-1 h-4 w-4 items-center justify-center rounded-full bg-secondary">
+                    <Text className="text-[10px] font-bold text-on-secondary">✓</Text>
+                  </View>
+                </View>
+                <View>
+                  <View className="flex-row items-center gap-1.5">
+                    <Text className="text-xl font-semibold text-text-primary">{product.seller.name}</Text>
+                    {product.seller.pro ? (
+                      <View className="rounded border border-primary/30 bg-primary/20 px-1.5 py-0.5">
+                        <Text className="font-mono text-[10px] font-bold text-primary">PRO</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                  <Text className="text-xs text-text-secondary">{product.seller.since}</Text>
+                </View>
+              </View>
+              <View className="shrink-0 items-end">
+                <View className="flex-row items-center gap-1">
+                  <AppIcon name="star" size={16} color={colors.diagnosticAmber} />
+                  <Text className="font-mono text-[11px] font-semibold text-text-primary">{product.seller.rating}</Text>
+                </View>
+                <Text className="font-mono text-[11px] font-medium text-secondary">{product.seller.positive}</Text>
+              </View>
+            </View>
+          </View>
+        ) : null}
+
+        {/* Garantía */}
+        <View className="px-4 pt-4">
+          <View className="flex flex-col gap-4 rounded-xl border border-line bg-card p-4" style={shadow.panel}>
+            <View className="flex-row items-center gap-2">
+              <AppIcon name="security" size={22} color={colors.secondary} />
+              <Text className="text-xl font-semibold text-text-primary">Garantía TechShield Total</Text>
+            </View>
+            <View className="flex-row gap-2">
+              <View className="flex-1 flex-col gap-1 rounded-lg border border-line/60 bg-surface p-2.5">
+                <View className="flex-row items-center gap-1.5">
+                  <AppIcon name="verified" size={16} color={colors.secondary} />
+                  <Text className="font-mono text-[11px] font-semibold text-secondary">90 DÍAS</Text>
+                </View>
+                <Text className="text-xs text-text-secondary">
+                  Garantía de hardware completa gestionada directamente por TechShield.
+                </Text>
+              </View>
+              <View className="flex-1 flex-col gap-1 rounded-lg border border-line/60 bg-surface p-2.5">
+                <View className="flex-row items-center gap-1.5">
+                  <AppIcon name="replay" size={16} color={colors.secondary} />
+                  <Text className="font-mono text-[11px] font-semibold text-secondary">14 DÍAS</Text>
+                </View>
+                <Text className="text-xs text-text-secondary">
+                  Devolución sin preguntas si no cumple con la descripción técnica.
+                </Text>
+              </View>
+            </View>
+            <View className="flex-row items-start gap-2.5 rounded-lg border border-line/60 bg-surface p-2.5">
+              <AppIcon name="account_balance_wallet" size={20} color={colors.primary} style={{ marginTop: 2 }} />
+              <View className="flex-1">
+                <Text className="font-mono text-[11px] font-bold text-primary">
+                  PAGO PROTEGIDO EN CUSTODIA (ESCROW)
+                </Text>
+                <Text className="mt-0.5 text-xs text-text-secondary">
+                  Tu dinero se mantiene seguro y congelado en TechShield. El vendedor no cobra hasta que recibas el
+                  equipo y verifiques su estado.
                 </Text>
               </View>
             </View>
           </View>
         </View>
+
+        {/* Specs */}
+        {product.specs ? (
+          <View className="px-4 pt-4">
+            <View className="flex flex-col gap-2 rounded-xl border border-line bg-card p-4" style={shadow.panel}>
+              <Text className="text-xl font-semibold text-text-primary">Especificaciones Validadas</Text>
+              {product.specs.map(([label, value], i) => (
+                <View
+                  key={label}
+                  className="flex-row items-center justify-between py-2"
+                  style={i < product.specs!.length - 1 ? { borderBottomWidth: 1, borderBottomColor: colors.line } : undefined}
+                >
+                  <Text className="font-mono text-[11px] text-text-secondary">{label}</Text>
+                  <Text className="font-mono text-[11px] font-semibold text-text-primary">{value}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : null}
       </ScrollView>
 
-      <View className="bg-white border-t border-gray-200 px-4 py-4 flex-row items-center justify-between">
-        <View>
-          <Text className="text-gray-500 text-sm">Precio</Text>
-          <Text className="text-2xl font-bold text-blue-600">
-            ${product.price.toLocaleString()}
-          </Text>
+      {/* Report modal */}
+      <Modal visible={reportOpen} transparent animationType="fade" onRequestClose={() => setReportOpen(false)}>
+        <View className="flex-1 items-center justify-center bg-black/70 px-6">
+          <View className="w-full rounded-2xl border border-line bg-panel p-5" style={shadow.card}>
+            <View className="flex-row items-center gap-2">
+              <AppIcon name="report" size={20} color={colors.diagnosticRed} />
+              <Text className="text-lg font-semibold text-text-primary">Reportar vendedor</Text>
+            </View>
+            <Text className="mt-1 text-xs leading-relaxed text-text-secondary">
+              {product.sellerName ?? 'Este vendedor'}. Contanos qué pasó: intentos de pago fuera de la plataforma,
+              estafa, producto defectuoso, etc.
+            </Text>
+            <TextInput
+              value={reportReason}
+              onChangeText={setReportReason}
+              placeholder="Motivo del reporte (mínimo 10 caracteres)"
+              placeholderTextColor={colors.textMuted}
+              multiline
+              className="mt-3 min-h-[90px] rounded-xl border border-line bg-surface-low p-3 text-sm text-text-primary"
+            />
+            {reportError ? <Text className="mt-2 text-xs text-diagnostic-red">{reportError}</Text> : null}
+            <View className="mt-4 flex-row gap-2">
+              <Pressable
+                onPress={() => setReportOpen(false)}
+                className="flex-1 items-center justify-center rounded-xl border border-line bg-elevated py-3"
+              >
+                <Text className="text-sm font-semibold text-text-secondary">Cancelar</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleReport}
+                disabled={reportSending}
+                className="flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-red-500 py-3"
+                style={reportSending ? { opacity: 0.7 } : undefined}
+              >
+                {reportSending ? (
+                  <AppIcon name="sync" size={16} color="#ffffff" />
+                ) : (
+                  <AppIcon name="report" size={16} color="#ffffff" />
+                )}
+                <Text className="text-sm font-semibold text-white">Enviar</Text>
+              </Pressable>
+            </View>
+          </View>
         </View>
-        <TouchableOpacity
-          className="bg-blue-500 px-8 py-4 rounded-xl flex-row items-center"
-          onPress={handleBuy}
+      </Modal>
+
+      {/* Sticky purchase bar */}
+      <View
+        className="w-full flex-row items-center gap-3 bg-surface/95 px-4 py-3"
+        style={{ borderTopWidth: 1, borderTopColor: colors.line, ...shadow.bottom }}
+      >
+        <View>
+          <Text className="font-mono text-[11px] text-text-secondary">{t('product.finalPrice')}</Text>
+          <View className="flex-row items-baseline gap-1">
+            <Text className="text-2xl font-bold text-text-primary">${product.price}</Text>
+            <Text className="font-mono text-[11px] text-text-secondary">{product.currency}</Text>
+          </View>
+        </View>
+        <Pressable
+          onPress={handleAddToCart}
+          disabled={outOfStock}
+          className="h-[52px] w-[52px] items-center justify-center rounded-xl border border-line bg-panel"
+          style={outOfStock ? { opacity: 0.5 } : undefined}
         >
-          <Ionicons name="cart" size={20} color="white" />
-          <Text className="text-white font-bold text-lg ml-2">Comprar</Text>
-        </TouchableOpacity>
+          <AppIcon
+            name={addedToCart ? 'check' : 'shopping_cart'}
+            size={22}
+            color={addedToCart ? colors.accentEmerald : colors.secondary}
+          />
+        </Pressable>
+        <Pressable
+          onPress={outOfStock ? undefined : handleBuy}
+          disabled={outOfStock}
+          className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl py-3.5 ${
+            outOfStock ? 'bg-elevated' : 'bg-secondary'
+          }`}
+          style={outOfStock ? undefined : shadow.panel}
+        >
+          <AppIcon
+            name={outOfStock ? 'block' : 'lock'}
+            size={20}
+            color={outOfStock ? colors.textMuted : colors.onSecondary}
+          />
+          <Text className={`text-[15px] font-semibold ${outOfStock ? 'text-text-muted' : 'text-on-secondary'}`}>
+            {outOfStock ? t('product.outOfStock') : t('product.buy')}
+          </Text>
+        </Pressable>
       </View>
+
+      {/* Seller reviews modal */}
+      <Modal
+        visible={reviewsOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setReviewsOpen(false)}
+      >
+        <View className="flex-1 items-center justify-end bg-black/70">
+          <View className="h-[75%] w-full rounded-t-3xl border-t border-line bg-panel p-5" style={shadow.bottom}>
+            <View className="flex-row items-center justify-between">
+              <View className="flex-row items-center gap-2">
+                <AppIcon name="star" size={20} color={colors.diagnosticAmber} />
+                <Text className="text-lg font-semibold text-text-primary">Reseñas del vendedor</Text>
+              </View>
+              <Pressable onPress={() => setReviewsOpen(false)} className="h-9 w-9 items-center justify-center rounded-lg bg-panel">
+                <AppIcon name="close" size={20} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+
+            <ScrollView className="mt-3 flex-1" showsVerticalScrollIndicator={false}>
+              {reviewsLoading ? (
+                <View className="items-center justify-center py-16">
+                  <ActivityIndicator color={colors.secondary} size="large" />
+                </View>
+              ) : reviewsError ? (
+                <View className="flex-row items-start gap-2 rounded-lg border border-red-500/40 bg-red-500/10 p-3">
+                  <AppIcon name="report" size={18} color={colors.diagnosticRed} />
+                  <Text className="flex-1 text-xs leading-relaxed text-red-400">{reviewsError}</Text>
+                </View>
+              ) : sellerReviews.length === 0 ? (
+                <View className="items-center justify-center gap-2 py-16">
+                  <AppIcon name="star_border" size={30} color={colors.textMuted} />
+                  <Text className="text-sm font-semibold text-text-primary">Sin reseñas aún</Text>
+                  <Text className="text-center text-xs text-text-secondary">
+                    Este vendedor todavía no tiene reseñas aprobadas.
+                  </Text>
+                </View>
+              ) : (
+                <View className="flex flex-col gap-3 pb-6">
+                  {sellerReviews.map((review) => (
+                    <View key={review.id} className="rounded-xl border border-line bg-panel p-3.5">
+                      <View className="flex-row items-center justify-between">
+                        <View className="flex-row items-center gap-2">
+                          <View className="h-7 w-7 items-center justify-center rounded-full bg-elevated">
+                            <Text className="text-[11px] font-bold text-accent-cyan">
+                              {(review.buyer?.name ?? 'C').charAt(0).toUpperCase()}
+                            </Text>
+                          </View>
+                          <Text className="text-sm font-semibold text-text-primary">
+                            {review.buyer?.name ?? 'Comprador verificado'}
+                          </Text>
+                        </View>
+                        <View className="flex-row items-center gap-1">
+                          <AppIcon name="star" size={15} color={colors.diagnosticAmber} />
+                          <Text className="font-mono text-xs font-bold text-text-primary">{review.rating}</Text>
+                        </View>
+                      </View>
+                      <View className="mt-2 flex-row flex-wrap items-center gap-1.5">
+                        <View
+                          className={`rounded border px-1.5 py-0.5 ${
+                            review.type === 'positive'
+                              ? 'border-emerald-500/40 bg-emerald-500/10'
+                              : review.type === 'neutral'
+                                ? 'border-cyan-500/40 bg-cyan-500/10'
+                                : 'border-red-500/40 bg-red-500/10'
+                          }`}
+                        >
+                          <Text
+                            className="font-mono text-[10px] font-semibold uppercase tracking-wider"
+                            style={{
+                              color:
+                                review.type === 'positive'
+                                  ? colors.accentEmerald
+                                  : review.type === 'neutral'
+                                    ? colors.accentCyan
+                                    : colors.diagnosticRed,
+                            }}
+                          >
+                            {review.type}
+                          </Text>
+                        </View>
+                        {review.isVerifiedPurchase ? (
+                          <View className="flex-row items-center gap-1 rounded border border-sky-500/40 bg-sky-950/50 px-1.5 py-0.5">
+                            <AppIcon name="verified" size={11} color="#7dd3fc" />
+                            <Text className="font-mono text-[10px] font-semibold text-sky-300">COMPRA VERIFICADA</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                      {review.comment ? (
+                        <Text className="mt-2 text-xs leading-relaxed text-text-secondary">{review.comment}</Text>
+                      ) : null}
+                      {review.type === 'complaint' && review.complaintReason ? (
+                        <View className="mt-2 rounded-lg border border-red-500/30 bg-red-500/5 p-2">
+                          <Text className="text-xs leading-relaxed text-red-300/90">{review.complaintReason}</Text>
+                        </View>
+                      ) : null}
+                      <Text className="mt-2 font-mono text-[10px] text-text-muted">
+                        {new Date(review.createdAt).toLocaleDateString()}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Checkout modal */}
+      <Modal
+        visible={checkoutOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCheckoutOpen(false)}
+      >
+        <View className="flex-1 items-center justify-end bg-black/70">
+          <View className="w-full rounded-t-3xl border-t border-line bg-panel p-5" style={shadow.bottom}>
+            {createdOrder ? (
+              <View className="flex flex-col items-center gap-3 py-4">
+                <View
+                  className="h-16 w-16 items-center justify-center rounded-2xl border border-secondary/40 bg-secondary/10"
+                  style={glow(colors.secondary, 18, 0.35)}
+                >
+                  <AppIcon name="check_circle" size={34} color={colors.accentEmerald} />
+                </View>
+                <Text className="text-xl font-bold text-text-primary">{t('product.checkout.success')}</Text>
+                <Text className="text-center text-xs leading-relaxed text-text-secondary">
+                  Tus {product.currency} ${Number(createdOrder.total).toFixed(2)} quedaron retenidos en la bóveda
+                  TechShield. El vendedor no cobra hasta que recibas y verifiques el producto.
+                </Text>
+                <View className="mt-1 flex-row items-center gap-1.5 rounded-lg border border-line bg-panel px-3 py-2">
+                  <AppIcon name="verified" size={15} color={colors.accentCyan} />
+                  <Text className="font-mono text-[11px] text-text-secondary">
+                    ORDER ID: #{createdOrder.id.slice(0, 8).toUpperCase()}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => {
+                    setCheckoutOpen(false);
+                    nav.go({ name: 'inspection', orderId: createdOrder.id });
+                  }}
+                  className="mt-2 w-full flex-row items-center justify-center gap-2 rounded-xl bg-secondary py-3.5"
+                  style={shadow.panel}
+                >
+                  <AppIcon name="verified_user" size={20} color={colors.onSecondary} />
+                  <Text className="text-base font-semibold text-on-secondary">
+                    Ver seguimiento en custodia
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setCheckoutOpen(false)}
+                  className="w-full items-center justify-center rounded-xl border border-line bg-panel py-3"
+                >
+                  <Text className="text-sm font-semibold text-text-secondary">{t('product.checkout.keepExploring')}</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <>
+                <View className="flex-row items-center gap-2">
+                  <AppIcon name="account_balance_wallet" size={20} color={colors.accentCyan} />
+                  <Text className="text-lg font-semibold text-text-primary">{t('product.checkout.title')}</Text>
+                </View>
+
+                <View className="mt-3 flex-row items-center gap-3 rounded-xl border border-line bg-panel p-3">
+                  <View className="h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-surface-low">
+                    <AppIcon name="hardware" size={24} color={colors.accentCyan} />
+                  </View>
+                  <View className="min-w-0 flex-1">
+                    <Text className="truncate text-sm font-semibold text-text-primary">{product.title}</Text>
+                    <Text className="font-mono text-xs text-text-secondary">Custodia escrow incluida</Text>
+                  </View>
+                  <Text className="text-lg font-bold text-text-primary">
+                    ${couponApplied ? couponApplied.finalTotal.toFixed(2) : product.price}
+                  </Text>
+                </View>
+
+                <Text className="mb-1.5 mt-4 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+                  Dirección de envío *
+                </Text>
+                <TextInput
+                  value={shippingAddress}
+                  onChangeText={setShippingAddress}
+                  placeholder="Ej: Av. Corrientes 1234, CABA"
+                  placeholderTextColor={colors.textMuted}
+                  className="w-full rounded-xl border border-line bg-panel px-3 py-2.5 text-sm text-text-primary"
+                />
+
+                <Text className="mb-1.5 mt-4 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+                  Método de pago
+                </Text>
+                <View className="flex-row gap-2">
+                  {(['credit_card', 'bank_transfer', 'crypto'] as const).map((method) => {
+                    const active = paymentMethod === method;
+                    const labels: Record<string, string> = {
+                      credit_card: 'Tarjeta',
+                      bank_transfer: 'Transferencia',
+                      crypto: 'Cripto',
+                    };
+                    return (
+                      <Pressable
+                        key={method}
+                        onPress={() => setPaymentMethod(method)}
+                        className="flex-1 items-center rounded-xl border px-2 py-2.5"
+                        style={{
+                          borderColor: active ? colors.secondary : colors.line,
+                          backgroundColor: active ? colors.successSoft : colors.panel,
+                          ...(active ? glow(colors.secondary, 8, 0.15) : undefined),
+                        }}
+                      >
+                        <Text
+                          className="font-mono text-[11px] font-semibold"
+                          style={{ color: active ? colors.accentEmerald : colors.textSecondary }}
+                        >
+                          {labels[method]}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                <Text className="mb-1.5 mt-4 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+                  {t('product.checkout.coupon')}
+                </Text>
+                <View className="flex-row gap-2">
+                  <TextInput
+                    value={couponCode}
+                    onChangeText={(v) => {
+                      setCouponCode(v);
+                      setCouponError(null);
+                    }}
+                    placeholder={t('product.checkout.couponPh')}
+                    placeholderTextColor={colors.textMuted}
+                    autoCapitalize="characters"
+                    className="flex-1 rounded-xl border border-line bg-panel px-3 py-2.5 text-sm text-text-primary"
+                  />
+                  <Pressable
+                    onPress={handleApplyCoupon}
+                    disabled={couponApplying || !couponCode.trim()}
+                    className="items-center justify-center rounded-xl border border-line bg-elevated px-4"
+                    style={couponApplying ? { opacity: 0.7 } : undefined}
+                  >
+                    {couponApplying ? (
+                      <AppIcon name="sync" size={16} color={colors.textPrimary} />
+                    ) : (
+                      <Text className="text-xs font-semibold text-primary">
+                        {t('product.checkout.couponApply')}
+                      </Text>
+                    )}
+                  </Pressable>
+                </View>
+                {couponError ? (
+                  <Text className="mt-2 text-xs text-red-400">{couponError}</Text>
+                ) : null}
+                {couponApplied ? (
+                  <View className="mt-2 flex-row items-center justify-between rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2">
+                    <Text className="text-xs font-semibold text-emerald-300">
+                      {t('product.checkout.couponApplied', { code: couponApplied.code })}
+                    </Text>
+                    <Text className="text-xs font-bold text-emerald-300">
+                      -${couponApplied.discount.toFixed(2)}
+                    </Text>
+                  </View>
+                ) : null}
+
+                {orderError ? (
+                  <View className="mt-3 flex-row items-start gap-2 rounded-lg border border-red-500/40 bg-red-500/10 p-3">
+                    <AppIcon name="report" size={18} color={colors.diagnosticRed} />
+                    <Text className="flex-1 text-xs leading-relaxed text-red-400">{orderError}</Text>
+                  </View>
+                ) : null}
+
+                <View className="mt-4 flex-row gap-2">
+                  <Pressable
+                    onPress={() => setCheckoutOpen(false)}
+                    className="flex-1 items-center justify-center rounded-xl border border-line bg-panel py-3"
+                  >
+                    <Text className="text-sm font-semibold text-text-secondary">Cancelar</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={handlePlaceOrder}
+                    disabled={placing}
+                    className="flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-secondary py-3"
+                    style={placing ? { opacity: 0.7 } : undefined}
+                  >
+                    {placing ? (
+                      <AppIcon name="sync" size={18} color={colors.onSecondary} />
+                    ) : (
+                      <AppIcon name="lock" size={18} color={colors.onSecondary} />
+                    )}
+                    <Text className="text-sm font-semibold text-on-secondary">
+                      {placing ? t('product.checkout.placing') : t('product.checkout.place')}
+                    </Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

@@ -1,10 +1,14 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Verification, VerificationResult } from './verification.entity';
-import { CreateVerificationDto } from './dto';
-import { ProductsService } from '../products/products.service';
-import { ProductCondition, ProductStatus } from '../products/product.entity';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Verification, VerificationResult } from "./verification.entity";
+import { CreateVerificationDto } from "./dto";
+import { ProductsService } from "../products/products.service";
+import { ProductCondition, ProductStatus } from "../products/product.entity";
 
 @Injectable()
 export class VerificationsService {
@@ -14,11 +18,18 @@ export class VerificationsService {
     private readonly productsService: ProductsService,
   ) {}
 
-  async create(createVerificationDto: CreateVerificationDto, verifiedBy: string): Promise<Verification> {
-    const product = await this.productsService.findOne(createVerificationDto.productId);
+  async create(
+    createVerificationDto: CreateVerificationDto,
+    verifiedBy: string,
+  ): Promise<Verification> {
+    const product = await this.productsService.findOne(
+      createVerificationDto.productId,
+    );
 
     if (product.condition !== ProductCondition.USED) {
-      throw new BadRequestException('Solo se pueden verificar productos usados');
+      throw new BadRequestException(
+        "Solo se pueden verificar productos usados",
+      );
     }
 
     const verification = this.verificationRepository.create({
@@ -26,11 +37,13 @@ export class VerificationsService {
       verifiedBy,
     });
 
-    const savedVerification = await this.verificationRepository.save(verification);
+    const savedVerification =
+      await this.verificationRepository.save(verification);
 
-    const newStatus = createVerificationDto.result === VerificationResult.PASS
-      ? ProductStatus.VERIFIED
-      : ProductStatus.DRAFT;
+    const newStatus =
+      createVerificationDto.result === VerificationResult.PASS
+        ? ProductStatus.VERIFIED
+        : ProductStatus.DRAFT;
 
     await this.productsService.update(product.id, {
       status: newStatus,
@@ -44,19 +57,19 @@ export class VerificationsService {
   async findByProduct(productId: string): Promise<Verification[]> {
     return this.verificationRepository.find({
       where: { productId },
-      relations: ['verifier'],
-      order: { createdAt: 'DESC' },
+      relations: ["verifier"],
+      order: { createdAt: "DESC" },
     });
   }
 
   async findOne(id: string): Promise<Verification> {
     const verification = await this.verificationRepository.findOne({
       where: { id },
-      relations: ['product', 'verifier'],
+      relations: ["product", "verifier"],
     });
 
     if (!verification) {
-      throw new NotFoundException('Verificación no encontrada');
+      throw new NotFoundException("Verificación no encontrada");
     }
 
     return verification;

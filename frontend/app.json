@@ -1,29 +1,73 @@
 {
   "expo": {
-    "name": "ERS Components",
-    "slug": "ers-components",
+    "name": "TechShield",
+    "slug": "techshield",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./src/assets/icon.png",
-    "userInterfaceStyle": "light",
-    "scheme": "ers-components",
-    "splash": {
-      "image": "./src/assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "assetBundlePatterns": ["**/*"],
+    "icon": "./assets/icon.png",
+    "scheme": "techshield",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#0b1326",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ers.components"
+      "bundleIdentifier": "com.techshield.app"
     },
     "android": {
+      "package": "com.techshield.app",
+      "backgroundColor": "#0b1326",
       "adaptiveIcon": {
-        "foregroundImage": "./src/assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "com.ers.components"
+      "predictiveBackGestureEnabled": false
     },
-    "plugins": ["expo-router", "expo-secure-store"]
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png",
+      "name": "TechShield — Marketplace Verificado",
+      "shortName": "TechShield",
+      "description": "Compra y venta de hardware y móviles verificados con custodia (escrow), auditoría técnica y garantía TechShield.",
+      "lang": "es",
+      "themeColor": "#0b1326",
+      "backgroundColor": "#0b1326",
+      "display": "standalone",
+      "startUrl": "/",
+      "scope": "/",
+      "orientation": "portrait",
+      "splash": {
+        "image": "./assets/splash-icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#0b1326"
+      }
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-router",
+      "expo-image",
+      "expo-asset",
+      "expo-localization",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Permitir a TechShield usar Face ID para iniciar sesión."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permitir a TechShield acceder a tus fotos para publicar productos."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#0b1326"
+        }
+      ]
+    ]
   }
 }

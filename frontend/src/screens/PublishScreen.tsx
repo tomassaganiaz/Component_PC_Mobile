@@ -1,222 +1,426 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { productService } from '../../services/productService';
-import { ProductCondition, ProductCategory } from '../../types';
+import { useState } from 'react';
+import { Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 
-const categoryOptions = [
-  { label: 'GPU', value: ProductCategory.GPU },
-  { label: 'CPU', value: ProductCategory.CPU },
-  { label: 'RAM', value: ProductCategory.RAM },
-  { label: 'Almacenamiento', value: ProductCategory.STORAGE },
-  { label: 'Motherboard', value: ProductCategory.MOTHERBOARD },
-  { label: 'Fuente', value: ProductCategory.PSU },
-  { label: 'Gabinete', value: ProductCategory.CASE },
-  { label: 'Refrigeración', value: ProductCategory.COOLING },
-  { label: 'Monitor', value: ProductCategory.MONITOR },
-  { label: 'Teclado', value: ProductCategory.KEYBOARD },
-  { label: 'Mouse', value: ProductCategory.MOUSE },
-  { label: 'Celular', value: ProductCategory.PHONE },
-  { label: 'Tablet', value: ProductCategory.TABLET },
-  { label: 'Otro', value: ProductCategory.OTHER },
+import AppHeader from '../components/AppHeader';
+import AppIcon from '../components/AppIcon';
+import BottomNav from '../components/BottomNav';
+import { Segmented } from '../components/ui';
+import { useI18n } from '../i18n';
+import { createProduct, uploadImage } from '../services/api';
+import { colors, glow, shadow } from '../theme';
+import type { Nav } from '../types';
+
+const CATEGORIES: { value: string; label: string; icon: string }[] = [
+  { value: 'cpu', label: 'Procesador', icon: 'memory' },
+  { value: 'gpu', label: 'GPU', icon: 'developer_board' },
+  { value: 'phone', label: 'Smartphone', icon: 'smartphone' },
+  { value: 'motherboard', label: 'Motherboard', icon: 'developer_board' },
+  { value: 'ram', label: 'RAM', icon: 'memory' },
+  { value: 'storage', label: 'Almacenamiento', icon: 'storage' },
+  { value: 'monitor', label: 'Monitor', icon: 'screenshot_monitor' },
+  { value: 'laptop', label: 'Laptop', icon: 'laptop_chromebook' },
+  { value: 'other', label: 'Otro', icon: 'hardware' },
 ];
 
-export default function PublishScreen() {
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <Text className="mb-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+      {children}
+    </Text>
+  );
+}
+
+function Input({
+  value,
+  onChangeText,
+  placeholder,
+  multiline,
+  numeric,
+}: {
+  value: string;
+  onChangeText: (v: string) => void;
+  placeholder: string;
+  multiline?: boolean;
+  numeric?: boolean;
+}) {
+  return (
+    <TextInput
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={placeholder}
+      placeholderTextColor={colors.textMuted}
+      multiline={multiline}
+      keyboardType={numeric ? 'numeric' : 'default'}
+      className={`w-full rounded-xl border border-line bg-panel px-3 text-sm text-text-primary ${
+        multiline ? 'min-h-[84px] py-3' : 'py-2.5'
+      }`}
+    />
+  );
+}
+
+export default function PublishScreen({ nav }: { nav: Nav }) {
+  const { t } = useI18n();
   const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [price, setPrice] = useState('');
-  const [condition, setCondition] = useState<ProductCondition>(ProductCondition.NEW);
-  const [category, setCategory] = useState<ProductCategory>(ProductCategory.GPU);
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
-  const [hoursOfUse, setHoursOfUse] = useState('');
+  const [category, setCategory] = useState('cpu');
+  const [condition, setCondition] = useState(0);
+  const [price, setPrice] = useState('');
+  const [stock, setStock] = useState('1');
+  const [broken, setBroken] = useState(false);
+  const [brokenTag, setBrokenTag] = useState<'reparable' | 'parts'>('reparable');
+  const [repairPrice, setRepairPrice] = useState('');
+  const [description, setDescription] = useState('');
+  const [usageType, setUsageType] = useState('');
+  const [hours, setHours] = useState('');
+  const [reportedHours, setReportedHours] = useState('');
   const [physicalState, setPhysicalState] = useState('');
+  const [images, setImages] = useState<string[]>([]);
 
-  const handleSubmit = async () => {
-    if (!title || !description || !price) {
-      Alert.alert('Error', 'Por favor completa los campos obligatorios');
-      return;
-    }
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [publishedId, setPublishedId] = useState<string | null>(null);
 
+  const pickImages = async () => {
     try {
-      setIsLoading(true);
-      await productService.create({
-        title,
-        description,
-        price: parseFloat(price),
-        condition,
-        category,
-        brand: brand || undefined,
-        model: model || undefined,
-        hoursOfUse: condition === ProductCondition.USED ? parseInt(hoursOfUse) || undefined : undefined,
-        physicalState: condition === ProductCondition.USED ? physicalState || undefined : undefined,
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        setError(t('publish.errPhotos'));
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        selectionLimit: 4,
+        quality: 0.7,
       });
-
-      Alert.alert('Éxito', 'Producto publicado correctamente', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
-    } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Error al publicar producto');
-    } finally {
-      setIsLoading(false);
+      if (!result.canceled) {
+        setImages((prev) =>
+          [...prev, ...result.assets.map((a) => a.uri)].slice(0, 4),
+        );
+      }
+    } catch {
+      setError(t('publish.errPhotos'));
     }
   };
 
-  return (
-    <View className="flex-1 bg-white">
-      <View className="bg-white px-4 pt-12 pb-4 border-b border-gray-200">
-        <View className="flex-row items-center">
-          <TouchableOpacity onPress={() => router.back()} className="mr-4">
-            <Ionicons name="arrow-back" size={24} color="#111827" />
-          </TouchableOpacity>
-          <Text className="text-xl font-bold text-gray-900">Publicar Producto</Text>
+  const handlePublish = async () => {
+    setError(null);
+    if (title.trim().length < 5) {
+      setError(t('publish.errTitle'));
+      return;
+    }
+    const parsedPrice = Number(price);
+    if (!price.trim() || Number.isNaN(parsedPrice) || parsedPrice <= 0) {
+      setError(t('publish.errPrice'));
+      return;
+    }
+    if (stock.trim() && (Number.isNaN(Number(stock)) || Number(stock) < 0)) {
+      setError(t('publish.errStock'));
+      return;
+    }
+    if (description.trim().length < 10) {
+      setError(t('publish.errDesc'));
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      // Sube las fotos al backend (quedan servidas en /static/uploads).
+      let uploadedImages: string[] | undefined;
+      if (images.length) {
+        uploadedImages = [];
+        for (const uri of images) {
+          try {
+            const { url } = await uploadImage(uri);
+            uploadedImages.push(url);
+          } catch {
+            uploadedImages.push(uri);
+          }
+        }
+      }
+
+      const created = await createProduct({
+        title: title.trim(),
+        description: description.trim(),
+        price: parsedPrice,
+        condition: condition === 0 ? 'new' : 'used',
+        category,
+        brand: brand.trim() || undefined,
+        model: model.trim() || undefined,
+        usageType: usageType.trim() || undefined,
+        physicalState: physicalState.trim() || undefined,
+        hoursOfUse: hours.trim() ? Number(hours) : undefined,
+        reportedHoursOfUse: reportedHours.trim() ? Number(reportedHours) : undefined,
+        stock: stock.trim() ? Number(stock) : 1,
+        images: uploadedImages,
+        broken: broken || undefined,
+        brokenTag: broken ? brokenTag : undefined,
+        repairPrice:
+          broken && brokenTag === 'reparable' && repairPrice.trim()
+            ? Number(repairPrice)
+            : undefined,
+      });
+      setPublishedId(created.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('publish.errGeneric'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (publishedId) {
+    return (
+      <View className="flex-1 bg-surface">
+        <AppHeader subtitle="Publicar Hardware" activeTab />
+        <View className="flex-1 items-center justify-center gap-3 px-8">
+          <View
+            className="h-16 w-16 items-center justify-center rounded-2xl border border-secondary/40 bg-secondary/10"
+            style={glow(colors.secondary, 16, 0.3)}
+          >
+            <AppIcon name="check_circle" size={34} color={colors.accentEmerald} />
+          </View>
+          <Text className="text-2xl font-bold text-text-primary">{t('publish.successTitle')}</Text>
+          <Text className="text-center text-sm leading-relaxed text-text-secondary">
+            {t('publish.successDesc')}
+          </Text>
+          <View className="mt-1 rounded-lg border border-line bg-panel px-4 py-2">
+            <Text className="font-mono text-[11px] text-text-secondary">ID: #{publishedId.slice(0, 8).toUpperCase()}</Text>
+          </View>
+          <Pressable
+            onPress={() => nav.go({ name: 'explore' })}
+            className="mt-2 flex-row items-center gap-2 rounded-xl bg-secondary px-5 py-3"
+            style={shadow.panel}
+          >
+            <Text className="text-sm font-semibold text-on-secondary">Ir al Marketplace</Text>
+            <AppIcon name="arrow_forward" size={18} color={colors.onSecondary} />
+          </Pressable>
         </View>
+        <BottomNav active="publish" onNavigate={(tab) => nav.go({ name: tab })} />
       </View>
+    );
+  }
 
-      <ScrollView className="flex-1 px-4 pt-4">
-        <Text className="text-lg font-semibold text-gray-900 mb-3">Condición</Text>
-        <View className="flex-row mb-6">
-          <TouchableOpacity
-            className={`flex-1 mr-2 py-3 rounded-xl items-center ${
-              condition === ProductCondition.NEW ? 'bg-blue-500' : 'bg-gray-200'
-            }`}
-            onPress={() => setCondition(ProductCondition.NEW)}
-          >
-            <Text
-              className={`font-semibold ${
-                condition === ProductCondition.NEW ? 'text-white' : 'text-gray-700'
-              }`}
-            >
-              Nuevo
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            className={`flex-1 ml-2 py-3 rounded-xl items-center ${
-              condition === ProductCondition.USED ? 'bg-orange-500' : 'bg-gray-200'
-            }`}
-            onPress={() => setCondition(ProductCondition.USED)}
-          >
-            <Text
-              className={`font-semibold ${
-                condition === ProductCondition.USED ? 'text-white' : 'text-gray-700'
-              }`}
-            >
-              Usado
-            </Text>
-          </TouchableOpacity>
+  return (
+    <View className="flex-1 bg-surface">
+      <AppHeader subtitle="Publicar Hardware" activeTab />
+
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
+        <View className="px-4 pb-2 pt-3">
+          <Text className="text-2xl font-bold text-text-primary">{t('publish.title')}</Text>
+          <Text className="mt-1 text-xs leading-relaxed text-text-secondary">
+            Envía tu hardware al kit de auditoría gratuito. Hasta que pase por los filtros de seguridad y verificación
+            no aparecerá con el check en el marketplace.
+          </Text>
         </View>
 
-        <Text className="text-lg font-semibold text-gray-900 mb-3">Categoría</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-6">
-          {categoryOptions.map((cat) => (
-            <TouchableOpacity
-              key={cat.value}
-              className={`mr-2 px-4 py-2 rounded-full ${
-                category === cat.value ? 'bg-blue-500' : 'bg-gray-200'
-              }`}
-              onPress={() => setCategory(cat.value)}
+        <View className="flex flex-col gap-4 px-4 pt-3">
+          <View>
+            <FieldLabel>{t('publish.fTitle')}</FieldLabel>
+            <Input value={title} onChangeText={setTitle} placeholder="Ej: AMD Ryzen 7 7800X3D" />
+          </View>
+
+          <View className="flex-row gap-3">
+            <View className="flex-1">
+              <FieldLabel>{t('publish.fBrand')}</FieldLabel>
+              <Input value={brand} onChangeText={setBrand} placeholder="Ej: AMD / NVIDIA" />
+            </View>
+            <View className="flex-1">
+              <FieldLabel>{t('publish.fModel')}</FieldLabel>
+              <Input value={model} onChangeText={setModel} placeholder="Ej: 7800X3D" />
+            </View>
+          </View>
+
+          <View>
+            <FieldLabel>{t('publish.fCategory')}</FieldLabel>
+            <View className="flex-row flex-wrap gap-2">
+              {CATEGORIES.map((cat) => {
+                const active = category === cat.value;
+                return (
+                  <Pressable
+                    key={cat.value}
+                    onPress={() => setCategory(cat.value)}
+                    className="flex-row items-center gap-1.5 rounded-xl border px-3 py-2"
+                    style={{
+                      borderColor: active ? colors.primary : colors.line,
+                      backgroundColor: active ? colors.primarySoft : colors.panel,
+                      ...(active ? glow(colors.primary, 8, 0.15) : undefined),
+                    }}
+                  >
+                    <AppIcon name={cat.icon} size={15} color={active ? colors.primary : colors.textSecondary} />
+                    <Text className="font-mono text-[11px] font-semibold" style={{ color: active ? colors.primary : colors.textSecondary }}>
+                      {cat.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          <View>
+            <FieldLabel>{t('publish.fCondition')}</FieldLabel>
+            <Segmented options={[t('publish.newSealed'), t('publish.used')]} value={condition} onChange={setCondition} />
+          </View>
+
+          <View className="flex-row gap-3">
+            <View className="flex-1">
+              <FieldLabel>{t('publish.fPrice')}</FieldLabel>
+              <Input value={price} onChangeText={setPrice} placeholder="Ej: 340" numeric />
+            </View>
+            <View className="flex-1">
+              <FieldLabel>{t('publish.fStock')}</FieldLabel>
+              <Input value={stock} onChangeText={setStock} placeholder="Ej: 1" numeric />
+            </View>
+          </View>
+
+          <View>
+            <Pressable
+              onPress={() => setBroken((v) => !v)}
+              className="flex-row items-center gap-2 rounded-xl border border-line bg-panel px-3 py-2.5"
             >
-              <Text
-                className={`${
-                  category === cat.value ? 'text-white' : 'text-gray-700'
-                }`}
-              >
-                {cat.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+              <AppIcon
+                name={broken ? 'check_circle' : 'add'}
+                size={18}
+                color={broken ? colors.diagnosticAmber : colors.textSecondary}
+              />
+              <Text className="flex-1 text-sm text-text-primary">{t('publish.fBroken')}</Text>
+            </Pressable>
+            {broken ? (
+              <View className="mt-2 flex-col gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3">
+                <Text className="font-mono text-[10px] uppercase tracking-wider text-amber-300">
+                  {t('publish.brokenTag')}
+                </Text>
+                <View className="flex-row gap-2">
+                  {(['reparable', 'parts'] as const).map((tag) => {
+                    const active = brokenTag === tag;
+                    return (
+                      <Pressable
+                        key={tag}
+                        onPress={() => setBrokenTag(tag)}
+                        className={`flex-1 items-center rounded-lg border px-3 py-2 ${
+                          active ? 'border-amber-500/60 bg-amber-500/20' : 'border-line bg-panel'
+                        }`}
+                      >
+                        <Text
+                          className={`text-xs font-semibold ${
+                            active ? 'text-amber-300' : 'text-text-secondary'
+                          }`}
+                        >
+                          {tag === 'reparable' ? t('publish.tagReparable') : t('publish.tagParts')}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                {brokenTag === 'reparable' ? (
+                  <View>
+                    <Text className="mb-1 font-mono text-[10px] uppercase tracking-wider text-amber-300">
+                      {t('publish.repairPrice')}
+                    </Text>
+                    <Input value={repairPrice} onChangeText={setRepairPrice} placeholder="Ej: 80" numeric />
+                  </View>
+                ) : (
+                  <Text className="text-[11px] text-amber-200/90">{t('publish.partsHint')}</Text>
+                )}
+              </View>
+            ) : null}
+          </View>
 
-        <Text className="text-sm font-medium text-gray-700 mb-1">Título *</Text>
-        <TextInput
-          className="bg-gray-100 rounded-xl px-4 py-3 mb-4 text-base"
-          placeholder="Ej: RTX 3080 Ti en excelente estado"
-          value={title}
-          onChangeText={setTitle}
-        />
-
-        <Text className="text-sm font-medium text-gray-700 mb-1">Descripción *</Text>
-        <TextInput
-          className="bg-gray-100 rounded-xl px-4 py-3 mb-4 text-base"
-          placeholder="Describe tu producto en detalle..."
-          value={description}
-          onChangeText={setDescription}
-          multiline
-          numberOfLines={4}
-          textAlignVertical="top"
-        />
-
-        <Text className="text-sm font-medium text-gray-700 mb-1">Precio (USD) *</Text>
-        <TextInput
-          className="bg-gray-100 rounded-xl px-4 py-3 mb-4 text-base"
-          placeholder="0.00"
-          value={price}
-          onChangeText={setPrice}
-          keyboardType="numeric"
-        />
-
-        <Text className="text-sm font-medium text-gray-700 mb-1">Marca</Text>
-        <TextInput
-          className="bg-gray-100 rounded-xl px-4 py-3 mb-4 text-base"
-          placeholder="Ej: NVIDIA, Samsung, Apple"
-          value={brand}
-          onChangeText={setBrand}
-        />
-
-        <Text className="text-sm font-medium text-gray-700 mb-1">Modelo</Text>
-        <TextInput
-          className="bg-gray-100 rounded-xl px-4 py-3 mb-4 text-base"
-          placeholder="Ej: RTX 3080 Ti, Galaxy S23"
-          value={model}
-          onChangeText={setModel}
-        />
-
-        {condition === ProductCondition.USED && (
-          <>
-            <Text className="text-sm font-medium text-gray-700 mb-1">Horas de uso</Text>
-            <TextInput
-              className="bg-gray-100 rounded-xl px-4 py-3 mb-4 text-base"
-              placeholder="Ej: 500"
-              value={hoursOfUse}
-              onChangeText={setHoursOfUse}
-              keyboardType="numeric"
+          <View>
+            <FieldLabel>{t('publish.fDescription')}</FieldLabel>
+            <Input
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Estado físico, accesorios incluidos, historial de uso..."
+              multiline
             />
+          </View>
 
-            <Text className="text-sm font-medium text-gray-700 mb-1">Estado físico</Text>
-            <TextInput
-              className="bg-gray-100 rounded-xl px-4 py-3 mb-4 text-base"
-              placeholder="Describe el estado físico del producto"
+          <View className="flex-row gap-3">
+            <View className="flex-1">
+              <FieldLabel>{t('publish.fHoursVerified')}</FieldLabel>
+              <Input value={hours} onChangeText={setHours} placeholder="Ej: 320" numeric />
+            </View>
+            <View className="flex-1">
+              <FieldLabel>{t('publish.fHoursReported')}</FieldLabel>
+              <Input value={reportedHours} onChangeText={setReportedHours} placeholder="Ej: 350" numeric />
+            </View>
+          </View>
+
+          <View>
+            <FieldLabel>{t('publish.fUsage')}</FieldLabel>
+            <Input value={usageType} onChangeText={setUsageType} placeholder="Ej: Gaming / Oficina / Minería" />
+          </View>
+
+          <View>
+            <FieldLabel>{t('publish.fPhysical')}</FieldLabel>
+            <Input
               value={physicalState}
               onChangeText={setPhysicalState}
+              placeholder="Rayones, marcas, detalles..."
+              multiline
             />
-          </>
-        )}
+          </View>
 
-        <TouchableOpacity
-          className={`bg-blue-500 rounded-xl py-4 items-center mb-8 ${
-            isLoading ? 'opacity-70' : ''
-          }`}
-          onPress={handleSubmit}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text className="text-white font-bold text-lg">Publicar Producto</Text>
-          )}
-        </TouchableOpacity>
+          <View>
+            <FieldLabel>{t('publish.fPhotos')}</FieldLabel>
+            <View className="flex-row flex-wrap gap-2">
+              {images.map((uri) => (
+                <View key={uri} className="relative">
+                  <Image source={{ uri }} style={{ width: 72, height: 72, borderRadius: 12 }} />
+                  <Pressable
+                    onPress={() => setImages((prev) => prev.filter((u) => u !== uri))}
+                    className="absolute -right-1.5 -top-1.5 h-6 w-6 items-center justify-center rounded-full bg-red-500"
+                  >
+                    <AppIcon name="close" size={13} color="#ffffff" />
+                  </Pressable>
+                </View>
+              ))}
+              {images.length < 4 ? (
+                <Pressable
+                  onPress={pickImages}
+                  className="h-[72px] w-[72px] items-center justify-center rounded-xl border border-dashed border-line bg-panel"
+                >
+                  <AppIcon name="photo_camera" size={22} color={colors.textSecondary} />
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
+
+          {error ? (
+            <View className="flex-row items-start gap-2 rounded-lg border border-red-500/40 bg-red-500/10 p-3">
+              <AppIcon name="report" size={18} color={colors.diagnosticRed} />
+              <Text className="flex-1 text-xs leading-relaxed text-red-400">{error}</Text>
+            </View>
+          ) : null}
+
+          <Pressable
+            onPress={handlePublish}
+            disabled={submitting}
+            className="flex-row items-center justify-center gap-2 rounded-xl bg-secondary py-3.5"
+            style={{ ...shadow.panel, ...(submitting ? { opacity: 0.7 } : undefined) }}
+          >
+            {submitting ? (
+              <AppIcon name="sync" size={20} color={colors.onSecondary} />
+            ) : (
+              <AppIcon name="verified" size={20} color={colors.onSecondary} />
+            )}
+            <Text className="text-base font-semibold text-on-secondary">
+              {submitting ? t('publish.submitting') : t('publish.submit')}
+            </Text>
+          </Pressable>
+
+          <View className="flex-row items-start gap-2.5 rounded-lg border border-line bg-panel p-3">
+            <AppIcon name="security" size={18} color={colors.accentEmerald} style={{ marginTop: 1 }} />
+            <Text className="flex-1 text-xs leading-relaxed text-text-secondary">
+              {t('publish.terms')}
+            </Text>
+          </View>
+        </View>
       </ScrollView>
+
+      <BottomNav active="publish" onNavigate={(tab) => nav.go({ name: tab })} />
     </View>
   );
 }

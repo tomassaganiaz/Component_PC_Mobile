@@ -5,68 +5,109 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
   Index,
-} from 'typeorm';
-import { User } from '../users/user.entity';
-import { Product } from '../products/product.entity';
+} from "typeorm";
+import { User } from "../users/user.entity";
+import { Product } from "../products/product.entity";
+import { OrderItemEntity } from "./order-item.entity";
 
 export enum OrderStatus {
-  PENDING = 'pending',
-  PAID = 'paid',
-  IN_CUSTODY = 'in_custody',
-  SHIPPED = 'shipped',
-  DELIVERED = 'delivered',
-  CANCELLED = 'cancelled',
-  REFUNDED = 'refunded',
+  PENDING = "pending",
+  PAID = "paid",
+  IN_CUSTODY = "in_custody",
+  SHIPPED = "shipped",
+  DELIVERED = "delivered",
+  CANCELLED = "cancelled",
+  REFUNDED = "refunded",
 }
 
-@Entity('orders')
-@Index(['buyerId', 'status'])
-@Index(['status', 'createdAt'])
+@Entity("orders")
+@Index(["buyerId", "status"])
+@Index(["status", "createdAt"])
 export class Order {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({ type: "decimal", precision: 10, scale: 2 })
   total: number;
 
-  @Column({ type: 'enum', enum: OrderStatus, default: OrderStatus.PENDING })
+  @Column({ type: "enum", enum: OrderStatus, default: OrderStatus.PENDING })
   status: OrderStatus;
 
-  @Column({ type: 'varchar', length: 500, nullable: true, name: 'shipping_address' })
+  @Column({
+    type: "varchar",
+    length: 500,
+    nullable: true,
+    name: "shipping_address",
+  })
   shippingAddress: string;
 
-  @Column({ type: 'varchar', length: 50, nullable: true, name: 'payment_method' })
+  @Column({
+    type: "varchar",
+    length: 50,
+    nullable: true,
+    name: "payment_method",
+  })
   paymentMethod: string;
 
-  @Column({ type: 'timestamptz', nullable: true, name: 'custody_start_date' })
+  @Column({ type: "timestamptz", nullable: true, name: "custody_start_date" })
   custodyStartDate: Date;
 
-  @Column({ type: 'timestamptz', nullable: true, name: 'custody_end_date' })
+  @Column({ type: "timestamptz", nullable: true, name: "custody_end_date" })
   custodyEndDate: Date;
 
-  @Column({ type: 'text', nullable: true, name: 'cancellation_reason' })
+  @Column({ type: "text", nullable: true, name: "cancellation_reason" })
   cancellationReason: string;
 
+  @Column({ type: "varchar", length: 40, nullable: true, name: "coupon_code" })
+  couponCode: string | null;
+
+  @Column({
+    type: "decimal",
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  discount: number;
+
+  /** El cliente pidió reparar un producto roto "reparable". */
+  @Column({ type: "boolean", default: false, name: "repair_requested" })
+  repairRequested: boolean;
+
+  /** Costo de reparación cobrado (0 si no aplica). */
+  @Column({
+    type: "decimal",
+    precision: 10,
+    scale: 2,
+    default: 0,
+    name: "repair_fee",
+  })
+  repairFee: number;
+
   // Relations
-  @ManyToOne(() => User, (user) => user.orders, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'buyer_id' })
+  @ManyToOne(() => User, (user) => user.orders, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "buyer_id" })
   buyer: User;
 
-  @Column({ name: 'buyer_id' })
+  @Column({ name: "buyer_id" })
   buyerId: string;
 
-  @ManyToOne(() => Product, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'product_id' })
-  product: Product;
+  @ManyToOne(() => Product, { onDelete: "CASCADE", nullable: true })
+  @JoinColumn({ name: "product_id" })
+  product: Product | null;
 
-  @Column({ name: 'product_id' })
-  productId: string;
+  @Column({ name: "product_id", type: "uuid", nullable: true })
+  productId: string | null;
 
-  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  /** Ítems de la orden (carrito / compra directa). */
+  @OneToMany(() => OrderItemEntity, (item) => item.order, { cascade: true })
+  items: OrderItemEntity[];
+
+  @CreateDateColumn({ name: "created_at", type: "timestamptz" })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+  @UpdateDateColumn({ name: "updated_at", type: "timestamptz" })
   updatedAt: Date;
 }

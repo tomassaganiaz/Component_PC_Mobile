@@ -1,0 +1,101 @@
+import '../../global.css';
+import { useEffect } from 'react';
+import { Platform, StyleSheet, ActivityIndicator, Text, View } from 'react-native';
+import Head from 'expo-router/head';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+
+import { AuthProvider, useAuth } from '../context/AuthContext';
+import { CartProvider } from '../context/CartContext';
+import { MarketplaceProvider } from '../context/MarketplaceContext';
+import { NotificationsProvider } from '../context/NotificationsContext';
+import { ThemeProvider } from '../context/ThemeContext';
+import { I18nProvider, useI18n } from '../i18n';
+import { initWebVitals } from '../services/webVitals';
+import { colors } from '../theme';
+
+if (Platform.OS === 'web') {
+  // react-native-web: habilita el dark mode por clase para permitir que Expo
+  // fije el color scheme manualmente (userInterfaceStyle: 'dark').
+  (StyleSheet as unknown as { setFlag?: (flag: string, value: string) => void }).setFlag?.(
+    'darkMode',
+    'class',
+  );
+}
+
+function ProtectedRouter() {
+  const { session, restoring } = useAuth();
+  const { t } = useI18n();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (restoring) return;
+    const inAuthGroup = segments[0] === 'login' || segments[0] === 'register';
+    if (!session && !inAuthGroup) {
+      router.replace('/login');
+    } else if (session && inAuthGroup) {
+      router.replace('/');
+    }
+  }, [session, restoring, segments, router]);
+
+  if (restoring) {
+    return (
+      <View className="flex-1 items-center justify-center gap-3">
+        <ActivityIndicator color={colors.secondary} size="large" />
+        <Text className="font-mono text-[11px] uppercase tracking-wider text-text-secondary">
+          {t('common.loading')}
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="login" />
+      <Stack.Screen name="register" />
+      <Stack.Screen name="index" />
+      <Stack.Screen name="filters" />
+      <Stack.Screen name="publish" />
+      <Stack.Screen name="inspection" />
+      <Stack.Screen name="profile" />
+      <Stack.Screen name="sales" />
+      <Stack.Screen name="notifications" />
+      <Stack.Screen name="cart" />
+      <Stack.Screen name="wallet" />
+      <Stack.Screen name="admin" />
+      <Stack.Screen name="analytics" />
+      <Stack.Screen name="product/[id]" />
+    </Stack>
+  );
+}
+
+export default function RootLayout() {
+  useEffect(() => {
+    initWebVitals();
+  }, []);
+
+  return (
+    <ThemeProvider>
+      <I18nProvider>
+        <Head.Provider>
+          <AuthProvider>
+            <NotificationsProvider>
+              <CartProvider>
+                <MarketplaceProvider>
+                  <SafeAreaProvider>
+                    <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface }} edges={['top', 'bottom']}>
+                      <StatusBar style="auto" />
+                      <ProtectedRouter />
+                    </SafeAreaView>
+                  </SafeAreaProvider>
+                </MarketplaceProvider>
+              </CartProvider>
+            </NotificationsProvider>
+          </AuthProvider>
+        </Head.Provider>
+      </I18nProvider>
+    </ThemeProvider>
+  );
+}

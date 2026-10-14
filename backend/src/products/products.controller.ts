@@ -9,56 +9,162 @@ import {
   Query,
   UseGuards,
   Request,
-} from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { ProductsService } from './products.service';
-import { CreateProductDto, UpdateProductDto, FilterProductDto } from './dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+  ForbiddenException,
+  ParseUUIDPipe,
+} from "@nestjs/common";
+import { Request as ExpressRequest } from "express";
+import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
+import { ProductsService } from "./products.service";
+import {
+  CreateProductDto,
+  UpdateProductDto,
+  FilterProductDto,
+  CreateVariationDto,
+  UpdateVariationDto,
+} from "./dto";
+import { ProductStatus } from "./product.entity";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RolesGuard } from "../auth/guards/roles.guard";
+import { Roles } from "../auth/decorators/roles.decorator";
+import { UserRole } from "../users/user.entity";
 
-@ApiTags('Products')
-@Controller('products')
+@ApiTags("Products")
+@Controller("products")
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SELLER, UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Publicar nuevo producto' })
-  create(@Body() createProductDto: CreateProductDto, @Request() req) {
-    return this.productsService.create(createProductDto, req.user.id);
+  @ApiOperation({ summary: "Publicar nuevo producto (solo vendedor/admin)" })
+  create(
+    @Body() createProductDto: CreateProductDto,
+    @Request() req: ExpressRequest,
+  ) {
+    return this.productsService.create(createProductDto, (req.user as any).id);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Listar productos con filtros' })
+  @ApiOperation({ summary: "Listar productos con filtros" })
   findAll(@Query() filters: FilterProductDto) {
     return this.productsService.findAll(filters);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Obtener detalle de producto' })
-  findOne(@Param('id') id: string) {
+  @Get(":id")
+  @ApiOperation({ summary: "Obtener detalle de producto" })
+  findOne(@Param("id", new ParseUUIDPipe()) id: string) {
     return this.productsService.findOne(id);
   }
 
-  @Get('seller/:sellerId')
-  @ApiOperation({ summary: 'Obtener productos de un vendedor' })
-  findBySeller(@Param('sellerId') sellerId: string) {
+  @Get("seller/:sellerId")
+  @ApiOperation({ summary: "Obtener productos de un vendedor" })
+  findBySeller(@Param("sellerId") sellerId: string) {
     return this.productsService.findBySeller(sellerId);
   }
 
-  @Patch(':id')
-  @UseGuards(JwtAuthGuard)
+  @Patch(":id")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SELLER, UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Actualizar producto' })
-  update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
+  @ApiOperation({ summary: "Actualizar producto (vendedor dueño o admin)" })
+  async update(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Body() updateProductDto: UpdateProductDto,
+    @Request() req: ExpressRequest,
+  ) {
+    const product = await this.productsService.findOne(id);
+    const user = req.user as { id: string; role: string };
+    if (user.role !== UserRole.ADMIN && product.sellerId !== user.id) {
+      throw new ForbiddenException(
+        "Solo el vendedor del catálogo o un admin pueden modificarlo",
+      );
+    }
     return this.productsService.update(id, updateProductDto);
   }
 
-  @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @Delete(":id")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SELLER, UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Eliminar producto' })
-  remove(@Param('id') id: string) {
+  @ApiOperation({
+    summary: "Eliminar producto vendido (vendedor dueño o admin)",
+  })
+  async remove(@Param("id", new ParseUUIDPipe()) id: string, @Request() req: ExpressRequest) {
+    const product = await this.productsService.findOne(id);
+    const user = req.user as { id: string; role: string };
+    if (user.role !== UserRole.ADMIN && product.sellerId !== user.id) {
+      throw new ForbiddenException(
+        "Solo el vendedor del catálogo o un admin pueden eliminarlo",
+      );
+    }
+    if (user.role !== UserRole.ADMIN && product.status !== ProductStatus.SOLD) {
+      throw new ForbiddenException(
+        "Solo podés eliminar productos que ya fueron vendidos",
+      );
+    }
     return this.productsService.remove(id);
+  }
+
+  /* ------------------------------ Variaciones ------------------------------ */
+
+  @Get(":id/variations")
+  @ApiOperation({ summary: "Listar variaciones de un producto" })
+  listVariations(@Param("id", new ParseUUIDPipe()) id: string) {
+    return this.productsService.listVariations(id);
+  }
+
+  @Post(":id/variations")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SELLER, UserRole.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Agregar variación (vendedor dueño o admin)" })
+  async addVariation(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Body() dto: CreateVariationDto,
+    @Request() req: ExpressRequest,
+  ) {
+    await this.assertProductOwner(id, req);
+    return this.productsService.addVariation(id, dto);
+  }
+
+  @Patch(":id/variations/:variationId")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SELLER, UserRole.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Actualizar variación (vendedor dueño o admin)" })
+  async updateVariation(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Param("variationId", new ParseUUIDPipe()) variationId: string,
+    @Body() dto: UpdateVariationDto,
+    @Request() req: ExpressRequest,
+  ) {
+    await this.assertProductOwner(id, req);
+    return this.productsService.updateVariation(variationId, dto);
+  }
+
+  @Delete(":id/variations/:variationId")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SELLER, UserRole.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Eliminar variación (vendedor dueño o admin)" })
+  async removeVariation(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Param("variationId", new ParseUUIDPipe()) variationId: string,
+    @Request() req: ExpressRequest,
+  ) {
+    await this.assertProductOwner(id, req);
+    return this.productsService.removeVariation(variationId);
+  }
+
+  private async assertProductOwner(id: string, req: ExpressRequest) {
+    const product = await this.productsService.findOne(id);
+    const user = req.user as { id: string; role: string };
+    if (user.role !== UserRole.ADMIN && product.sellerId !== user.id) {
+      throw new ForbiddenException(
+        "Solo el vendedor del catálogo o un admin pueden modificarlo",
+      );
+    }
+    return product;
   }
 }

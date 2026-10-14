@@ -1,22 +1,28 @@
-import { IsString, IsEmail, IsOptional, IsEnum, MinLength } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { UserRole } from '../user.entity';
+import {
+  IsString,
+  IsEmail,
+  IsOptional,
+  IsEnum,
+  MinLength,
+} from "class-validator";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { UserRole } from "../user.entity";
 
 export class CreateUserDto {
-  @ApiProperty({ example: 'Juan Pérez' })
+  @ApiProperty({ example: "Juan Pérez" })
   @IsString()
   name: string;
 
-  @ApiProperty({ example: 'juan@email.com' })
+  @ApiProperty({ example: "juan@email.com" })
   @IsEmail()
   email: string;
 
-  @ApiProperty({ example: 'password123' })
+  @ApiProperty({ example: "password123" })
   @IsString()
   @MinLength(6)
   password: string;
 
-  @ApiPropertyOptional({ example: '+54 11 1234-5678' })
+  @ApiPropertyOptional({ example: "+54 11 1234-5678" })
   @IsOptional()
   @IsString()
   phone?: string;
@@ -45,11 +51,11 @@ export class UpdateUserDto {
 }
 
 export class LoginDto {
-  @ApiProperty({ example: 'juan@email.com' })
+  @ApiProperty({ example: "juan@email.com" })
   @IsEmail()
   email: string;
 
-  @ApiProperty({ example: 'password123' })
+  @ApiProperty({ example: "password123" })
   @IsString()
   password: string;
 }

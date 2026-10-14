@@ -9,95 +9,173 @@ import {
   OneToMany,
   JoinColumn,
   Index,
-} from 'typeorm';
-import { User } from '../users/user.entity';
-import { Verification } from '../verifications/verification.entity';
-import { Review } from '../reviews/review.entity';
+} from "typeorm";
+import { User } from "../users/user.entity";
+import { Verification } from "../verifications/verification.entity";
+import { Review } from "../reviews/review.entity";
+import { ProductVariation } from "./product-variation.entity";
 
 export enum ProductCondition {
-  NEW = 'new',
-  USED = 'used',
+  NEW = "new",
+  USED = "used",
 }
 
 export enum ProductCategory {
-  CPU = 'cpu',
-  GPU = 'gpu',
-  RAM = 'ram',
-  STORAGE = 'storage',
-  MOTHERBOARD = 'motherboard',
-  PSU = 'psu',
-  CASE = 'case',
-  COOLING = 'cooling',
-  MONITOR = 'monitor',
-  KEYBOARD = 'keyboard',
-  MOUSE = 'mouse',
-  PHONE = 'phone',
-  TABLET = 'tablet',
-  OTHER = 'other',
+  CPU = "cpu",
+  GPU = "gpu",
+  RAM = "ram",
+  STORAGE = "storage",
+  MOTHERBOARD = "motherboard",
+  PSU = "psu",
+  CASE = "case",
+  COOLING = "cooling",
+  MONITOR = "monitor",
+  KEYBOARD = "keyboard",
+  MOUSE = "mouse",
+  PHONE = "phone",
+  TABLET = "tablet",
+  LAPTOP = "laptop",
+  OTHER = "other",
 }
 
 export enum ProductStatus {
-  DRAFT = 'draft',
-  PENDING = 'pending',
-  VERIFIED = 'verified',
-  PUBLISHED = 'published',
-  SOLD = 'sold',
+  DRAFT = "draft",
+  PENDING = "pending",
+  VERIFIED = "verified",
+  PUBLISHED = "published",
+  SOLD = "sold",
 }
 
-@Entity('products')
-@Index(['status', 'category'])
-@Index(['sellerId', 'status'])
-@Index(['condition', 'status'])
-@Index(['price'])
+export enum SellerSecurityTier {
+  SECURE = 'secure',
+  NORMAL = 'normal',
+  NOT_SECURE = 'not_secure',
+}
+
+/** Etiquetas para productos rotos. No se permiten pérdidas totales. */
+export enum BrokenTag {
+  REPARABLE = 'reparable',
+  PARTS = 'parts',
+}
+
+@Entity("products")
+@Index(["status", "category"])
+@Index(["sellerId", "status"])
+@Index(["condition", "status"])
+@Index(["price"])
 export class Product {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @Column({ type: 'varchar', length: 200 })
+  @Column({ type: "varchar", length: 200 })
   title: string;
 
-  @Column({ type: 'text' })
+  @Column({ type: "text" })
   description: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({ type: "decimal", precision: 10, scale: 2 })
   price: number;
 
-  @Column({ type: 'enum', enum: ProductCondition })
+  @Column({ type: "enum", enum: ProductCondition })
   condition: ProductCondition;
 
-  @Column({ type: 'enum', enum: ProductCategory })
+  @Column({ type: "enum", enum: ProductCategory })
   category: ProductCategory;
 
-  @Column({ type: 'enum', enum: ProductStatus, default: ProductStatus.DRAFT })
+  @Column({ type: "enum", enum: ProductStatus, default: ProductStatus.DRAFT })
   status: ProductStatus;
 
-  @Column({ type: 'simple-array', nullable: true })
+  @Column({ type: "simple-array", nullable: true })
   images: string[];
 
-  @Column({ type: 'integer', nullable: true, name: 'hours_of_use' })
+  @Column({ type: "integer", nullable: true, name: "hours_of_use" })
   hoursOfUse: number;
 
-  @Column({ type: 'varchar', length: 500, nullable: true, name: 'physical_state' })
+  @Column({ type: "integer", nullable: true, name: "reported_hours_of_use" })
+  reportedHoursOfUse: number;
+
+  @Column({ type: "varchar", length: 100, nullable: true, name: "usage_type" })
+  usageType: string;
+
+  @Column({ type: "varchar", length: 500, nullable: true, name: "stress_test" })
+  stressTest: string;
+
+  @Column({
+    type: "varchar",
+    length: 20,
+    nullable: true,
+    name: "condition_grade",
+  })
+  conditionGrade: string;
+
+  @Column({ type: "boolean", default: false })
+  verified: boolean;
+
+  @Column({ type: "boolean", default: false })
+  sealed: boolean;
+
+  @Column({ type: "integer", default: 1 })
+  stock: number;
+
+  /** Producto roto: se vende barato para repuestos o reparación. */
+  @Column({ type: "boolean", default: false })
+  broken: boolean;
+
+  /** Etiqueta del producto roto (reparable | parts). Null si no es roto. */
+  @Column({ type: "enum", enum: BrokenTag, nullable: true, name: "broken_tag" })
+  brokenTag: BrokenTag | null;
+
+  /** Costo extra si el cliente pide reparación (solo "reparable"). */
+  @Column({
+    type: "decimal",
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    name: "repair_price",
+  })
+  repairPrice: number | null;
+
+  @Column({ type: "integer", default: 90, name: "warranty_days" })
+  warrantyDays: number;
+
+  @Column({ type: "boolean", default: false, name: "coverage_extended" })
+  coverageExtended: boolean;
+
+  @Column({ type: "boolean", default: true, name: "escrow_protected" })
+  escrowProtected: boolean;
+
+  @Column({
+    type: "varchar",
+    length: 500,
+    nullable: true,
+    name: "physical_state",
+  })
   physicalState: string;
 
-  @Column({ type: 'varchar', length: 100, nullable: true })
+  @Column({ type: "varchar", length: 100, nullable: true })
   brand: string;
 
-  @Column({ type: 'varchar', length: 200, nullable: true })
+  @Column({ type: "varchar", length: 200, nullable: true })
   model: string;
 
-  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true, name: 'average_rating' })
+  @Column({
+    type: "decimal",
+    precision: 3,
+    scale: 2,
+    nullable: true,
+    name: "average_rating",
+  })
   averageRating: number;
 
-  @Column({ type: 'integer', default: 0, name: 'review_count' })
+  @Column({ type: "integer", default: 0, name: "review_count" })
   reviewCount: number;
 
   // Relations
-  @ManyToOne(() => User, (user) => user.products, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'seller_id' })
+  @ManyToOne(() => User, (user) => user.products, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "seller_id" })
   seller: User;
 
-  @Column({ name: 'seller_id' })
+  @Column({ name: "seller_id" })
   sellerId: string;
 
   @OneToMany(() => Verification, (verification) => verification.product)
@@ -106,12 +184,34 @@ export class Product {
   @OneToMany(() => Review, (review) => review.product)
   reviews: Review[];
 
-  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  @OneToMany(() => ProductVariation, (variation) => variation.product)
+  variations: ProductVariation[];
+
+  @CreateDateColumn({ name: "created_at", type: "timestamptz" })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+  @UpdateDateColumn({ name: "updated_at", type: "timestamptz" })
   updatedAt: Date;
 
-  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz' })
+  @DeleteDateColumn({ name: "deleted_at", type: "timestamptz" })
   deletedAt: Date;
+
+  // Ubicación física del producto (para envío/recogida)
+  @Column({ type: "decimal", precision: 10, scale: 7, nullable: true, name: "lat" })
+  lat: number | null;
+
+  @Column({ type: "decimal", precision: 10, scale: 7, nullable: true, name: "lng" })
+  lng: number | null;
+
+  @Column({ type: "varchar", length: 500, nullable: true, name: "address" })
+  address: string;
+
+  @Column({ type: "varchar", length: 100, nullable: true, name: "city" })
+  city: string;
+
+  @Column({ type: "varchar", length: 100, nullable: true, name: "province" })
+  province: string;
+
+  @Column({ type: "varchar", length: 20, nullable: true, name: "postal_code" })
+  postalCode: string;
 }

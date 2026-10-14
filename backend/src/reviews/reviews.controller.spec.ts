@@ -1,9 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { ReviewsController } from './reviews.controller';
-import { ReviewsService } from './reviews.service';
-import { ReviewType, ReviewStatus, TrustBadge } from './review.entity';
+import { Test, TestingModule } from "@nestjs/testing";
+import { ReviewsController } from "./reviews.controller";
+import { ReviewsService } from "./reviews.service";
+import { ReviewType, ReviewStatus, TrustBadge } from "./review.entity";
 
-describe('ReviewsController', () => {
+describe("ReviewsController", () => {
   let controller: ReviewsController;
   let service: ReviewsService;
 
@@ -32,36 +32,38 @@ describe('ReviewsController', () => {
     jest.clearAllMocks();
   });
 
-  describe('create', () => {
-    it('should create a review', async () => {
+  describe("create", () => {
+    it("should create a review", async () => {
       const createDto = {
-        productId: 'product-uuid',
-        orderId: 'order-uuid',
+        productId: "product-uuid",
+        orderId: "order-uuid",
         rating: 5,
         type: ReviewType.POSITIVE,
-        comment: 'Excelente producto',
+        comment: "Excelente producto",
       };
 
       const expectedReview = {
-        id: 'review-uuid',
+        id: "review-uuid",
         ...createDto,
-        buyerId: 'buyer-uuid',
-        sellerId: 'seller-uuid',
+        buyerId: "buyer-uuid",
+        sellerId: "seller-uuid",
         status: ReviewStatus.APPROVED,
       };
 
       mockReviewsService.create.mockResolvedValue(expectedReview);
 
-      const result = await controller.create(createDto, { user: { id: 'buyer-uuid' } });
+      const result = await controller.create(createDto, {
+        user: { id: "buyer-uuid" },
+      } as any);
 
       expect(result).toEqual(expectedReview);
     });
   });
 
-  describe('findAll', () => {
-    it('should return paginated reviews', async () => {
+  describe("findAll", () => {
+    it("should return paginated reviews", async () => {
       const expectedResponse = {
-        data: [{ id: 'review-1', rating: 5 }],
+        data: [{ id: "review-1", rating: 5 }],
         total: 1,
       };
 
@@ -73,36 +75,32 @@ describe('ReviewsController', () => {
     });
   });
 
-  describe('findBySeller', () => {
-    it('should return reviews for a seller', async () => {
-      const expectedReviews = [
-        { id: 'review-1', sellerId: 'seller-uuid' },
-      ];
+  describe("findBySeller", () => {
+    it("should return reviews for a seller", async () => {
+      const expectedReviews = [{ id: "review-1", sellerId: "seller-uuid" }];
 
       mockReviewsService.findBySeller.mockResolvedValue(expectedReviews);
 
-      const result = await controller.findBySeller('seller-uuid');
+      const result = await controller.findBySeller("seller-uuid");
 
       expect(result).toEqual(expectedReviews);
     });
   });
 
-  describe('findByProduct', () => {
-    it('should return reviews for a product', async () => {
-      const expectedReviews = [
-        { id: 'review-1', productId: 'product-uuid' },
-      ];
+  describe("findByProduct", () => {
+    it("should return reviews for a product", async () => {
+      const expectedReviews = [{ id: "review-1", productId: "product-uuid" }];
 
       mockReviewsService.findByProduct.mockResolvedValue(expectedReviews);
 
-      const result = await controller.findByProduct('product-uuid');
+      const result = await controller.findByProduct("product-uuid");
 
       expect(result).toEqual(expectedReviews);
     });
   });
 
-  describe('getTrustBadge', () => {
-    it('should return trust badge for a seller', async () => {
+  describe("getTrustBadge", () => {
+    it("should return trust badge for a seller", async () => {
       const expectedBadge = {
         badge: TrustBadge.SAFE,
         averageRating: 4.5,
@@ -113,14 +111,14 @@ describe('ReviewsController', () => {
 
       mockReviewsService.getTrustBadge.mockResolvedValue(expectedBadge);
 
-      const result = await controller.getTrustBadge('seller-uuid');
+      const result = await controller.getTrustBadge("seller-uuid");
 
       expect(result).toEqual(expectedBadge);
     });
   });
 
-  describe('getSellerStats', () => {
-    it('should return seller statistics', async () => {
+  describe("getSellerStats", () => {
+    it("should return seller statistics", async () => {
       const expectedStats = {
         totalSales: 15,
         averageRating: 4.2,
@@ -130,54 +128,52 @@ describe('ReviewsController', () => {
 
       mockReviewsService.getSellerStats.mockResolvedValue(expectedStats);
 
-      const result = await controller.getSellerStats('seller-uuid');
+      const result = await controller.getSellerStats("seller-uuid");
 
       expect(result).toEqual(expectedStats);
     });
   });
 
-  describe('findOne', () => {
-    it('should return a review by id', async () => {
+  describe("findOne", () => {
+    it("should return a review by id", async () => {
       const expectedReview = {
-        id: 'review-uuid',
+        id: "review-uuid",
         rating: 5,
-        comment: 'Great product',
+        comment: "Great product",
       };
 
       mockReviewsService.findOne.mockResolvedValue(expectedReview);
 
-      const result = await controller.findOne('review-uuid');
+      const result = await controller.findOne("review-uuid");
 
       expect(result).toEqual(expectedReview);
     });
   });
 
-  describe('updateStatus', () => {
-    it('should update review status (admin only)', async () => {
+  describe("updateStatus", () => {
+    it("should update review status (admin only)", async () => {
       const updateDto = {
-        status: 'resolved',
-        resolutionNotes: 'Queja resuelta',
+        status: "resolved",
+        resolutionNotes: "Queja resuelta",
       };
 
       const expectedReview = {
-        id: 'review-uuid',
+        id: "review-uuid",
         status: ReviewStatus.RESOLVED,
-        resolutionNotes: 'Queja resuelta',
+        resolutionNotes: "Queja resuelta",
       };
 
       mockReviewsService.updateStatus.mockResolvedValue(expectedReview);
 
-      const result = await controller.updateStatus(
-        'review-uuid',
-        updateDto,
-        { user: { id: 'admin-uuid' } },
-      );
+      const result = await controller.updateStatus("review-uuid", updateDto, {
+        user: { id: "admin-uuid" },
+      } as any);
 
       expect(result).toEqual(expectedReview);
       expect(mockReviewsService.updateStatus).toHaveBeenCalledWith(
-        'review-uuid',
+        "review-uuid",
         updateDto,
-        'admin-uuid',
+        "admin-uuid",
       );
     });
   });

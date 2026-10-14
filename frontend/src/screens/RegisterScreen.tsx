@@ -1,189 +1,206 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../../context/AuthContext';
-import { UserRole } from '../../types';
+import { useState } from 'react';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Link } from 'expo-router';
 
-export default function RegisterScreen() {
-  const router = useRouter();
-  const { register } = useAuth();
+import AppIcon from './../components/AppIcon';
+import { useI18n } from '../i18n';
+import { login, register } from './../services/api';
+import { colors, shadow } from '../theme';
+import type { LoginSuccess } from '../types';
+
+export default function RegisterScreen({ onLogin }: { onLogin: (session: LoginSuccess) => void }) {
+  const { t } = useI18n();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [phone, setPhone] = useState('');
-  const [role, setRole] = useState<UserRole>(UserRole.BUYER);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [wantToSell, setWantToSell] = useState(false);
+  const [showPass, setShowPass] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleRegister = async () => {
-    if (!name || !email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Por favor completa los campos obligatorios');
+    if (name.trim().length < 2) {
+      setError(t('register.errName'));
       return;
     }
-
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Las contraseñas no coinciden');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) {
+      setError(t('register.errEmail'));
       return;
     }
-
     if (password.length < 6) {
-      Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres');
+      setError(t('register.errPass'));
       return;
     }
-
+    setSubmitting(true);
+    setError(null);
     try {
-      setIsLoading(true);
-      await register({ name, email, password, phone: phone || undefined, role });
-      Alert.alert('Éxito', 'Cuenta creada correctamente', [
-        { text: 'OK', onPress: () => router.replace('/login') },
-      ]);
-    } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Error al registrarse');
+      await register({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+        phone: phone.trim() || undefined,
+        role: wantToSell ? 'seller' : 'buyer',
+      });
+      const result = await login(email.trim(), password);
+      if ((result as { requiresOtp?: boolean }).requiresOtp) {
+        setError('Cuenta creada. Iniciá sesión para completar la verificación.');
+        return;
+      }
+      onLogin(result as LoginSuccess);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('register.errGeneric'));
     } finally {
-      setIsLoading(false);
+      setSubmitting(false);
     }
   };
 
+  const fieldCls = 'w-full rounded-lg border border-[#233554] bg-[#111a2e] py-3 pl-4 pr-4 text-sm text-text-primary';
+
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-white"
-    >
-      <ScrollView className="flex-1 px-8 pt-16">
-        <TouchableOpacity onPress={() => router.back()} className="mb-8">
-          <Ionicons name="arrow-back" size={24} color="#111827" />
-        </TouchableOpacity>
-
-        <Text className="text-3xl font-bold text-gray-900 mb-2">Crear Cuenta</Text>
-        <Text className="text-gray-500 mb-8">Únete a la comunidad ERS</Text>
-
-        <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 mb-4">
-          <Ionicons name="person-outline" size={20} color="#6b7280" />
-          <TextInput
-            className="flex-1 ml-3 text-base"
-            placeholder="Nombre completo"
-            value={name}
-            onChangeText={setName}
-          />
+    <View className="flex-1 bg-surface">
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: 24 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View className="px-4 py-3">
+          <View className="pointer-events-none absolute -bottom-10 -right-10 h-44 w-44 rounded-full bg-primary/10" />
+          <View className="relative z-10 flex-row items-start gap-4 rounded-xl border border-border-subtle bg-surface-low p-4" style={shadow.panel}>
+            <View className="h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-surface-container-highest">
+              <AppIcon name="shield_locked" size={28} color={colors.primary} />
+            </View>
+            <View className="min-w-0 flex-1">
+              <Text className="text-[28px] font-bold tracking-tight text-text-primary">{t('register.title')}</Text>
+              <Text className="mt-1 text-xs leading-relaxed text-text-secondary">
+                Unite al marketplace verificado de hardware con custodia y auditoría técnica.
+              </Text>
+            </View>
+          </View>
         </View>
 
-        <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 mb-4">
-          <Ionicons name="mail-outline" size={20} color="#6b7280" />
-          <TextInput
-            className="flex-1 ml-3 text-base"
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-        </View>
-
-        <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 mb-4">
-          <Ionicons name="call-outline" size={20} color="#6b7280" />
-          <TextInput
-            className="flex-1 ml-3 text-base"
-            placeholder="Teléfono (opcional)"
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-          />
-        </View>
-
-        <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 mb-4">
-          <Ionicons name="lock-closed-outline" size={20} color="#6b7280" />
-          <TextInput
-            className="flex-1 ml-3 text-base"
-            placeholder="Contraseña"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPassword}
-          />
-          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-            <Ionicons
-              name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-              size={20}
-              color="#6b7280"
+        <View className="mt-1 flex flex-col gap-4 px-4">
+          <View className="flex flex-col gap-1.5">
+            <Text className="font-mono text-[11px] uppercase text-text-secondary">{t('register.nameLabel')}</Text>
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder={t('register.namePh')}
+              placeholderTextColor={colors.textMuted}
+              className={fieldCls}
             />
-          </TouchableOpacity>
-        </View>
+          </View>
 
-        <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 mb-6">
-          <Ionicons name="lock-closed-outline" size={20} color="#6b7280" />
-          <TextInput
-            className="flex-1 ml-3 text-base"
-            placeholder="Confirmar contraseña"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry={!showPassword}
-          />
-        </View>
+          <View className="flex flex-col gap-1.5">
+            <Text className="font-mono text-[11px] uppercase text-text-secondary">{t('register.emailLabel')}</Text>
+            <TextInput
+              value={email}
+              onChangeText={setEmail}
+              placeholder={t('register.emailPh')}
+              placeholderTextColor={colors.textMuted}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              className={fieldCls}
+            />
+          </View>
 
-        <Text className="text-sm font-medium text-gray-700 mb-3">Quiero:</Text>
-        <View className="flex-row mb-6">
-          <TouchableOpacity
-            className={`flex-1 mr-2 py-3 rounded-xl items-center ${
-              role === UserRole.BUYER ? 'bg-blue-500' : 'bg-gray-200'
-            }`}
-            onPress={() => setRole(UserRole.BUYER)}
+          <View className="flex flex-col gap-1.5">
+            <Text className="font-mono text-[11px] uppercase text-text-secondary">{t('register.passLabel')}</Text>
+            <View className="relative flex-row items-center rounded-lg border border-[#233554] bg-[#111a2e]">
+              <TextInput
+                value={password}
+                onChangeText={setPassword}
+                placeholder="••••••••"
+                placeholderTextColor={colors.textMuted}
+                secureTextEntry={!showPass}
+                className="w-full rounded-lg py-3 pl-4 pr-11 text-sm text-text-primary"
+              />
+              <Pressable
+                onPress={() => setShowPass((v) => !v)}
+                className="absolute right-2.5 h-8 w-8 items-center justify-center rounded"
+              >
+                <AppIcon name={showPass ? 'visibility' : 'visibility_off'} size={19} color={colors.textMuted} />
+              </Pressable>
+            </View>
+          </View>
+
+          <View className="flex flex-col gap-1.5">
+            <Text className="font-mono text-[11px] uppercase text-text-secondary">{t('register.phoneLabel')}</Text>
+            <TextInput
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="+54 11 1234-5678"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="phone-pad"
+              className={fieldCls}
+            />
+          </View>
+
+          <View className="flex-col gap-1.5">
+            <Text className="font-mono text-[11px] uppercase text-text-secondary">{t('register.roleLabel')}</Text>
+            <View className="flex-row gap-2">
+              <Pressable
+                onPress={() => setWantToSell(false)}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: !wantToSell }}
+                className="flex-1 flex-row items-center justify-center gap-2 rounded-xl border py-2.5"
+                style={{
+                  borderColor: !wantToSell ? colors.secondary : '#233554',
+                  backgroundColor: !wantToSell ? '#06271a' : '#111a2e',
+                }}
+              >
+                <AppIcon name="shopping_cart" size={17} color={!wantToSell ? colors.accentEmerald : colors.textMuted} />
+                <Text className="text-sm font-semibold" style={{ color: !wantToSell ? colors.accentEmerald : colors.textMuted }}>{t('register.buy')}</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setWantToSell(true)}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: wantToSell }}
+                className="flex-1 flex-row items-center justify-center gap-2 rounded-xl border py-2.5"
+                style={{
+                  borderColor: wantToSell ? colors.primary : '#233554',
+                  backgroundColor: wantToSell ? '#182845' : '#111a2e',
+                }}
+              >
+                <AppIcon name="storefront" size={17} color={wantToSell ? colors.primary : colors.textMuted} />
+                <Text className="text-sm font-semibold" style={{ color: wantToSell ? colors.primary : colors.textMuted }}>{t('register.sell')}</Text>
+              </Pressable>
+            </View>
+            {wantToSell ? (
+              <Text className="mt-1 text-[11px] leading-relaxed text-text-muted">
+                Como vendedor vas a poder crear y modificar tu propio catálogo (un admin puede auditar).
+              </Text>
+            ) : null}
+          </View>
+
+          {error ? (
+            <View className="flex-row items-start gap-2.5 rounded-lg border border-diagnostic-red/40 bg-diagnostic-red/10 p-3">
+              <AppIcon name="notifications_active" size={20} color={colors.diagnosticRed} />
+              <Text className="flex-1 text-xs leading-relaxed text-diagnostic-red">{error}</Text>
+            </View>
+          ) : null}
+
+          <Pressable
+            onPress={handleRegister}
+            disabled={submitting}
+            className="mt-1 flex-row items-center justify-center gap-2 rounded-lg bg-primary py-3.5"
+            style={[shadow.panel, submitting ? { opacity: 0.7 } : undefined]}
           >
-            <Text
-              className={`font-semibold ${
-                role === UserRole.BUYER ? 'text-white' : 'text-gray-700'
-              }`}
-            >
-              Comprar
+            {submitting ? (
+              <AppIcon name="sync" size={20} color={colors.onPrimary} />
+            ) : (
+              <AppIcon name="verified_user" size={20} color={colors.onPrimary} />
+            )}
+            <Text className="text-base font-semibold text-on-primary">
+              {submitting ? t('register.submitting') : t('register.submit')}
             </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            className={`flex-1 ml-2 py-3 rounded-xl items-center ${
-              role === UserRole.SELLER ? 'bg-green-500' : 'bg-gray-200'
-            }`}
-            onPress={() => setRole(UserRole.SELLER)}
-          >
-            <Text
-              className={`font-semibold ${
-                role === UserRole.SELLER ? 'text-white' : 'text-gray-700'
-              }`}
-            >
-              Vender
-            </Text>
-          </TouchableOpacity>
-        </View>
+          </Pressable>
 
-        <TouchableOpacity
-          className={`bg-blue-500 rounded-xl py-4 items-center mb-4 ${
-            isLoading ? 'opacity-70' : ''
-          }`}
-          onPress={handleRegister}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text className="text-white font-bold text-lg">Crear Cuenta</Text>
-          )}
-        </TouchableOpacity>
-
-        <View className="flex-row justify-center mb-8">
-          <Text className="text-gray-500">¿Ya tienes cuenta? </Text>
-          <TouchableOpacity onPress={() => router.push('/login')}>
-            <Text className="text-blue-500 font-semibold">Inicia sesión</Text>
-          </TouchableOpacity>
+          <View className="items-center py-2">
+            <Link href="/login" className="text-xs font-semibold text-primary">{t('register.haveAccount')}</Link>
+          </View>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
