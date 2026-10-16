@@ -42,21 +42,27 @@ npx expo start          # Abrir en emulador o dispositivo
 
 #### Túnel (dispositivo remoto, fuera de la LAN)
 
-Expo `--tunnel` usa el token compartido de ngrok de Expo (puede saturarse, ERR_NGROK_108).
-Con tu cuenta ngrok (gratis en https://ngrok.com):
+No uses `npx expo start --tunnel`: usa el token compartido de ngrok de Expo y
+suele fallar (saturado, `ERR_NGROK_108` / `failed to start tunnel`), dejando un
+QR que no abre. En su lugar, el proyecto abre túneles propios **sin crear
+ninguna cuenta** (cloudflared; con `NGROK_AUTHTOKEN` usa tu ngrok):
 
 ```bash
-$env:NGROK_AUTHTOKEN="tu_token"
-
-# Backend: expone la API por un túnel exp.direct
+# Backend: expone la API (muestra la URL pública)
 cd backend && npm run tunnel
 
-# Frontend: abre ngrok a Metro y lanza expo con EXPO_PACKAGER_PROXY_URL
-# (opcional) $env:EXPO_PUBLIC_API_URL="https://backend-xxx.exp.direct/api"
+# Frontend: abre el túnel a Metro y muestra el QR para Expo Go
+# (en otra terminal; apunta la app a la API pública)
+$env:EXPO_PUBLIC_API_URL="https://tu-api.trycloudflare.com/api"
 cd Frontend && npm run start:tunnel
 ```
 
-El QR de Metro llevará a `exp://app-xxxx.exp.direct`.
+El QR de la terminal lleva a `exp://tu-app.trycloudflare.com` y vale desde
+cualquier red. Todo en uno (backend + túneles + Expo + QR):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\LevantarTodo.ps1
+```
 
 ## Comandos Disponibles
 
