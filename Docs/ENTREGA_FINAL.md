@@ -22,9 +22,9 @@ cd backend && npm run start:dev      # puerto 3000
 
 # App
 cd Frontend
-npx expo start                        # escaneá el QR con Expo Go
+npx expo start                        # escaneá el QR con Expo Go (misma Wi-Fi)
 # o
-npx expo start --tunnel               # fuera de la LAN (requiere NGROK_AUTHTOKEN)
+npm run start:tunnel                # fuera de la LAN: abre un túnel sin cuenta y muestra el QR
 ```
 
 > La app detecta el host del backend automáticamente (`src/config.ts`) o definí `EXPO_PUBLIC_API_URL`.
@@ -91,13 +91,16 @@ eas build -p android --profile preview   # genera APK (perfil preview)
 - **Backend público**: `cd backend && npm run tunnel` (expone la API por un túnel) y compilá la web con `EXPO_PUBLIC_API_URL="<url-túnel>/api"`.
 - **QR de un túnel de la web**: `PUBLIC_URL="https://tu-web.ngrok.io" npm run serve:web`.
 
-### Opción C — App móvil nativa (Expo Go)
+### Opción C — App móvil nativa (Expo Go, desde cualquier red)
 ```bash
-cd backend && npm run tunnel            # API pública
+cd backend && npm run tunnel            # API pública (sin cuenta, muestra la URL)
 cd Frontend
 $env:EXPO_PUBLIC_API_URL="<url-túnel>/api"; npm run start:tunnel
 ```
 Escaneás el QR con **Expo Go** (funciona desde cualquier red). En iOS/Android.
+No uses `npx expo start --tunnel`: usa el token compartido de Expo y suele fallar
+(`failed to start tunnel`, `ERR_NGROK_108`, QR que no abre). `npm run start:tunnel`
+abre un túnel propio (cloudflared sin cuenta, o ngrok si definís `NGROK_AUTHTOKEN`).
 
 ## 8.b. Comandos de build web
 
