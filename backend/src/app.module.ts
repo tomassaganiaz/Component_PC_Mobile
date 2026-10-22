@@ -32,6 +32,7 @@ import { ThrottlerUserGuard } from "./common/throttler-user.guard";
       isGlobal: true,
       envFilePath: ".env",
     }),
+    ThrottlerModule.forRoot(),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
