@@ -41,7 +41,9 @@ describe("GoogleMapsService", () => {
           {
             provide: ConfigService,
             useValue: {
-              get: jest.fn((key: string) => (key === "GOOGLE_MAPS_API_KEY" ? "" : "test")),
+              get: jest.fn((key: string) =>
+                key === "GOOGLE_MAPS_API_KEY" ? "" : "test",
+              ),
             },
           },
         ],
@@ -62,7 +64,9 @@ describe("GoogleMapsService", () => {
           {
             provide: ConfigService,
             useValue: {
-              get: jest.fn((key: string) => (key === "GOOGLE_MAPS_API_KEY" ? "" : "test")),
+              get: jest.fn((key: string) =>
+                key === "GOOGLE_MAPS_API_KEY" ? "" : "test",
+              ),
             },
           },
         ],
@@ -70,7 +74,9 @@ describe("GoogleMapsService", () => {
 
       return moduleWithoutKey.then((m) => {
         const svc = m.get<GoogleMapsService>(GoogleMapsService);
-        return expect(svc.geocode("Av. Corrientes 1234, CABA")).resolves.toBeNull();
+        return expect(
+          svc.geocode("Av. Corrientes 1234, CABA"),
+        ).resolves.toBeNull();
       });
     });
   });
@@ -83,7 +89,9 @@ describe("GoogleMapsService", () => {
           {
             provide: ConfigService,
             useValue: {
-              get: jest.fn((key: string) => (key === "GOOGLE_MAPS_API_KEY" ? "" : "test")),
+              get: jest.fn((key: string) =>
+                key === "GOOGLE_MAPS_API_KEY" ? "" : "test",
+              ),
             },
           },
         ],
@@ -104,7 +112,9 @@ describe("GoogleMapsService", () => {
           {
             provide: ConfigService,
             useValue: {
-              get: jest.fn((key: string) => (key === "GOOGLE_MAPS_API_KEY" ? "" : "test")),
+              get: jest.fn((key: string) =>
+                key === "GOOGLE_MAPS_API_KEY" ? "" : "test",
+              ),
             },
           },
         ],
@@ -113,7 +123,10 @@ describe("GoogleMapsService", () => {
       return moduleWithoutKey.then((m) => {
         const svc = m.get<GoogleMapsService>(GoogleMapsService);
         return expect(
-          svc.getDirections({ lat: -34.6, lng: -58.4 }, { lat: -34.5, lng: -58.3 }),
+          svc.getDirections(
+            { lat: -34.6, lng: -58.4 },
+            { lat: -34.5, lng: -58.3 },
+          ),
         ).resolves.toBeNull();
       });
     });
@@ -127,7 +140,9 @@ describe("GoogleMapsService", () => {
           {
             provide: ConfigService,
             useValue: {
-              get: jest.fn((key: string) => (key === "GOOGLE_MAPS_API_KEY" ? "" : "test")),
+              get: jest.fn((key: string) =>
+                key === "GOOGLE_MAPS_API_KEY" ? "" : "test",
+              ),
             },
           },
         ],
@@ -136,7 +151,10 @@ describe("GoogleMapsService", () => {
       return moduleWithoutKey.then((m) => {
         const svc = m.get<GoogleMapsService>(GoogleMapsService);
         return expect(
-          svc.getDistanceMatrix([{ lat: -34.6, lng: -58.4 }], [{ lat: -34.5, lng: -58.3 }]),
+          svc.getDistanceMatrix(
+            [{ lat: -34.6, lng: -58.4 }],
+            [{ lat: -34.5, lng: -58.3 }],
+          ),
         ).resolves.toBeNull();
       });
     });
@@ -150,7 +168,9 @@ describe("GoogleMapsService", () => {
           {
             provide: ConfigService,
             useValue: {
-              get: jest.fn((key: string) => (key === "GOOGLE_MAPS_API_KEY" ? "" : "test")),
+              get: jest.fn((key: string) =>
+                key === "GOOGLE_MAPS_API_KEY" ? "" : "test",
+              ),
             },
           },
         ],
@@ -201,7 +221,9 @@ describe("GoogleMapsService", () => {
           {
             provide: ConfigService,
             useValue: {
-              get: jest.fn((key: string) => (key === "GOOGLE_MAPS_API_KEY" ? "" : "test")),
+              get: jest.fn((key: string) =>
+                key === "GOOGLE_MAPS_API_KEY" ? "" : "test",
+              ),
             },
           },
         ],
@@ -209,27 +231,45 @@ describe("GoogleMapsService", () => {
 
       return moduleWithoutKey.then((m) => {
         const svc = m.get<GoogleMapsService>(GoogleMapsService);
-        return expect(svc.findNearbyPlaces({ lat: -34.6, lng: -58.4 })).resolves.toBeNull();
+        return expect(
+          svc.findNearbyPlaces({ lat: -34.6, lng: -58.4 }),
+        ).resolves.toBeNull();
       });
     });
   });
 
   describe("estimateDeliveryDate", () => {
     it("estimates delivery for standard shipping", () => {
-      const result = service.estimateDeliveryDate(100, "standard", new Date("2026-10-14"));
+      const result = service.estimateDeliveryDate(
+        100,
+        "standard",
+        new Date("2026-10-14"),
+      );
       expect(result.estimatedDays).toBeGreaterThanOrEqual(1);
       expect(result.estimatedDate).toBeInstanceOf(Date);
       expect(typeof result.text).toBe("string");
     });
 
     it("estimates faster delivery for express", () => {
-      const standard = service.estimateDeliveryDate(100, "standard", new Date("2026-10-14"));
-      const express = service.estimateDeliveryDate(100, "express", new Date("2026-10-14"));
+      const standard = service.estimateDeliveryDate(
+        100,
+        "standard",
+        new Date("2026-10-14"),
+      );
+      const express = service.estimateDeliveryDate(
+        100,
+        "express",
+        new Date("2026-10-14"),
+      );
       expect(express.estimatedDays).toBeLessThanOrEqual(standard.estimatedDays);
     });
 
     it("avoids Sundays", () => {
-      const result = service.estimateDeliveryDate(400, "standard", new Date("2026-10-11"));
+      const result = service.estimateDeliveryDate(
+        400,
+        "standard",
+        new Date("2026-10-11"),
+      );
       expect(result.estimatedDate.getDay()).not.toBe(0);
     });
   });

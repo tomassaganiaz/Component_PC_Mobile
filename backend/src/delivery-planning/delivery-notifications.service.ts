@@ -5,7 +5,11 @@ import { ConfigService } from "@nestjs/config";
 import * as admin from "firebase-admin";
 import * as sgMail from "@sendgrid/mail";
 import twilio from "twilio";
-import { Notification, NotificationChannel, NotificationType } from "../notifications/notification.entity";
+import {
+  Notification,
+  NotificationChannel,
+  NotificationType,
+} from "../notifications/notification.entity";
 import { User } from "../users/user.entity";
 import { DeliveryRoute } from "./delivery-route.entity";
 import { RouteStop } from "./delivery-route.entity";
@@ -47,9 +51,15 @@ export class DeliveryNotificationsService implements OnModuleInit {
   ) {
     this.baseUrl = this.config.get("APP_FRONTEND_URL", "http://localhost:3000");
 
-    this.pushEnabled = Boolean(this.config.get("FIREBASE_SERVICE_ACCOUNT_KEY") || this.config.get("FIREBASE_PROJECT_ID"));
+    this.pushEnabled = Boolean(
+      this.config.get("FIREBASE_SERVICE_ACCOUNT_KEY") ||
+      this.config.get("FIREBASE_PROJECT_ID"),
+    );
     this.emailEnabled = Boolean(this.config.get("SENDGRID_API_KEY"));
-    this.smsEnabled = Boolean(this.config.get("TWILIO_ACCOUNT_SID") && this.config.get("TWILIO_AUTH_TOKEN"));
+    this.smsEnabled = Boolean(
+      this.config.get("TWILIO_ACCOUNT_SID") &&
+      this.config.get("TWILIO_AUTH_TOKEN"),
+    );
   }
 
   async onModuleInit(): Promise<void> {
@@ -60,7 +70,9 @@ export class DeliveryNotificationsService implements OnModuleInit {
 
   private async initializeFirebase(): Promise<void> {
     if (!this.pushEnabled) {
-      this.logger.warn("Push notifications disabled: FIREBASE_SERVICE_ACCOUNT_KEY or FIREBASE_PROJECT_ID not set");
+      this.logger.warn(
+        "Push notifications disabled: FIREBASE_SERVICE_ACCOUNT_KEY or FIREBASE_PROJECT_ID not set",
+      );
       return;
     }
 
@@ -69,9 +81,10 @@ export class DeliveryNotificationsService implements OnModuleInit {
       const projectId = this.config.get("FIREBASE_PROJECT_ID");
 
       if (serviceAccountKey) {
-        const serviceAccount = typeof serviceAccountKey === "string"
-          ? JSON.parse(serviceAccountKey)
-          : serviceAccountKey;
+        const serviceAccount =
+          typeof serviceAccountKey === "string"
+            ? JSON.parse(serviceAccountKey)
+            : serviceAccountKey;
         this.firebaseApp = admin.initializeApp({
           credential: (admin as any).credential.cert(serviceAccount),
           projectId,
@@ -81,7 +94,9 @@ export class DeliveryNotificationsService implements OnModuleInit {
       }
 
       if (this.firebaseApp) {
-        this.logger.log("Firebase Admin SDK initialized for push notifications");
+        this.logger.log(
+          "Firebase Admin SDK initialized for push notifications",
+        );
       }
     } catch (err) {
       this.logger.error(`Failed to initialize Firebase: ${String(err)}`);
@@ -91,7 +106,9 @@ export class DeliveryNotificationsService implements OnModuleInit {
 
   private initializeSendGrid(): void {
     if (!this.emailEnabled) {
-      this.logger.warn("Email notifications disabled: SENDGRID_API_KEY not set");
+      this.logger.warn(
+        "Email notifications disabled: SENDGRID_API_KEY not set",
+      );
       return;
     }
 
@@ -107,7 +124,9 @@ export class DeliveryNotificationsService implements OnModuleInit {
 
   private initializeTwilio(): void {
     if (!this.smsEnabled) {
-      this.logger.warn("SMS notifications disabled: TWILIO credentials not set");
+      this.logger.warn(
+        "SMS notifications disabled: TWILIO credentials not set",
+      );
       return;
     }
 
@@ -131,8 +150,13 @@ export class DeliveryNotificationsService implements OnModuleInit {
     return `${this.baseUrl}/tracking?${params.toString()}`;
   }
 
-  async notifyRouteAssigned(route: DeliveryRoute, stop: RouteStop): Promise<void> {
-    const buyer = await this.userRepository.findOne({ where: { id: stop.orderId } });
+  async notifyRouteAssigned(
+    route: DeliveryRoute,
+    stop: RouteStop,
+  ): Promise<void> {
+    const buyer = await this.userRepository.findOne({
+      where: { id: stop.orderId },
+    });
     if (!buyer) {
       this.logger.warn(`No se encontró comprador para orden ${stop.orderId}`);
       return;
@@ -140,7 +164,9 @@ export class DeliveryNotificationsService implements OnModuleInit {
 
     const trackingUrl = this.generateTrackingUrl(stop, route);
     const estimatedDate = new Date(route.deliveryDate);
-    estimatedDate.setDate(estimatedDate.getDate() + (stop.sequence > 5 ? 1 : 0));
+    estimatedDate.setDate(
+      estimatedDate.getDate() + (stop.sequence > 5 ? 1 : 0),
+    );
 
     await this.sendMultiChannel(buyer, {
       type: NotificationType.DELIVERY_ASSIGNED,
@@ -156,13 +182,22 @@ export class DeliveryNotificationsService implements OnModuleInit {
         driverName: route.driverName,
         vehiclePlate: route.vehiclePlate,
       } as TrackingLinkData,
-      channels: [NotificationChannel.PUSH, NotificationChannel.EMAIL, NotificationChannel.IN_APP],
+      channels: [
+        NotificationChannel.PUSH,
+        NotificationChannel.EMAIL,
+        NotificationChannel.IN_APP,
+      ],
     });
   }
 
-  async notifyRouteStarted(route: DeliveryRoute, stops: RouteStop[]): Promise<void> {
+  async notifyRouteStarted(
+    route: DeliveryRoute,
+    stops: RouteStop[],
+  ): Promise<void> {
     for (const stop of stops) {
-      const buyer = await this.userRepository.findOne({ where: { id: stop.orderId } });
+      const buyer = await this.userRepository.findOne({
+        where: { id: stop.orderId },
+      });
       if (!buyer) continue;
 
       const trackingUrl = this.generateTrackingUrl(stop, route);
@@ -186,8 +221,14 @@ export class DeliveryNotificationsService implements OnModuleInit {
     }
   }
 
-  async notifyDriverApproaching(stop: RouteStop, route: DeliveryRoute, etaMinutes: number): Promise<void> {
-    const buyer = await this.userRepository.findOne({ where: { id: stop.orderId } });
+  async notifyDriverApproaching(
+    stop: RouteStop,
+    route: DeliveryRoute,
+    etaMinutes: number,
+  ): Promise<void> {
+    const buyer = await this.userRepository.findOne({
+      where: { id: stop.orderId },
+    });
     if (!buyer) return;
 
     const trackingUrl = this.generateTrackingUrl(stop, route);
@@ -212,7 +253,9 @@ export class DeliveryNotificationsService implements OnModuleInit {
   }
 
   async notifyDelivered(stop: RouteStop, route: DeliveryRoute): Promise<void> {
-    const buyer = await this.userRepository.findOne({ where: { id: stop.orderId } });
+    const buyer = await this.userRepository.findOne({
+      where: { id: stop.orderId },
+    });
     if (!buyer) return;
 
     const trackingUrl = this.generateTrackingUrl(stop, route);
@@ -229,12 +272,22 @@ export class DeliveryNotificationsService implements OnModuleInit {
         deliveredAt: new Date().toISOString(),
         carrierName: route.carrierName,
       } as TrackingLinkData,
-      channels: [NotificationChannel.PUSH, NotificationChannel.EMAIL, NotificationChannel.IN_APP],
+      channels: [
+        NotificationChannel.PUSH,
+        NotificationChannel.EMAIL,
+        NotificationChannel.IN_APP,
+      ],
     });
   }
 
-  async notifyDeliveryFailed(stop: RouteStop, route: DeliveryRoute, reason: string): Promise<void> {
-    const buyer = await this.userRepository.findOne({ where: { id: stop.orderId } });
+  async notifyDeliveryFailed(
+    stop: RouteStop,
+    route: DeliveryRoute,
+    reason: string,
+  ): Promise<void> {
+    const buyer = await this.userRepository.findOne({
+      where: { id: stop.orderId },
+    });
     if (!buyer) return;
 
     const trackingUrl = this.generateTrackingUrl(stop, route);
@@ -254,7 +307,12 @@ export class DeliveryNotificationsService implements OnModuleInit {
         failureReason: reason,
         carrierName: route.carrierName,
       } as TrackingLinkData,
-      channels: [NotificationChannel.PUSH, NotificationChannel.EMAIL, NotificationChannel.IN_APP, NotificationChannel.SMS],
+      channels: [
+        NotificationChannel.PUSH,
+        NotificationChannel.EMAIL,
+        NotificationChannel.IN_APP,
+        NotificationChannel.SMS,
+      ],
     });
   }
 
@@ -269,7 +327,9 @@ export class DeliveryNotificationsService implements OnModuleInit {
     },
   ): Promise<void> {
     const results = await Promise.allSettled(
-      payload.channels.map((channel) => this.sendSingleChannel(user, channel, payload)),
+      payload.channels.map((channel) =>
+        this.sendSingleChannel(user, channel, payload),
+      ),
     );
 
     const notification = this.notificationRepository.create({
@@ -287,7 +347,9 @@ export class DeliveryNotificationsService implements OnModuleInit {
       if (result.status === "fulfilled") {
         this.logger.log(`${channel} notification sent to user ${user.id}`);
       } else {
-        this.logger.error(`${channel} notification failed for user ${user.id}: ${result.reason}`);
+        this.logger.error(
+          `${channel} notification failed for user ${user.id}: ${result.reason}`,
+        );
       }
     });
   }
@@ -342,7 +404,7 @@ export class DeliveryNotificationsService implements OnModuleInit {
         },
         data: {
           ...Object.fromEntries(
-            Object.entries(payload.data).map(([k, v]) => [k, String(v)])
+            Object.entries(payload.data).map(([k, v]) => [k, String(v)]),
           ),
           click_action: "FLUTTER_NOTIFICATION_CLICK",
         },
@@ -369,8 +431,10 @@ export class DeliveryNotificationsService implements OnModuleInit {
       this.logger.log(`Push sent to user ${user.id}`);
     } catch (err) {
       const error = err as any;
-      if (error.code === "messaging/registration-token-not-registered" ||
-          error.code === "messaging/invalid-registration-token") {
+      if (
+        error.code === "messaging/registration-token-not-registered" ||
+        error.code === "messaging/invalid-registration-token"
+      ) {
         this.logger.warn(`Invalid push token for user ${user.id}, clearing`);
         user.pushToken = "";
         await this.userRepository.save(user);
@@ -394,12 +458,19 @@ export class DeliveryNotificationsService implements OnModuleInit {
     }
 
     try {
-      const html = this.renderEmailTemplate(payload.title, payload.body, payload.data.trackingUrl);
+      const html = this.renderEmailTemplate(
+        payload.title,
+        payload.body,
+        payload.data.trackingUrl,
+      );
 
       await this.sendGridClient!.send({
         to: user.email,
         from: {
-          email: this.config.get("SENDGRID_FROM_EMAIL", "noreply@techshield.com"),
+          email: this.config.get(
+            "SENDGRID_FROM_EMAIL",
+            "noreply@techshield.com",
+          ),
           name: this.config.get("SENDGRID_FROM_NAME", "TechShield"),
         },
         subject: payload.title,
@@ -448,7 +519,11 @@ export class DeliveryNotificationsService implements OnModuleInit {
     }
   }
 
-  private renderEmailTemplate(title: string, body: string, trackingUrl: string): string {
+  private renderEmailTemplate(
+    title: string,
+    body: string,
+    trackingUrl: string,
+  ): string {
     return `
 <!DOCTYPE html>
 <html>

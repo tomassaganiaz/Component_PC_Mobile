@@ -76,7 +76,13 @@ export class WalletService {
     const wallet = await this.getOrCreate(userId);
     wallet.balance = this.round(Number(wallet.balance) + amount);
     await this.walletRepository.save(wallet);
-    await this.addEntry(wallet, WalletEntryType.CREDIT, amount, description, orderId);
+    await this.addEntry(
+      wallet,
+      WalletEntryType.CREDIT,
+      amount,
+      description,
+      orderId,
+    );
     return wallet;
   }
 
@@ -90,7 +96,13 @@ export class WalletService {
     const wallet = await this.getOrCreate(userId);
     wallet.balance = this.round(Math.max(0, Number(wallet.balance) - amount));
     await this.walletRepository.save(wallet);
-    await this.addEntry(wallet, WalletEntryType.DEBIT, amount, description, orderId);
+    await this.addEntry(
+      wallet,
+      WalletEntryType.DEBIT,
+      amount,
+      description,
+      orderId,
+    );
     return wallet;
   }
 

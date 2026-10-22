@@ -3,7 +3,12 @@ import { GoogleMapsController } from "./googlemaps.controller";
 import { GoogleMapsService } from "./googlemaps.service";
 import { ProductsService } from "../products/products.service";
 import { UsersService } from "../users/users.service";
-import { Product, ProductCondition, ProductCategory, ProductStatus } from "../products/product.entity";
+import {
+  Product,
+  ProductCondition,
+  ProductCategory,
+  ProductStatus,
+} from "../products/product.entity";
 import { User, UserRole } from "../users/user.entity";
 import { NotFoundException, BadRequestException } from "@nestjs/common";
 
@@ -87,7 +92,9 @@ describe("GoogleMapsController", () => {
   describe("productLocation", () => {
     it("returns product location with seller info and static map", async () => {
       mockProductsService.findOne.mockResolvedValue(mockProduct);
-      mockMapsService.staticMapUrl.mockReturnValue("https://maps.googleapis.com/staticmap?...");
+      mockMapsService.staticMapUrl.mockReturnValue(
+        "https://maps.googleapis.com/staticmap?...",
+      );
 
       const result = await controller.productLocation("prod-123");
 
@@ -110,14 +117,26 @@ describe("GoogleMapsController", () => {
         lat: -34.61,
         lng: -58.39,
       });
-      expect(result.staticMapUrl).toBe("https://maps.googleapis.com/staticmap?...");
+      expect(result.staticMapUrl).toBe(
+        "https://maps.googleapis.com/staticmap?...",
+      );
       expect(mockProductsService.findOne).toHaveBeenCalledWith("prod-123");
     });
 
     it("falls back to seller location when product has no coords", async () => {
-      const productNoCoords = { ...mockProduct, lat: null, lng: null, address: null, city: null, province: null, postalCode: null };
+      const productNoCoords = {
+        ...mockProduct,
+        lat: null,
+        lng: null,
+        address: null,
+        city: null,
+        province: null,
+        postalCode: null,
+      };
       mockProductsService.findOne.mockResolvedValue(productNoCoords);
-      mockMapsService.staticMapUrl.mockReturnValue("https://maps.googleapis.com/staticmap?...");
+      mockMapsService.staticMapUrl.mockReturnValue(
+        "https://maps.googleapis.com/staticmap?...",
+      );
 
       const result = await controller.productLocation("prod-123");
 
@@ -136,7 +155,15 @@ describe("GoogleMapsController", () => {
         ...mockProduct,
         lat: null,
         lng: null,
-        seller: { ...mockProduct.seller, lat: null, lng: null, address: null, city: null, province: null, postalCode: null },
+        seller: {
+          ...mockProduct.seller,
+          lat: null,
+          lng: null,
+          address: null,
+          city: null,
+          province: null,
+          postalCode: null,
+        },
       };
       mockProductsService.findOne.mockResolvedValue(productNoLocation);
       mockMapsService.staticMapUrl.mockReturnValue(null);
@@ -157,14 +184,18 @@ describe("GoogleMapsController", () => {
         distanceKm: 15.5,
         durationMinutes: 25,
         polyline: "encoded_polyline",
-        steps: [{ instruction: "Head north", distanceKm: 2, durationMinutes: 5 }],
+        steps: [
+          { instruction: "Head north", distanceKm: 2, durationMinutes: 5 },
+        ],
       });
       mockMapsService.estimateDeliveryDate.mockReturnValue({
         estimatedDate: new Date("2026-10-16"),
         estimatedDays: 2,
         text: "En 2 días",
       });
-      mockMapsService.staticMapUrl.mockReturnValue("https://maps.googleapis.com/staticmap?...");
+      mockMapsService.staticMapUrl.mockReturnValue(
+        "https://maps.googleapis.com/staticmap?...",
+      );
 
       const result = await controller.deliveryEstimate(
         { user: { id: "buyer-1" } },
@@ -183,9 +214,13 @@ describe("GoogleMapsController", () => {
       });
       expect(result.route).toEqual({
         polyline: "encoded_polyline",
-        steps: [{ instruction: "Head north", distanceKm: 2, durationMinutes: 5 }],
+        steps: [
+          { instruction: "Head north", distanceKm: 2, durationMinutes: 5 },
+        ],
       });
-      expect(result.staticMapUrl).toBe("https://maps.googleapis.com/staticmap?...");
+      expect(result.staticMapUrl).toBe(
+        "https://maps.googleapis.com/staticmap?...",
+      );
     });
 
     it("throws NotFoundException when product has no location", async () => {
@@ -198,16 +233,28 @@ describe("GoogleMapsController", () => {
       mockUsersService.findOne.mockResolvedValue(mockBuyer);
 
       await expect(
-        controller.deliveryEstimate({ user: { id: "buyer-1" } }, "prod-123", "standard"),
+        controller.deliveryEstimate(
+          { user: { id: "buyer-1" } },
+          "prod-123",
+          "standard",
+        ),
       ).rejects.toThrow(NotFoundException);
     });
 
     it("throws BadRequestException when buyer has no location", async () => {
       mockProductsService.findOne.mockResolvedValue(mockProduct);
-      mockUsersService.findOne.mockResolvedValue({ ...mockBuyer, lat: null, lng: null });
+      mockUsersService.findOne.mockResolvedValue({
+        ...mockBuyer,
+        lat: null,
+        lng: null,
+      });
 
       await expect(
-        controller.deliveryEstimate({ user: { id: "buyer-1" } }, "prod-123", "standard"),
+        controller.deliveryEstimate(
+          { user: { id: "buyer-1" } },
+          "prod-123",
+          "standard",
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -220,7 +267,9 @@ describe("GoogleMapsController", () => {
         estimatedDays: 2,
         text: "En 2 días",
       });
-      mockMapsService.staticMapUrl.mockReturnValue("https://maps.googleapis.com/staticmap?...");
+      mockMapsService.staticMapUrl.mockReturnValue(
+        "https://maps.googleapis.com/staticmap?...",
+      );
 
       const result = await controller.deliveryEstimate(
         { user: { id: "buyer-1" } },
@@ -238,20 +287,47 @@ describe("GoogleMapsController", () => {
       mockProductsService.findOne.mockResolvedValue(mockProduct);
       mockMapsService.findNearbyPlaces
         .mockResolvedValueOnce([
-          { name: "Tienda A", lat: -34.604, lng: -58.382, address: "Cerca 1", placeId: "1", rating: 4.5 },
+          {
+            name: "Tienda A",
+            lat: -34.604,
+            lng: -58.382,
+            address: "Cerca 1",
+            placeId: "1",
+            rating: 4.5,
+          },
         ])
         .mockResolvedValueOnce([
-          { name: "Correo Central", lat: -34.605, lng: -58.383, address: "Cerca 2", placeId: "2", rating: 4.0 },
+          {
+            name: "Correo Central",
+            lat: -34.605,
+            lng: -58.383,
+            address: "Cerca 2",
+            placeId: "2",
+            rating: 4.0,
+          },
         ])
         .mockResolvedValueOnce([
-          { name: "Envíos Rápidos", lat: -34.606, lng: -58.384, address: "Cerca 3", placeId: "3", rating: 4.8 },
+          {
+            name: "Envíos Rápidos",
+            lat: -34.606,
+            lng: -58.384,
+            address: "Cerca 3",
+            placeId: "3",
+            rating: 4.8,
+          },
         ]);
 
-      const result = await controller.nearbyPickups("prod-123", "5000", "store");
+      const result = await controller.nearbyPickups(
+        "prod-123",
+        "5000",
+        "store",
+      );
 
       expect(result.productId).toBe("prod-123");
       expect(result.places).toHaveLength(3);
-      expect(result.places[0].distanceKm).toBeLessThanOrEqual(result.places[1].distanceKm);
+      expect(result.places[0].distanceKm).toBeLessThanOrEqual(
+        result.places[1].distanceKm,
+      );
       expect(result.places[0].name).toBe("Tienda A");
     });
 
@@ -259,16 +335,41 @@ describe("GoogleMapsController", () => {
       mockProductsService.findOne.mockResolvedValue(mockProduct);
       mockMapsService.findNearbyPlaces
         .mockResolvedValueOnce([
-          { name: "Tienda A", lat: -34.604, lng: -58.382, address: "Cerca 1", placeId: "1", rating: 4.5 },
+          {
+            name: "Tienda A",
+            lat: -34.604,
+            lng: -58.382,
+            address: "Cerca 1",
+            placeId: "1",
+            rating: 4.5,
+          },
         ])
         .mockResolvedValueOnce([
-          { name: "Correo Central", lat: -34.605, lng: -58.383, address: "Cerca 2", placeId: "2", rating: 4.0 },
+          {
+            name: "Correo Central",
+            lat: -34.605,
+            lng: -58.383,
+            address: "Cerca 2",
+            placeId: "2",
+            rating: 4.0,
+          },
         ])
         .mockResolvedValueOnce([
-          { name: "Tienda A duplicada", lat: -34.604, lng: -58.382, address: "Cerca 1", placeId: "1", rating: 4.5 },
+          {
+            name: "Tienda A duplicada",
+            lat: -34.604,
+            lng: -58.382,
+            address: "Cerca 1",
+            placeId: "1",
+            rating: 4.5,
+          },
         ]);
 
-      const result = await controller.nearbyPickups("prod-123", "5000", "store");
+      const result = await controller.nearbyPickups(
+        "prod-123",
+        "5000",
+        "store",
+      );
 
       expect(result.places).toHaveLength(2);
     });
@@ -281,7 +382,9 @@ describe("GoogleMapsController", () => {
         seller: { ...mockProduct.seller, lat: null, lng: null },
       });
 
-      await expect(controller.nearbyPickups("prod-123")).rejects.toThrow(NotFoundException);
+      await expect(controller.nearbyPickups("prod-123")).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -310,7 +413,9 @@ describe("GoogleMapsController", () => {
 
   describe("reverseGeocode", () => {
     it("returns reverse geocoded address", async () => {
-      mockMapsService.reverseGeocode.mockResolvedValue("Av. Corrientes 1234, CABA, Argentina");
+      mockMapsService.reverseGeocode.mockResolvedValue(
+        "Av. Corrientes 1234, CABA, Argentina",
+      );
 
       const result = await controller.reverseGeocode("-34.6037", "-58.3816");
 
@@ -329,7 +434,12 @@ describe("GoogleMapsController", () => {
         steps: [],
       });
 
-      const result = await controller.directions("-34.6", "-58.4", "-34.5", "-58.3");
+      const result = await controller.directions(
+        "-34.6",
+        "-58.4",
+        "-34.5",
+        "-58.3",
+      );
 
       expect(result.result).toEqual({
         distanceKm: 10.5,
@@ -342,17 +452,34 @@ describe("GoogleMapsController", () => {
 
   describe("staticMap", () => {
     it("returns static map URL", async () => {
-      mockMapsService.staticMapUrl.mockReturnValue("https://maps.googleapis.com/staticmap?...");
+      mockMapsService.staticMapUrl.mockReturnValue(
+        "https://maps.googleapis.com/staticmap?...",
+      );
 
-      const result = await controller.staticMap("-34.6", "-58.4", "-34.5", "-58.3");
+      const result = await controller.staticMap(
+        "-34.6",
+        "-58.4",
+        "-34.5",
+        "-58.3",
+      );
 
-      expect(result.staticMapUrl).toBe("https://maps.googleapis.com/staticmap?...");
+      expect(result.staticMapUrl).toBe(
+        "https://maps.googleapis.com/staticmap?...",
+      );
     });
 
     it("parses waypoints correctly", async () => {
-      mockMapsService.staticMapUrl.mockReturnValue("https://maps.googleapis.com/staticmap?...");
+      mockMapsService.staticMapUrl.mockReturnValue(
+        "https://maps.googleapis.com/staticmap?...",
+      );
 
-      await controller.staticMap("-34.6", "-58.4", "-34.5", "-58.3", "-34.55,-58.35|-34.52,-58.32");
+      await controller.staticMap(
+        "-34.6",
+        "-58.4",
+        "-34.5",
+        "-58.3",
+        "-34.55,-58.35|-34.52,-58.32",
+      );
 
       expect(mockMapsService.staticMapUrl).toHaveBeenCalledWith(
         { lat: -34.6, lng: -58.4 },

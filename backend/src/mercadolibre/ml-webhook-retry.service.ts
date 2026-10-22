@@ -74,7 +74,7 @@ export class MlWebhookRetryService {
 
     const saved = await this.webhookRepository.save(webhook);
     this.logger.log(`Webhook encolado: ${saved.id} (${payload.topic})`);
-    
+
     // Procesar de forma asíncrona (no bloquear el webhook HTTP)
     this.processWithRetry(saved.id).catch((err) => {
       this.logger.error(`Error procesando webhook ${saved.id}: ${String(err)}`);
@@ -87,7 +87,9 @@ export class MlWebhookRetryService {
    * Procesa un webhook con lógica de reintentos exponenciales.
    */
   async processWithRetry(webhookId: string): Promise<void> {
-    const webhook = await this.webhookRepository.findOne({ where: { id: webhookId } });
+    const webhook = await this.webhookRepository.findOne({
+      where: { id: webhookId },
+    });
     if (!webhook) {
       this.logger.warn(`Webhook ${webhookId} no encontrado para procesar`);
       return;
@@ -104,8 +106,10 @@ export class MlWebhookRetryService {
       const startTime = Date.now();
 
       try {
-        this.logger.log(`Procesando webhook ${webhook.id} (intento ${attempt + 1}/${maxRetries + 1})`);
-        
+        this.logger.log(
+          `Procesando webhook ${webhook.id} (intento ${attempt + 1}/${maxRetries + 1})`,
+        );
+
         const result = await this.mlService.handleWebhook(
           webhook.topic,
           webhook.resource,
@@ -121,7 +125,9 @@ export class MlWebhookRetryService {
           webhook.processingTimeMs = processingTime;
           webhook.updatedAt = new Date();
           await this.webhookRepository.save(webhook);
-          this.logger.log(`Webhook ${webhook.id} completado en ${processingTime}ms`);
+          this.logger.log(
+            `Webhook ${webhook.id} completado en ${processingTime}ms`,
+          );
           return;
         }
 
@@ -132,7 +138,6 @@ export class MlWebhookRetryService {
         webhook.updatedAt = new Date();
         await this.webhookRepository.save(webhook);
         return;
-
       } catch (error) {
         const processingTime = Date.now() - startTime;
         const errorMessage = String(error);
@@ -147,7 +152,7 @@ export class MlWebhookRetryService {
 
           this.logger.warn(
             `Webhook ${webhook.id} falló (intento ${attempt + 1}): ${errorMessage}. ` +
-            `Reintentando en ${delay}ms...`
+              `Reintentando en ${delay}ms...`,
           );
 
           await this.sleep(delay);
@@ -175,7 +180,10 @@ export class MlWebhookRetryService {
   /**
    * Mueve webhook fallido a Dead Letter Queue.
    */
-  private async moveToDeadLetterQueue(webhook: MlWebhook, errorMessage: string): Promise<void> {
+  private async moveToDeadLetterQueue(
+    webhook: MlWebhook,
+    errorMessage: string,
+  ): Promise<void> {
     webhook.status = WebhookStatus.DEAD_LETTER;
     webhook.lastError = errorMessage;
     webhook.updatedAt = new Date();
@@ -209,7 +217,7 @@ export class MlWebhookRetryService {
 
     this.logger.error(
       `[DLQ] Webhook ${webhook.id} | Topic: ${webhook.topic} | Resource: ${webhook.resource} | ` +
-      `User: ${webhook.userId} | Error: ${errorMessage} | Intentos: ${webhook.attempts}`
+        `User: ${webhook.userId} | Error: ${errorMessage} | Intentos: ${webhook.attempts}`,
     );
   }
 
@@ -217,7 +225,9 @@ export class MlWebhookRetryService {
    * Reprocesa un webhook de la Dead Letter Queue.
    */
   async replayDeadLetter(deadLetterId: string): Promise<boolean> {
-    const dlqEntry = await this.deadLetterRepository.findOne({ where: { id: deadLetterId } });
+    const dlqEntry = await this.deadLetterRepository.findOne({
+      where: { id: deadLetterId },
+    });
     if (!dlqEntry) {
       this.logger.warn(`Dead letter entry ${deadLetterId} no encontrado`);
       return false;
@@ -253,24 +263,34 @@ export class MlWebhookRetryService {
       this.logger.error(`Error en replay de ${saved.id}: ${String(err)}`);
     });
 
-    this.logger.log(`Dead letter ${deadLetterId} re-enviado como webhook ${saved.id}`);
+    this.logger.log(
+      `Dead letter ${deadLetterId} re-enviado como webhook ${saved.id}`,
+    );
     return true;
   }
 
   /**
    * Limpia webhooks procesados antiguos (cron diario).
    */
-  @Cron(CronExpression.EVERY_DAY_AT_3AM, { name: "cleanup-old-webhooks", timeZone: "America/Argentina/Buenos_Aires" })
+  @Cron(CronExpression.EVERY_DAY_AT_3AM, {
+    name: "cleanup-old-webhooks",
+    timeZone: "America/Argentina/Buenos_Aires",
+  })
   async cleanupOldWebhooks(): Promise<void> {
     const retentionDays = this.config.get("ML_WEBHOOK_RETENTION_DAYS", 30);
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
 
-    const dlqRetentionDays = this.config.get("ML_WEBHOOK_DLQ_RETENTION_DAYS", 90);
+    const dlqRetentionDays = this.config.get(
+      "ML_WEBHOOK_DLQ_RETENTION_DAYS",
+      90,
+    );
     const dlqCutoffDate = new Date();
     dlqCutoffDate.setDate(dlqCutoffDate.getDate() - dlqRetentionDays);
 
-    this.logger.log(`Limpiando webhooks completados anteriores a ${cutoffDate.toISOString()}`);
+    this.logger.log(
+      `Limpiando webhooks completados anteriores a ${cutoffDate.toISOString()}`,
+    );
 
     // Borrar webhooks completados antiguos
     const deletedWebhooks = await this.webhookRepository
@@ -287,13 +307,18 @@ export class MlWebhookRetryService {
       .where("movedAt < :cutoff", { cutoff: dlqCutoffDate })
       .execute();
 
-    this.logger.log(`Limpieza completada: ${deletedWebhooks.affected} webhooks, ${deletedDlq.affected} DLQ eliminados`);
+    this.logger.log(
+      `Limpieza completada: ${deletedWebhooks.affected} webhooks, ${deletedDlq.affected} DLQ eliminados`,
+    );
   }
 
   /**
    * Procesa webhooks pendientes de reintento (cron cada 5 min).
    */
-  @Cron(CronExpression.EVERY_5_MINUTES, { name: "process-webhook-retries", timeZone: "America/Argentina/Buenos_Aires" })
+  @Cron(CronExpression.EVERY_5_MINUTES, {
+    name: "process-webhook-retries",
+    timeZone: "America/Argentina/Buenos_Aires",
+  })
   async processPendingRetries(): Promise<void> {
     const pending = await this.webhookRepository.find({
       where: {
@@ -306,7 +331,9 @@ export class MlWebhookRetryService {
 
     if (pending.length === 0) return;
 
-    this.logger.log(`Procesando ${pending.length} webhooks pendientes de reintento`);
+    this.logger.log(
+      `Procesando ${pending.length} webhooks pendientes de reintento`,
+    );
 
     for (const webhook of pending) {
       // Evitar procesar el mismo webhook concurrentemente
@@ -343,13 +370,23 @@ export class MlWebhookRetryService {
       deadLetterCount,
       avgTimeResult,
     ] = await Promise.all([
-      this.webhookRepository.count({ where: { status: WebhookStatus.PENDING } }),
-      this.webhookRepository.count({ where: { status: WebhookStatus.PROCESSING } }),
       this.webhookRepository.count({
-        where: { status: WebhookStatus.COMPLETED, createdAt: Between(last24h, new Date()) },
+        where: { status: WebhookStatus.PENDING },
       }),
       this.webhookRepository.count({
-        where: { status: In([WebhookStatus.FAILED, WebhookStatus.DEAD_LETTER]), createdAt: Between(last24h, new Date()) },
+        where: { status: WebhookStatus.PROCESSING },
+      }),
+      this.webhookRepository.count({
+        where: {
+          status: WebhookStatus.COMPLETED,
+          createdAt: Between(last24h, new Date()),
+        },
+      }),
+      this.webhookRepository.count({
+        where: {
+          status: In([WebhookStatus.FAILED, WebhookStatus.DEAD_LETTER]),
+          createdAt: Between(last24h, new Date()),
+        },
       }),
       this.deadLetterRepository.count(),
       this.webhookRepository
@@ -370,12 +407,14 @@ export class MlWebhookRetryService {
     };
   }
 
-  async listDeadLetter(limit: number = 50, offset: number = 0): Promise<MlWebhookDeadLetter[]> {
+  async listDeadLetter(
+    limit: number = 50,
+    offset: number = 0,
+  ): Promise<MlWebhookDeadLetter[]> {
     return this.deadLetterRepository.find({
       order: { movedAt: "DESC" },
       take: limit,
       skip: offset,
     });
   }
-
-  }
+}

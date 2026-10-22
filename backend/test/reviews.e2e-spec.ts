@@ -41,9 +41,12 @@ describe("Reviews (e2e)", () => {
 
   describe("POST /api/reviews", () => {
     it("falla sin autenticación -> 401", async () => {
-      const res = await request(app.getHttpServer())
-        .post("/api/reviews")
-        .send({ productId, orderId: "nonexistent", rating: 5, type: "positive" });
+      const res = await request(app.getHttpServer()).post("/api/reviews").send({
+        productId,
+        orderId: "nonexistent",
+        rating: 5,
+        type: "positive",
+      });
       expect(res.status).toBe(401);
     });
 
@@ -51,7 +54,12 @@ describe("Reviews (e2e)", () => {
       const res = await request(app.getHttpServer())
         .post("/api/reviews")
         .set("Authorization", `Bearer ${buyer.token}`)
-        .send({ productId, orderId: "nonexistent", rating: 5, type: "positive" });
+        .send({
+          productId,
+          orderId: "nonexistent",
+          rating: 5,
+          type: "positive",
+        });
       expect(res.status).toBe(400);
     });
   });

@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsEnum, IsUUID, IsBoolean } from "class-validator";
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsUUID,
+  IsBoolean,
+} from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { OrderStatus } from "../order.entity";
 

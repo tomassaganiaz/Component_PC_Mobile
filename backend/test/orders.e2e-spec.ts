@@ -137,6 +137,22 @@ describe("Orders (e2e)", () => {
       expect(res.status).toBe(403);
     });
 
+    it("solo admin avanza recepción, inspección y sellado antes del envío", async () => {
+      const forbidden = await request(app.getHttpServer())
+        .post(`/api/orders/${orderId}/advance-fulfillment`)
+        .set("Authorization", `Bearer ${buyer.token}`);
+      expect(forbidden.status).toBe(403);
+
+      const stages = ["technical_inspection", "secure_packaging", "dispatch"];
+      for (const stage of stages) {
+        const res = await request(app.getHttpServer())
+          .post(`/api/orders/${orderId}/advance-fulfillment`)
+          .set("Authorization", `Bearer ${admin.token}`);
+        expect(res.status).toBe(201);
+        expect(res.body.fulfillmentStage).toBe(stage);
+      }
+    });
+
     it("el vendedor marca como enviado -> shipped", async () => {
       const res = await request(app.getHttpServer())
         .post(`/api/orders/${orderId}/ship`)
@@ -178,7 +194,9 @@ describe("Orders (e2e)", () => {
         .send({ productId: pid, shippingAddress: "x", paymentMethod: "card" });
       expect(created.status).toBe(201);
 
-      const before = await request(app.getHttpServer()).get(`/api/products/${pid}`);
+      const before = await request(app.getHttpServer()).get(
+        `/api/products/${pid}`,
+      );
       expect(before.body.stock).toBe(1);
 
       const cancel = await request(app.getHttpServer())
@@ -187,7 +205,9 @@ describe("Orders (e2e)", () => {
       expect(cancel.status).toBe(201);
       expect(cancel.body.status).toBe("cancelled");
 
-      const after = await request(app.getHttpServer()).get(`/api/products/${pid}`);
+      const after = await request(app.getHttpServer()).get(
+        `/api/products/${pid}`,
+      );
       expect(after.body.stock).toBe(2);
       expect(after.body.status).toBe("published");
     });

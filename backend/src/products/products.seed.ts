@@ -56,7 +56,8 @@ interface SeedSeller {
   email: string;
   name: string;
   acceptsTesting: boolean;
-}const SELLERS: SeedSeller[] = [
+}
+const SELLERS: SeedSeller[] = [
   { email: "techlab.pro@test.com", name: "TechLab Pro", acceptsTesting: true },
   { email: "cybermundo@test.com", name: "CyberMundo", acceptsTesting: true },
   {

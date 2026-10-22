@@ -1,10 +1,19 @@
-import { Injectable, Logger, BadRequestException, NotFoundException } from "@nestjs/common";
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { ConfigService } from "@nestjs/config";
 import * as crypto from "crypto";
 import { MlCredential } from "./ml-credential.entity";
-import { Product, ProductCategory, ProductCondition } from "../products/product.entity";
+import {
+  Product,
+  ProductCategory,
+  ProductCondition,
+} from "../products/product.entity";
 import { ProductVariation } from "../products/product-variation.entity";
 import { ProductsService } from "../products/products.service";
 
@@ -189,7 +198,9 @@ export class MercadoLibreService {
       mlUserId,
       accessToken,
       refreshToken: String(token.refresh_token),
-      expiresAt: new Date(Date.now() + Number(token.expires_in ?? 21600) * 1000),
+      expiresAt: new Date(
+        Date.now() + Number(token.expires_in ?? 21600) * 1000,
+      ),
     });
   }
 
@@ -254,11 +265,13 @@ export class MercadoLibreService {
       id: String(order.id),
       total: Number(order.total_amount ?? (first ? first.unitPrice : 0)),
       status: this.mapStatus(order.status),
-      shippingAddress: order.shipping?.receiver_address?.address_line ?? undefined,
+      shippingAddress:
+        order.shipping?.receiver_address?.address_line ?? undefined,
       paymentMethod: order.payments?.[0]?.payment_type ?? undefined,
       productId: first?.productId ?? "",
       createdAt: order.date_created ?? new Date().toISOString(),
-      updatedAt: order.last_updated ?? order.date_created ?? new Date().toISOString(),
+      updatedAt:
+        order.last_updated ?? order.date_created ?? new Date().toISOString(),
       product: first?.product ?? null,
       items,
       buyer: order.buyer
@@ -303,8 +316,20 @@ export class MercadoLibreService {
 
     return [
       mk(1, "AMD Ryzen 7 7800X3D", 340, "paid", "juan_perez_ml"),
-      mk(2, "NVIDIA RTX 4070 Super verificada", 620, "in_custody", "maria.gomez"),
-      mk(3, "Samsung Galaxy S24 Ultra Sellado", 980, "pending", "comprador_uy_22"),
+      mk(
+        2,
+        "NVIDIA RTX 4070 Super verificada",
+        620,
+        "in_custody",
+        "maria.gomez",
+      ),
+      mk(
+        3,
+        "Samsung Galaxy S24 Ultra Sellado",
+        980,
+        "pending",
+        "comprador_uy_22",
+      ),
       mk(4, "DDR5 Corsair 32GB 6000MHz", 130, "paid", "mateo_dev"),
     ];
   }
@@ -331,7 +356,12 @@ export class MercadoLibreService {
   ): Promise<{
     source: "mercadolibre" | "mock" | "not_connected";
     sales: MlSale[];
-    pagination?: { offset: number; limit: number; total: number; hasMore: boolean };
+    pagination?: {
+      offset: number;
+      limit: number;
+      total: number;
+      hasMore: boolean;
+    };
   }> {
     const { offset = 0, limit = 50 } = options;
 
@@ -341,7 +371,12 @@ export class MercadoLibreService {
       return {
         source: "mock",
         sales: paginated,
-        pagination: { offset, limit, total: mock.length, hasMore: offset + limit < mock.length },
+        pagination: {
+          offset,
+          limit,
+          total: mock.length,
+          hasMore: offset + limit < mock.length,
+        },
       };
     }
 
@@ -371,8 +406,13 @@ export class MercadoLibreService {
       }
 
       const url = `https://api.mercadolibre.com/orders/search?seller=${mlUserId}&sort=date_desc&offset=${offset}&limit=${limit}`;
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-      const data = (await res.json()) as { results?: unknown[]; paging?: { total: number } };
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = (await res.json()) as {
+        results?: unknown[];
+        paging?: { total: number };
+      };
       const sales = (data.results ?? []).map((o) => this.mapOrder(o));
       const total = data.paging?.total ?? sales.length;
 
@@ -391,9 +431,14 @@ export class MercadoLibreService {
     await this.credentialRepository.delete({ userId });
   }
 
-  async publishItem(userId: string, productId: string): Promise<MlPublishResult> {
+  async publishItem(
+    userId: string,
+    productId: string,
+  ): Promise<MlPublishResult> {
     if (!this.isConfigured()) {
-      throw new BadRequestException("Mercado Libre no está configurado (faltan ML_CLIENT_ID/ML_CLIENT_SECRET).");
+      throw new BadRequestException(
+        "Mercado Libre no está configurado (faltan ML_CLIENT_ID/ML_CLIENT_SECRET).",
+      );
     }
 
     const cred = await this.credentialRepository.findOne({ where: { userId } });
@@ -403,15 +448,21 @@ export class MercadoLibreService {
 
     const token = await this.ensureFreshToken(cred);
     if (!token) {
-      throw new BadRequestException("No se pudo obtener token válido de Mercado Libre.");
+      throw new BadRequestException(
+        "No se pudo obtener token válido de Mercado Libre.",
+      );
     }
 
     const product = await this.productsService.findOne(productId);
     if (product.sellerId !== userId) {
-      throw new BadRequestException("No tenés permiso para publicar este producto.");
+      throw new BadRequestException(
+        "No tenés permiso para publicar este producto.",
+      );
     }
     if (product.status !== "published" && product.status !== "verified") {
-      throw new BadRequestException("El producto debe estar publicado o verificado para sincronizar con ML.");
+      throw new BadRequestException(
+        "El producto debe estar publicado o verificado para sincronizar con ML.",
+      );
     }
     if (product.stock <= 0) {
       throw new BadRequestException("El producto no tiene stock disponible.");
@@ -419,27 +470,35 @@ export class MercadoLibreService {
 
     const mlCategoryId = CATEGORY_MAP[product.category];
     if (!mlCategoryId) {
-      throw new BadRequestException(`Categoría ${product.category} no mapeada para Mercado Libre.`);
+      throw new BadRequestException(
+        `Categoría ${product.category} no mapeada para Mercado Libre.`,
+      );
     }
 
     const pictures = (product.images ?? []).map((url) => ({ source: url }));
     if (pictures.length === 0) {
-      throw new BadRequestException("El producto debe tener al menos una imagen para publicar en ML.");
+      throw new BadRequestException(
+        "El producto debe tener al menos una imagen para publicar en ML.",
+      );
     }
 
     // Cargar variaciones del producto local
     const variations = await this.productsService.listVariations(productId);
 
-    const { attributes, missingRequired } = await this.validateAndBuildAttributes(product, token);
+    const { attributes, missingRequired } =
+      await this.validateAndBuildAttributes(product, token);
     if (missingRequired.length > 0) {
       throw new BadRequestException(
         `Faltan atributos obligatorios para la categoría en ML: ${missingRequired.join(", ")}. ` +
-        `Completá marca, modelo y campos específicos del producto antes de publicar.`,
+          `Completá marca, modelo y campos específicos del producto antes de publicar.`,
       );
     }
 
     // Obtener atributos de variación permitidos por ML para esta categoría
-    const variationAttrs = await this.getVariationAttributes(mlCategoryId, token);
+    const variationAttrs = await this.getVariationAttributes(
+      mlCategoryId,
+      token,
+    );
 
     // Construir body base
     const body: Record<string, unknown> = {
@@ -453,13 +512,21 @@ export class MercadoLibreService {
       description: { plain_text: product.description },
       pictures,
       attributes,
-      warranty: product.warrantyDays > 0 ? `Garantía de ${product.warrantyDays} días` : undefined,
+      warranty:
+        product.warrantyDays > 0
+          ? `Garantía de ${product.warrantyDays} días`
+          : undefined,
       video_id: undefined,
     };
 
     // Si hay variaciones locales, construir array de variaciones para ML
     if (variations.length > 0) {
-      const mlVariations = this.buildMlVariations(variations, product, variationAttrs, pictures);
+      const mlVariations = this.buildMlVariations(
+        variations,
+        product,
+        variationAttrs,
+        pictures,
+      );
       if (mlVariations.length > 0) {
         body.variations = mlVariations;
         // Con variaciones, available_quantity y price van en cada variación, no en root
@@ -471,7 +538,10 @@ export class MercadoLibreService {
       body.available_quantity = product.stock;
     }
 
-    const apiBase = this.site() === "MLB" ? "https://api.mercadolivre.com" : "https://api.mercadolibre.com";
+    const apiBase =
+      this.site() === "MLB"
+        ? "https://api.mercadolivre.com"
+        : "https://api.mercadolibre.com";
     const res = await fetch(`${apiBase}/items`, {
       method: "POST",
       headers: {
@@ -485,7 +555,9 @@ export class MercadoLibreService {
     const data = (await res.json()) as Record<string, unknown>;
     if (!res.ok) {
       this.logger.error(`Error publicando en ML: ${JSON.stringify(data)}`);
-      throw new BadRequestException(`Mercado Libre: ${(data as any).message ?? res.statusText}`);
+      throw new BadRequestException(
+        `Mercado Libre: ${(data as any).message ?? res.statusText}`,
+      );
     }
 
     return {
@@ -495,28 +567,42 @@ export class MercadoLibreService {
     };
   }
 
-  private buildAttributes(product: Product): Array<{ id: string; value_name?: string; value_id?: string }> {
-    const attrs: Array<{ id: string; value_name?: string; value_id?: string }> = [];
+  private buildAttributes(
+    product: Product,
+  ): Array<{ id: string; value_name?: string; value_id?: string }> {
+    const attrs: Array<{ id: string; value_name?: string; value_id?: string }> =
+      [];
 
     if (product.brand) attrs.push({ id: "BRAND", value_name: product.brand });
     if (product.model) attrs.push({ id: "MODEL", value_name: product.model });
 
     if (product.condition === ProductCondition.USED && product.hoursOfUse) {
-      attrs.push({ id: "ITEM_CONDITION", value_id: "2230284", value_name: "Usado" });
-      attrs.push({ id: "HOURS_OF_USE", value_name: String(product.hoursOfUse) });
+      attrs.push({
+        id: "ITEM_CONDITION",
+        value_id: "2230284",
+        value_name: "Usado",
+      });
+      attrs.push({
+        id: "HOURS_OF_USE",
+        value_name: String(product.hoursOfUse),
+      });
     }
 
     if (product.category === ProductCategory.CPU) {
-      if (product.model) attrs.push({ id: "PROCESSOR_MODEL", value_name: product.model });
+      if (product.model)
+        attrs.push({ id: "PROCESSOR_MODEL", value_name: product.model });
     }
     if (product.category === ProductCategory.GPU) {
-      if (product.model) attrs.push({ id: "VIDEO_CARD_MODEL", value_name: product.model });
+      if (product.model)
+        attrs.push({ id: "VIDEO_CARD_MODEL", value_name: product.model });
     }
     if (product.category === ProductCategory.RAM) {
-      if (product.model) attrs.push({ id: "RAM_MODEL", value_name: product.model });
+      if (product.model)
+        attrs.push({ id: "RAM_MODEL", value_name: product.model });
     }
     if (product.category === ProductCategory.STORAGE) {
-      if (product.model) attrs.push({ id: "STORAGE_MODEL", value_name: product.model });
+      if (product.model)
+        attrs.push({ id: "STORAGE_MODEL", value_name: product.model });
     }
 
     if (product.sealed) attrs.push({ id: "SEALED", value_name: "Sí" });
@@ -528,19 +614,27 @@ export class MercadoLibreService {
   /** Obtiene atributos de una categoría de ML (cache simple en memoria). */
   private categoryAttributesCache = new Map<string, MlAttribute[]>();
 
-  async getCategoryAttributes(categoryId: string, token: string): Promise<MlAttribute[]> {
+  async getCategoryAttributes(
+    categoryId: string,
+    token: string,
+  ): Promise<MlAttribute[]> {
     if (this.categoryAttributesCache.has(categoryId)) {
       return this.categoryAttributesCache.get(categoryId)!;
     }
 
-    const apiBase = this.site() === "MLB" ? "https://api.mercadolivre.com" : "https://api.mercadolibre.com";
+    const apiBase =
+      this.site() === "MLB"
+        ? "https://api.mercadolivre.com"
+        : "https://api.mercadolibre.com";
     const res = await fetch(`${apiBase}/categories/${categoryId}/attributes`, {
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
     });
 
     const data = (await res.json()) as MlCategoryAttributes;
     if (!res.ok) {
-      this.logger.warn(`No se pudieron obtener atributos de ${categoryId}: ${JSON.stringify(data)}`);
+      this.logger.warn(
+        `No se pudieron obtener atributos de ${categoryId}: ${JSON.stringify(data)}`,
+      );
       return [];
     }
 
@@ -553,14 +647,19 @@ export class MercadoLibreService {
   async validateAndBuildAttributes(
     product: Product,
     token: string,
-  ): Promise<{ attributes: Array<{ id: string; value_name?: string; value_id?: string }>; missingRequired: string[] }> {
+  ): Promise<{
+    attributes: Array<{ id: string; value_name?: string; value_id?: string }>;
+    missingRequired: string[];
+  }> {
     const mlCategoryId = CATEGORY_MAP[product.category];
     if (!mlCategoryId) {
       return { attributes: this.buildAttributes(product), missingRequired: [] };
     }
 
     const mlAttrs = await this.getCategoryAttributes(mlCategoryId, token);
-    const requiredAttrs = mlAttrs.filter((a) => a.tags?.required || a.tags?.catalog_required);
+    const requiredAttrs = mlAttrs.filter(
+      (a) => a.tags?.required || a.tags?.catalog_required,
+    );
     const userAttrs = this.buildAttributes(product);
 
     const providedIds = new Set(userAttrs.map((a) => a.id));
@@ -576,10 +675,15 @@ export class MercadoLibreService {
   }
 
   /** Obtiene atributos que permiten variaciones (tags.variation_attribute o allow_variations). */
-  private async getVariationAttributes(categoryId: string, token: string): Promise<MlAttribute[]> {
+  private async getVariationAttributes(
+    categoryId: string,
+    token: string,
+  ): Promise<MlAttribute[]> {
     const attrs = await this.getCategoryAttributes(categoryId, token);
     return attrs.filter(
-      (a) => a.tags?.variation_attribute === true || a.tags?.allow_variations === true,
+      (a) =>
+        a.tags?.variation_attribute === true ||
+        a.tags?.allow_variations === true,
     );
   }
 
@@ -605,10 +709,16 @@ export class MercadoLibreService {
     for (const v of localVariations) {
       if (v.stock <= 0) continue; // Saltar variaciones sin stock
 
-      const attributeCombinations: Array<{ id: string; value_name?: string; value_id?: string }> = [];
+      const attributeCombinations: Array<{
+        id: string;
+        value_name?: string;
+        value_id?: string;
+      }> = [];
 
       if (v.attributes) {
-        for (const [localName, localValue] of Object.entries(v.attributes as Record<string, string>)) {
+        for (const [localName, localValue] of Object.entries(
+          v.attributes as Record<string, string>,
+        )) {
           const mlAttrId = attrNameToMlId.get(localName.toLowerCase());
           if (mlAttrId) {
             // Buscar value_id en valores permitidos del atributo ML
@@ -654,7 +764,11 @@ export class MercadoLibreService {
   async updateItem(
     userId: string,
     mlItemId: string,
-    updates: { price?: number; available_quantity?: number; status?: "active" | "paused" | "closed" },
+    updates: {
+      price?: number;
+      available_quantity?: number;
+      status?: "active" | "paused" | "closed";
+    },
   ): Promise<{ id: string; status: string }> {
     if (!this.isConfigured()) {
       throw new BadRequestException("Mercado Libre no está configurado.");
@@ -667,18 +781,26 @@ export class MercadoLibreService {
 
     const token = await this.ensureFreshToken(cred);
     if (!token) {
-      throw new BadRequestException("No se pudo obtener token válido de Mercado Libre.");
+      throw new BadRequestException(
+        "No se pudo obtener token válido de Mercado Libre.",
+      );
     }
 
     const body: Record<string, unknown> = {};
     if (updates.price !== undefined) body.price = updates.price;
-    if (updates.available_quantity !== undefined) body.available_quantity = updates.available_quantity;
+    if (updates.available_quantity !== undefined)
+      body.available_quantity = updates.available_quantity;
     if (updates.status !== undefined) body.status = updates.status;
     if (Object.keys(body).length === 0) {
-      throw new BadRequestException("Debe enviar al menos un campo para actualizar (price, available_quantity o status).");
+      throw new BadRequestException(
+        "Debe enviar al menos un campo para actualizar (price, available_quantity o status).",
+      );
     }
 
-    const apiBase = this.site() === "MLB" ? "https://api.mercadolivre.com" : "https://api.mercadolibre.com";
+    const apiBase =
+      this.site() === "MLB"
+        ? "https://api.mercadolivre.com"
+        : "https://api.mercadolibre.com";
     const res = await fetch(`${apiBase}/items/${mlItemId}`, {
       method: "PUT",
       headers: {
@@ -691,14 +813,21 @@ export class MercadoLibreService {
 
     const data = (await res.json()) as Record<string, unknown>;
     if (!res.ok) {
-      this.logger.error(`Error actualizando item ML ${mlItemId}: ${JSON.stringify(data)}`);
-      throw new BadRequestException(`Mercado Libre: ${(data as any).message ?? res.statusText}`);
+      this.logger.error(
+        `Error actualizando item ML ${mlItemId}: ${JSON.stringify(data)}`,
+      );
+      throw new BadRequestException(
+        `Mercado Libre: ${(data as any).message ?? res.statusText}`,
+      );
     }
 
     return { id: String(data.id), status: String(data.status) };
   }
 
-  async getItem(userId: string, mlItemId: string): Promise<Record<string, unknown>> {
+  async getItem(
+    userId: string,
+    mlItemId: string,
+  ): Promise<Record<string, unknown>> {
     if (!this.isConfigured()) {
       throw new BadRequestException("Mercado Libre no está configurado.");
     }
@@ -710,24 +839,34 @@ export class MercadoLibreService {
 
     const token = await this.ensureFreshToken(cred);
     if (!token) {
-      throw new BadRequestException("No se pudo obtener token válido de Mercado Libre.");
+      throw new BadRequestException(
+        "No se pudo obtener token válido de Mercado Libre.",
+      );
     }
 
-    const apiBase = this.site() === "MLB" ? "https://api.mercadolivre.com" : "https://api.mercadolibre.com";
+    const apiBase =
+      this.site() === "MLB"
+        ? "https://api.mercadolivre.com"
+        : "https://api.mercadolibre.com";
     const res = await fetch(`${apiBase}/items/${mlItemId}`, {
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
     });
 
     const data = (await res.json()) as Record<string, unknown>;
     if (!res.ok) {
-      throw new BadRequestException(`Mercado Libre: ${(data as any).message ?? res.statusText}`);
+      throw new BadRequestException(
+        `Mercado Libre: ${(data as any).message ?? res.statusText}`,
+      );
     }
     return data;
   }
 
   /** URL pública donde ML enviará notificaciones (configurar en ML Applications). */
   getWebhookUrl(): string {
-    return this.config.get("ML_WEBHOOK_URL", "http://localhost:3000/api/mercadolibre/webhook");
+    return this.config.get(
+      "ML_WEBHOOK_URL",
+      "http://localhost:3000/api/mercadolibre/webhook",
+    );
   }
 
   /** Suscribe tópicos de notificación en ML (programático, evita ir a Developers manual). */
@@ -746,11 +885,16 @@ export class MercadoLibreService {
 
     const token = await this.ensureFreshToken(cred);
     if (!token) {
-      throw new BadRequestException("No se pudo obtener token válido de Mercado Libre.");
+      throw new BadRequestException(
+        "No se pudo obtener token válido de Mercado Libre.",
+      );
     }
 
     const callbackUrl = this.getWebhookUrl();
-    const apiBase = this.site() === "MLB" ? "https://api.mercadolivre.com" : "https://api.mercadolibre.com";
+    const apiBase =
+      this.site() === "MLB"
+        ? "https://api.mercadolivre.com"
+        : "https://api.mercadolibre.com";
     const appId = this.config.get("ML_CLIENT_ID");
 
     const subscribed: string[] = [];
@@ -758,18 +902,21 @@ export class MercadoLibreService {
 
     for (const topic of topics) {
       try {
-        const res = await fetch(`${apiBase}/applications/${appId}/subscriptions`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-            Accept: "application/json",
+        const res = await fetch(
+          `${apiBase}/applications/${appId}/subscriptions`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify({
+              topic,
+              callback_url: callbackUrl,
+            }),
           },
-          body: JSON.stringify({
-            topic,
-            callback_url: callbackUrl,
-          }),
-        });
+        );
 
         const data = (await res.json()) as Record<string, unknown>;
         if (res.ok) {
@@ -777,7 +924,9 @@ export class MercadoLibreService {
           this.logger.log(`Suscrito a ${topic} en ML`);
         } else {
           failed.push(`${topic}: ${(data as any).message ?? res.statusText}`);
-          this.logger.warn(`Falló suscripción a ${topic}: ${JSON.stringify(data)}`);
+          this.logger.warn(
+            `Falló suscripción a ${topic}: ${JSON.stringify(data)}`,
+          );
         }
       } catch (err) {
         failed.push(`${topic}: ${String(err)}`);
@@ -801,10 +950,15 @@ export class MercadoLibreService {
 
     const token = await this.ensureFreshToken(cred);
     if (!token) {
-      throw new BadRequestException("No se pudo obtener token válido de Mercado Libre.");
+      throw new BadRequestException(
+        "No se pudo obtener token válido de Mercado Libre.",
+      );
     }
 
-    const apiBase = this.site() === "MLB" ? "https://api.mercadolivre.com" : "https://api.mercadolibre.com";
+    const apiBase =
+      this.site() === "MLB"
+        ? "https://api.mercadolivre.com"
+        : "https://api.mercadolibre.com";
     const appId = this.config.get("ML_CLIENT_ID");
 
     const res = await fetch(`${apiBase}/applications/${appId}/subscriptions`, {
@@ -813,7 +967,9 @@ export class MercadoLibreService {
 
     const data = (await res.json()) as Record<string, unknown>[];
     if (!res.ok) {
-      throw new BadRequestException(`Mercado Libre: ${(data as any).message ?? res.statusText}`);
+      throw new BadRequestException(
+        `Mercado Libre: ${(data as any).message ?? res.statusText}`,
+      );
     }
     return data;
   }
@@ -831,20 +987,33 @@ export class MercadoLibreService {
 
     const token = await this.ensureFreshToken(cred);
     if (!token) {
-      throw new BadRequestException("No se pudo obtener token válido de Mercado Libre.");
+      throw new BadRequestException(
+        "No se pudo obtener token válido de Mercado Libre.",
+      );
     }
 
-    const apiBase = this.site() === "MLB" ? "https://api.mercadolivre.com" : "https://api.mercadolibre.com";
+    const apiBase =
+      this.site() === "MLB"
+        ? "https://api.mercadolivre.com"
+        : "https://api.mercadolibre.com";
     const appId = this.config.get("ML_CLIENT_ID");
 
-    const res = await fetch(`${apiBase}/applications/${appId}/subscriptions/${topic}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-    });
+    const res = await fetch(
+      `${apiBase}/applications/${appId}/subscriptions/${topic}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      },
+    );
 
     if (!res.ok) {
       const data = (await res.json()) as Record<string, unknown>;
-      throw new BadRequestException(`Mercado Libre: ${(data as any).message ?? res.statusText}`);
+      throw new BadRequestException(
+        `Mercado Libre: ${(data as any).message ?? res.statusText}`,
+      );
     }
   }
 
@@ -866,7 +1035,11 @@ export class MercadoLibreService {
     }
 
     if (signature && rawBody) {
-      const valid = this.verifySignature(rawBody, signature, this.config.get("ML_CLIENT_SECRET", ""));
+      const valid = this.verifySignature(
+        rawBody,
+        signature,
+        this.config.get("ML_CLIENT_SECRET", ""),
+      );
       if (!valid) {
         this.logger.warn(`Webhook: firma inválida para user ${userId}`);
         return { processed: false, message: "Invalid signature" };
@@ -879,14 +1052,25 @@ export class MercadoLibreService {
     }
 
     try {
-      const apiBase = this.site() === "MLB" ? "https://api.mercadolivre.com" : "https://api.mercadolibre.com";
+      const apiBase =
+        this.site() === "MLB"
+          ? "https://api.mercadolivre.com"
+          : "https://api.mercadolibre.com";
       const res = await fetch(`${apiBase}${resource}`, {
-        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
       });
       const data = (await res.json()) as Record<string, unknown>;
       if (!res.ok) {
-        this.logger.warn(`Webhook: error fetching ${resource}: ${JSON.stringify(data)}`);
-        return { processed: false, message: `Error fetching resource: ${res.status}` };
+        this.logger.warn(
+          `Webhook: error fetching ${resource}: ${JSON.stringify(data)}`,
+        );
+        return {
+          processed: false,
+          message: `Error fetching resource: ${res.status}`,
+        };
       }
 
       switch (topic) {
@@ -904,12 +1088,18 @@ export class MercadoLibreService {
         case "shipments": {
           const shipmentId = String(data.id);
           await this.handleShipmentUpdate(userId, shipmentId, token);
-          return { processed: true, message: `Shipment ${shipmentId} processed` };
+          return {
+            processed: true,
+            message: `Shipment ${shipmentId} processed`,
+          };
         }
         case "questions": {
           const questionId = String(data.id);
           await this.handleQuestion(userId, questionId, token);
-          return { processed: true, message: `Question ${questionId} processed` };
+          return {
+            processed: true,
+            message: `Question ${questionId} processed`,
+          };
         }
         case "claims": {
           const claimId = String(data.id);
@@ -926,8 +1116,15 @@ export class MercadoLibreService {
     }
   }
 
-  private async importSingleOrder(userId: string, orderId: string, token: string): Promise<void> {
-    const apiBase = this.site() === "MLB" ? "https://api.mercadolivre.com" : "https://api.mercadolibre.com";
+  private async importSingleOrder(
+    userId: string,
+    orderId: string,
+    token: string,
+  ): Promise<void> {
+    const apiBase =
+      this.site() === "MLB"
+        ? "https://api.mercadolivre.com"
+        : "https://api.mercadolibre.com";
     const res = await fetch(`${apiBase}/orders/${orderId}`, {
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
     });
@@ -938,8 +1135,15 @@ export class MercadoLibreService {
     await this.importService.importSales(userId);
   }
 
-  private async handlePaymentUpdate(userId: string, paymentId: string, token: string): Promise<void> {
-    const apiBase = this.site() === "MLB" ? "https://api.mercadolivre.com" : "https://api.mercadolibre.com";
+  private async handlePaymentUpdate(
+    userId: string,
+    paymentId: string,
+    token: string,
+  ): Promise<void> {
+    const apiBase =
+      this.site() === "MLB"
+        ? "https://api.mercadolivre.com"
+        : "https://api.mercadolibre.com";
     const res = await fetch(`${apiBase}/payments/${paymentId}`, {
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
     });
@@ -952,8 +1156,15 @@ export class MercadoLibreService {
     }
   }
 
-  private async handleShipmentUpdate(userId: string, shipmentId: string, token: string): Promise<void> {
-    const apiBase = this.site() === "MLB" ? "https://api.mercadolivre.com" : "https://api.mercadolibre.com";
+  private async handleShipmentUpdate(
+    userId: string,
+    shipmentId: string,
+    token: string,
+  ): Promise<void> {
+    const apiBase =
+      this.site() === "MLB"
+        ? "https://api.mercadolivre.com"
+        : "https://api.mercadolibre.com";
     const res = await fetch(`${apiBase}/shipments/${shipmentId}`, {
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
     });
@@ -966,8 +1177,15 @@ export class MercadoLibreService {
     }
   }
 
-  private async handleQuestion(userId: string, questionId: string, token: string): Promise<void> {
-    const apiBase = this.site() === "MLB" ? "https://api.mercadolivre.com" : "https://api.mercadolibre.com";
+  private async handleQuestion(
+    userId: string,
+    questionId: string,
+    token: string,
+  ): Promise<void> {
+    const apiBase =
+      this.site() === "MLB"
+        ? "https://api.mercadolivre.com"
+        : "https://api.mercadolibre.com";
     const res = await fetch(`${apiBase}/questions/${questionId}`, {
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
     });
@@ -975,20 +1193,31 @@ export class MercadoLibreService {
     if (!res.ok) throw new Error(`Failed to fetch question ${questionId}`);
 
     const from = question.from as Record<string, unknown> | undefined;
-    this.logger.log(`Pregunta recibida en ML: item=${question.item_id}, from=${from?.id}, text=${question.text}`);
+    this.logger.log(
+      `Pregunta recibida en ML: item=${question.item_id}, from=${from?.id}, text=${question.text}`,
+    );
     // TODO: Notificar al vendedor local (push, email, in-app notification)
     // TODO: Opcional: auto-responder preguntas frecuentes
   }
 
-  private async handleClaim(userId: string, claimId: string, token: string): Promise<void> {
-    const apiBase = this.site() === "MLB" ? "https://api.mercadolivre.com" : "https://api.mercadolibre.com";
+  private async handleClaim(
+    userId: string,
+    claimId: string,
+    token: string,
+  ): Promise<void> {
+    const apiBase =
+      this.site() === "MLB"
+        ? "https://api.mercadolivre.com"
+        : "https://api.mercadolibre.com";
     const res = await fetch(`${apiBase}/claims/${claimId}`, {
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
     });
     const claim = (await res.json()) as Record<string, unknown>;
     if (!res.ok) throw new Error(`Failed to fetch claim ${claimId}`);
 
-    this.logger.warn(`Reclamo recibido en ML: claim_id=${claimId}, type=${claim.type}, status=${claim.status}, order_id=${claim.order_id}`);
+    this.logger.warn(
+      `Reclamo recibido en ML: claim_id=${claimId}, type=${claim.type}, status=${claim.status}, order_id=${claim.order_id}`,
+    );
     // TODO: Crear/actualizar disputa local, notificar al vendedor, integrar con flujo de resolución
     const orderId = claim.order_id ? String(claim.order_id) : null;
     if (orderId) {
@@ -1003,27 +1232,59 @@ export class MercadoLibreService {
   /** Obtiene atributos de categoría ML para una categoría local (para UI de validación previa). */
   async getCategoryAttributesForLocal(localCategory: string): Promise<{
     mlCategoryId: string | null;
-    required: Array<{ id: string; name: string; value_type: string; values?: Array<{ id: string; name: string }> }>;
-    optional: Array<{ id: string; name: string; value_type: string; values?: Array<{ id: string; name: string }> }>;
+    required: Array<{
+      id: string;
+      name: string;
+      value_type: string;
+      values?: Array<{ id: string; name: string }>;
+    }>;
+    optional: Array<{
+      id: string;
+      name: string;
+      value_type: string;
+      values?: Array<{ id: string; name: string }>;
+    }>;
     error?: string;
   }> {
     if (!this.isConfigured()) {
-      return { mlCategoryId: null, required: [], optional: [], error: "ML no configurado" };
+      return {
+        mlCategoryId: null,
+        required: [],
+        optional: [],
+        error: "ML no configurado",
+      };
     }
 
-    const cred = await this.credentialRepository.findOne({ where: { userId: "" } });
+    const cred = await this.credentialRepository.findOne({
+      where: { userId: "" },
+    });
     if (!cred?.accessToken) {
-      return { mlCategoryId: null, required: [], optional: [], error: "Sin token ML" };
+      return {
+        mlCategoryId: null,
+        required: [],
+        optional: [],
+        error: "Sin token ML",
+      };
     }
 
     const token = await this.ensureFreshToken(cred);
     if (!token) {
-      return { mlCategoryId: null, required: [], optional: [], error: "Token inválido" };
+      return {
+        mlCategoryId: null,
+        required: [],
+        optional: [],
+        error: "Token inválido",
+      };
     }
 
     const mlCategoryId = CATEGORY_MAP[localCategory as ProductCategory];
     if (!mlCategoryId) {
-      return { mlCategoryId: null, required: [], optional: [], error: `Categoría ${localCategory} no mapeada` };
+      return {
+        mlCategoryId: null,
+        required: [],
+        optional: [],
+        error: `Categoría ${localCategory} no mapeada`,
+      };
     }
 
     const attrs = await this.getCategoryAttributes(mlCategoryId, token);
@@ -1038,7 +1299,9 @@ export class MercadoLibreService {
       }));
 
     const optional = attrs
-      .filter((a) => !a.tags?.required && !a.tags?.catalog_required && !a.tags?.fixed)
+      .filter(
+        (a) => !a.tags?.required && !a.tags?.catalog_required && !a.tags?.fixed,
+      )
       .map((a) => ({
         id: a.id,
         name: a.name,
@@ -1049,16 +1312,25 @@ export class MercadoLibreService {
     return { mlCategoryId, required, optional };
   }
 
-  private verifySignature(payload: string, signature: string, secret: string): boolean {
+  private verifySignature(
+    payload: string,
+    signature: string,
+    secret: string,
+  ): boolean {
     if (!secret) {
-      this.logger.warn("ML_CLIENT_SECRET no configurado, saltando verificación de firma");
+      this.logger.warn(
+        "ML_CLIENT_SECRET no configurado, saltando verificación de firma",
+      );
       return true;
     }
     const expected = crypto
       .createHmac("sha256", secret)
       .update(payload)
       .digest("hex");
-    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+    return crypto.timingSafeEqual(
+      Buffer.from(signature),
+      Buffer.from(expected),
+    );
   }
 
   private importService: any;

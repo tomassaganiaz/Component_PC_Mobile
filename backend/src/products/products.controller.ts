@@ -90,7 +90,10 @@ export class ProductsController {
   @ApiOperation({
     summary: "Eliminar producto vendido (vendedor dueño o admin)",
   })
-  async remove(@Param("id", new ParseUUIDPipe()) id: string, @Request() req: ExpressRequest) {
+  async remove(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Request() req: ExpressRequest,
+  ) {
     const product = await this.productsService.findOne(id);
     const user = req.user as { id: string; role: string };
     if (user.role !== UserRole.ADMIN && product.sellerId !== user.id) {

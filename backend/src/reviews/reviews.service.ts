@@ -310,10 +310,7 @@ export class ReviewsService {
     return 1;
   }
 
-  private computeMedal(
-    level: number,
-    totalSales: number,
-  ): ReputationMedal {
+  private computeMedal(level: number, totalSales: number): ReputationMedal {
     if (level >= 5 && totalSales >= 50) return "platinum";
     if (level >= 4 && totalSales >= 10) return "gold";
     if (level >= 3 && totalSales >= 3) return "silver";

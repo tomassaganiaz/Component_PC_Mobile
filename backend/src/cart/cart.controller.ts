@@ -31,10 +31,7 @@ export class CartController {
 
   @Post("items")
   @ApiOperation({ summary: "Agregar un producto al carrito" })
-  addItem(
-    @Body() dto: AddCartItemDto,
-    @Request() req: ExpressRequest,
-  ) {
+  addItem(@Body() dto: AddCartItemDto, @Request() req: ExpressRequest) {
     return this.cartService.addItem(
       (req.user as any).id,
       dto.productId,

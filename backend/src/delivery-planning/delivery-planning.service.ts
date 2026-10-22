@@ -15,7 +15,10 @@ import {
 import { Order, OrderStatus } from "../orders/order.entity";
 import { User } from "../users/user.entity";
 import { GoogleMapsService } from "../googlemaps/googlemaps.service";
-import { DeliveryNotificationsService, TrackingLinkData } from "./delivery-notifications.service";
+import {
+  DeliveryNotificationsService,
+  TrackingLinkData,
+} from "./delivery-notifications.service";
 
 export interface EnrichedOrder {
   order: Order;
@@ -75,29 +78,45 @@ export class DeliveryPlanningService {
     const orders = await this.orderRepository
       .createQueryBuilder("order")
       .leftJoinAndSelect("order.buyer", "buyer")
-      .where("order.status IN (:...statuses)", { statuses: [OrderStatus.PAID, OrderStatus.IN_CUSTODY] })
-      .andWhere("order.createdAt BETWEEN :start AND :end", { start: startOfDay, end: endOfDay })
+      .where("order.status IN (:...statuses)", {
+        statuses: [OrderStatus.PAID, OrderStatus.IN_CUSTODY],
+      })
+      .andWhere("order.createdAt BETWEEN :start AND :end", {
+        start: startOfDay,
+        end: endOfDay,
+      })
       .andWhere(
         "NOT EXISTS (SELECT 1 FROM route_stops rs WHERE rs.order_id = order.id)",
       )
       .orderBy("order.createdAt", "ASC")
       .getMany();
 
-    this.logger.log(`Planificando rutas para ${orders.length} órdenes del ${startOfDay.toISOString().split("T")[0]}`);
+    this.logger.log(
+      `Planificando rutas para ${orders.length} órdenes del ${startOfDay.toISOString().split("T")[0]}`,
+    );
 
     if (orders.length === 0) {
-      return { date: startOfDay.toISOString().split("T")[0], routes: [], totalOrders: 0, unassignedOrders: 0 };
+      return {
+        date: startOfDay.toISOString().split("T")[0],
+        routes: [],
+        totalOrders: 0,
+        unassignedOrders: 0,
+      };
     }
 
     // Enriquecer órdenes con ubicación del comprador
     const enrichedOrders = await this.enrichOrdersWithLocation(orders);
 
     // Filtrar solo las que tienen coordenadas válidas
-    const validOrders = enrichedOrders.filter((o) => o.buyerLat != null && o.buyerLng != null);
+    const validOrders = enrichedOrders.filter(
+      (o) => o.buyerLat != null && o.buyerLng != null,
+    );
     const unassignedOrders = orders.length - validOrders.length;
 
     if (unassignedOrders > 0) {
-      this.logger.warn(`${unassignedOrders} órdenes sin coordenadas válidas, no se pueden planificar`);
+      this.logger.warn(
+        `${unassignedOrders} órdenes sin coordenadas válidas, no se pueden planificar`,
+      );
     }
 
     // Agrupar por zona de entrega
@@ -106,7 +125,11 @@ export class DeliveryPlanningService {
     // Planificar ruta por zona
     const plannedRoutes: PlannedRoute[] = [];
     for (const [zone, zoneOrders] of Object.entries(ordersByZone)) {
-      const route = await this.optimizeRouteForZone(zone as DeliveryZone, zoneOrders, startOfDay);
+      const route = await this.optimizeRouteForZone(
+        zone as DeliveryZone,
+        zoneOrders,
+        startOfDay,
+      );
       if (route.orders.length > 0) {
         plannedRoutes.push(route);
       }
@@ -126,7 +149,10 @@ export class DeliveryPlanningService {
   /**
    * Ejecuta la planificación diaria automáticamente (cron a las 06:00).
    */
-  @Cron(CronExpression.EVERY_DAY_AT_6AM, { name: "daily-route-planning", timeZone: "America/Argentina/Buenos_Aires" })
+  @Cron(CronExpression.EVERY_DAY_AT_6AM, {
+    name: "daily-route-planning",
+    timeZone: "America/Argentina/Buenos_Aires",
+  })
   async handleDailyPlanningCron(): Promise<void> {
     this.logger.log("Ejecutando planificación diaria automática de rutas");
     try {
@@ -173,7 +199,9 @@ export class DeliveryPlanningService {
     driverName?: string,
     vehiclePlate?: string,
   ): Promise<DeliveryRoute> {
-    const route = await this.routeRepository.findOne({ where: { id: routeId } });
+    const route = await this.routeRepository.findOne({
+      where: { id: routeId },
+    });
     if (!route) throw new Error("Ruta no encontrada");
 
     route.carrierId = carrierId;
@@ -189,7 +217,9 @@ export class DeliveryPlanningService {
         try {
           await this.notifications.notifyRouteAssigned(savedRoute, stop);
         } catch (err) {
-          this.logger.warn(`Error notificando asignación para parada ${stop.id}: ${String(err)}`);
+          this.logger.warn(
+            `Error notificando asignación para parada ${stop.id}: ${String(err)}`,
+          );
         }
       }
     }
@@ -214,7 +244,10 @@ export class DeliveryPlanningService {
     // Notificar inicio de ruta a todos los compradores
     if (savedRoute.stops?.length) {
       try {
-        await this.notifications.notifyRouteStarted(savedRoute, savedRoute.stops);
+        await this.notifications.notifyRouteStarted(
+          savedRoute,
+          savedRoute.stops,
+        );
       } catch (err) {
         this.logger.warn(`Error notificando inicio de ruta: ${String(err)}`);
       }
@@ -226,7 +259,10 @@ export class DeliveryPlanningService {
   /**
    * Marca una parada como entregada.
    */
-  async completeStop(stopId: string, failureReason?: string): Promise<RouteStop> {
+  async completeStop(
+    stopId: string,
+    failureReason?: string,
+  ): Promise<RouteStop> {
     const stop = await this.stopRepository.findOne({
       where: { id: stopId },
       relations: ["route"],
@@ -246,12 +282,18 @@ export class DeliveryPlanningService {
     // Notificar entrega o fallo
     try {
       if (failureReason) {
-        await this.notifications.notifyDeliveryFailed(savedStop, savedStop.route, failureReason);
+        await this.notifications.notifyDeliveryFailed(
+          savedStop,
+          savedStop.route,
+          failureReason,
+        );
       } else {
         await this.notifications.notifyDelivered(savedStop, savedStop.route);
       }
     } catch (err) {
-      this.logger.warn(`Error notificando completado de parada ${stopId}: ${String(err)}`);
+      this.logger.warn(
+        `Error notificando completado de parada ${stopId}: ${String(err)}`,
+      );
     }
 
     return savedStop;
@@ -273,18 +315,28 @@ export class DeliveryPlanningService {
 
     const stops = route.stops ?? [];
     const completed = stops.filter((s) => s.status === "delivered").length;
-    const nextStop = stops.find((s) => s.status === "pending" || s.status === "arrived") ?? null;
+    const nextStop =
+      stops.find((s) => s.status === "pending" || s.status === "arrived") ??
+      null;
 
     return {
       route,
-      progress: { completed, total: stops.length, percent: stops.length ? Math.round((completed / stops.length) * 100) : 0 },
+      progress: {
+        completed,
+        total: stops.length,
+        percent: stops.length
+          ? Math.round((completed / stops.length) * 100)
+          : 0,
+      },
       nextStop,
     };
   }
 
   // ==================== MÉTODOS PRIVADOS ====================
 
-  private async enrichOrdersWithLocation(orders: Order[]): Promise<EnrichedOrder[]> {
+  private async enrichOrdersWithLocation(
+    orders: Order[],
+  ): Promise<EnrichedOrder[]> {
     const buyerIds = [...new Set(orders.map((o) => o.buyerId))];
     const buyers = await this.userRepository.findBy({ id: In(buyerIds) });
     const buyerMap = new Map(buyers.map((b) => [b.id, b]));
@@ -299,7 +351,10 @@ export class DeliveryPlanningService {
 
       if (buyerLat != null && buyerLng != null) {
         zone = getZoneForLocation(buyerLat, buyerLng);
-        distanceFromOrigin = haversineKm(this.cabaCenter, { lat: buyerLat, lng: buyerLng });
+        distanceFromOrigin = haversineKm(this.cabaCenter, {
+          lat: buyerLat,
+          lng: buyerLng,
+        });
         estimatedDays = getEstimatedDays(zone, "standard");
       }
 
@@ -316,7 +371,9 @@ export class DeliveryPlanningService {
     });
   }
 
-  private groupByZone(orders: EnrichedOrder[]): Record<DeliveryZone, EnrichedOrder[]> {
+  private groupByZone(
+    orders: EnrichedOrder[],
+  ): Record<DeliveryZone, EnrichedOrder[]> {
     const grouped: Record<DeliveryZone, EnrichedOrder[]> = {} as any;
     for (const zone of DELIVERY_ZONES.map((z) => z.name)) {
       grouped[zone] = [];
@@ -334,11 +391,20 @@ export class DeliveryPlanningService {
     date: Date,
   ): Promise<PlannedRoute> {
     if (orders.length === 0) {
-      return { zone, date, orders: [], totalDistanceKm: 0, estimatedDurationMinutes: 0, optimizedSequence: [] };
+      return {
+        zone,
+        date,
+        orders: [],
+        totalDistanceKm: 0,
+        estimatedDurationMinutes: 0,
+        optimizedSequence: [],
+      };
     }
 
     // Ordenar por distancia desde CABA (más cercano primero)
-    const sorted = [...orders].sort((a, b) => a.distanceFromOriginKm - b.distanceFromOriginKm);
+    const sorted = [...orders].sort(
+      (a, b) => a.distanceFromOriginKm - b.distanceFromOriginKm,
+    );
 
     // Optimizar secuencia usando nearest neighbor (greedy TSP simple)
     const optimized = this.optimizeSequence(sorted, this.cabaCenter);
@@ -349,24 +415,27 @@ export class DeliveryPlanningService {
     let prev = this.cabaCenter;
 
     for (const stop of optimized) {
-      const dist = haversineKm(prev, { lat: stop.buyerLat!, lng: stop.buyerLng! });
+      const dist = haversineKm(prev, {
+        lat: stop.buyerLat!,
+        lng: stop.buyerLng!,
+      });
       totalDistance += dist;
-      totalDuration += Math.round(dist / 50 * 60) + 10; // 50 km/h + 10 min por parada
+      totalDuration += Math.round((dist / 50) * 60) + 10; // 50 km/h + 10 min por parada
       prev = { lat: stop.buyerLat!, lng: stop.buyerLng! };
     }
     // Vuelta al depósito
     totalDistance += haversineKm(prev, this.cabaCenter);
-    totalDuration += Math.round(haversineKm(prev, this.cabaCenter) / 50 * 60);
+    totalDuration += Math.round((haversineKm(prev, this.cabaCenter) / 50) * 60);
 
     // Si hay Google Maps API, intentar obtener ruta real para la primera orden (sample)
     let realDistance = totalDistance;
     let realDuration = totalDuration;
     if (this.maps.isConfigured() && optimized.length > 0) {
       try {
-        const directions = await this.maps.getDirections(
-          this.cabaCenter,
-          { lat: optimized[0].buyerLat!, lng: optimized[0].buyerLng! },
-        );
+        const directions = await this.maps.getDirections(this.cabaCenter, {
+          lat: optimized[0].buyerLat!,
+          lng: optimized[0].buyerLng!,
+        });
         if (directions) {
           realDistance = directions.distanceKm;
           realDuration = directions.durationMinutes;
@@ -402,7 +471,10 @@ export class DeliveryPlanningService {
       let nearestDist = Infinity;
 
       for (let i = 0; i < unvisited.length; i++) {
-        const dist = haversineKm(current, { lat: unvisited[i].buyerLat!, lng: unvisited[i].buyerLng! });
+        const dist = haversineKm(current, {
+          lat: unvisited[i].buyerLat!,
+          lng: unvisited[i].buyerLng!,
+        });
         if (dist < nearestDist) {
           nearestDist = dist;
           nearestIdx = i;
@@ -417,7 +489,10 @@ export class DeliveryPlanningService {
     return result;
   }
 
-  private async persistRoutes(routes: PlannedRoute[], date: Date): Promise<void> {
+  private async persistRoutes(
+    routes: PlannedRoute[],
+    date: Date,
+  ): Promise<void> {
     for (const planned of routes) {
       const route = this.routeRepository.create({
         deliveryDate: date,
@@ -433,12 +508,19 @@ export class DeliveryPlanningService {
       const stops: RouteStop[] = [];
       for (let idx = 0; idx < planned.orders.length; idx++) {
         const order = planned.orders[idx];
-        const distanceFromPrev = idx === 0
-          ? haversineKm(this.cabaCenter, { lat: order.buyerLat!, lng: order.buyerLng! })
-          : haversineKm(
-              { lat: planned.orders[idx - 1].buyerLat!, lng: planned.orders[idx - 1].buyerLng! },
-              { lat: order.buyerLat!, lng: order.buyerLng! },
-            );
+        const distanceFromPrev =
+          idx === 0
+            ? haversineKm(this.cabaCenter, {
+                lat: order.buyerLat!,
+                lng: order.buyerLng!,
+              })
+            : haversineKm(
+                {
+                  lat: planned.orders[idx - 1].buyerLat!,
+                  lng: planned.orders[idx - 1].buyerLng!,
+                },
+                { lat: order.buyerLat!, lng: order.buyerLng! },
+              );
 
         const stop = new RouteStop();
         stop.routeId = savedRoute.id;
@@ -449,13 +531,15 @@ export class DeliveryPlanningService {
         stop.lng = order.buyerLng!;
         stop.contactName = order.buyerName ?? "";
         stop.distanceFromPreviousKm = Math.round(distanceFromPrev * 10) / 10;
-        stop.travelTimeMinutes = Math.round(distanceFromPrev / 50 * 60) + 10;
+        stop.travelTimeMinutes = Math.round((distanceFromPrev / 50) * 60) + 10;
         stop.status = "pending";
         stops.push(stop);
       }
 
       await this.stopRepository.save(stops);
-      this.logger.log(`Ruta creada: zona=${planned.zone}, paradas=${planned.orders.length}, km=${planned.totalDistanceKm}`);
+      this.logger.log(
+        `Ruta creada: zona=${planned.zone}, paradas=${planned.orders.length}, km=${planned.totalDistanceKm}`,
+      );
     }
   }
 }

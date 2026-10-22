@@ -111,7 +111,10 @@ describe("Cart (e2e)", () => {
       const res = await request(app.getHttpServer())
         .post("/api/orders/checkout")
         .set("Authorization", `Bearer ${buyer.token}`)
-        .send({ shippingAddress: "Av. Siempreviva 742", paymentMethod: "card" });
+        .send({
+          shippingAddress: "Av. Siempreviva 742",
+          paymentMethod: "card",
+        });
 
       expect(res.status).toBe(201);
       expect(res.body.status).toBe("pending");

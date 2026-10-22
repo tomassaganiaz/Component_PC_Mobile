@@ -8,7 +8,11 @@ import { ProductsModule } from "../products/products.module";
 import { UsersModule } from "../users/users.module";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Product]), ProductsModule, UsersModule],
+  imports: [
+    TypeOrmModule.forFeature([User, Product]),
+    ProductsModule,
+    UsersModule,
+  ],
   controllers: [GoogleMapsController],
   providers: [GoogleMapsService],
   exports: [GoogleMapsService],

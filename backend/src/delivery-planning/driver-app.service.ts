@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from "@nestjs/common";
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { DeliveryRoute, RouteStop, RouteStatus } from "./delivery-route.entity";
@@ -103,11 +108,16 @@ export class DriverAppService {
       0,
     );
 
-    const allStopsToday = [...inProgress, ...completed].flatMap((r) => r.stops || []);
-    const deliveredOnTime = allStopsToday.filter((s) => s.status === "delivered").length;
-    const efficiency = allStopsToday.length > 0
-      ? Math.round((deliveredOnTime / allStopsToday.length) * 100)
-      : 100;
+    const allStopsToday = [...inProgress, ...completed].flatMap(
+      (r) => r.stops || [],
+    );
+    const deliveredOnTime = allStopsToday.filter(
+      (s) => s.status === "delivered",
+    ).length;
+    const efficiency =
+      allStopsToday.length > 0
+        ? Math.round((deliveredOnTime / allStopsToday.length) * 100)
+        : 100;
 
     return {
       currentRoute: currentRoute ? this.mapRouteSummary(currentRoute) : null,
@@ -140,11 +150,16 @@ export class DriverAppService {
 
     return {
       route: this.mapRouteSummary(route),
-      stops: stops.map((stop, idx) => this.mapStopDetail(stop, route, idx === 0 ? null : stops[idx - 1])),
+      stops: stops.map((stop, idx) =>
+        this.mapStopDetail(stop, route, idx === 0 ? null : stops[idx - 1]),
+      ),
     };
   }
 
-  async getRouteDetailForDriver(driverId: string, routeId: string): Promise<{
+  async getRouteDetailForDriver(
+    driverId: string,
+    routeId: string,
+  ): Promise<{
     route: DriverRouteSummary;
     stops: DriverStopDetail[];
   } | null> {
@@ -161,7 +176,9 @@ export class DriverAppService {
 
     return {
       route: this.mapRouteSummary(route),
-      stops: stops.map((stop, idx) => this.mapStopDetail(stop, route, idx === 0 ? null : stops[idx - 1])),
+      stops: stops.map((stop, idx) =>
+        this.mapStopDetail(stop, route, idx === 0 ? null : stops[idx - 1]),
+      ),
     };
   }
 
@@ -171,7 +188,8 @@ export class DriverAppService {
       relations: ["route"],
     });
     if (!stop) throw new NotFoundException("Parada no encontrada");
-    if (stop.route.carrierId !== driverId) throw new BadRequestException("No autorizado");
+    if (stop.route.carrierId !== driverId)
+      throw new BadRequestException("No autorizado");
 
     if (stop.status !== "pending") {
       throw new BadRequestException(`Parada ya está en estado ${stop.status}`);
@@ -188,7 +206,8 @@ export class DriverAppService {
       relations: ["route"],
     });
     if (!stop) throw new NotFoundException("Parada no encontrada");
-    if (stop.route.carrierId !== driverId) throw new BadRequestException("No autorizado");
+    if (stop.route.carrierId !== driverId)
+      throw new BadRequestException("No autorizado");
 
     if (stop.status === "delivered") {
       throw new BadRequestException("Parada ya entregada");
@@ -203,13 +222,18 @@ export class DriverAppService {
     return saved;
   }
 
-  async failStop(driverId: string, stopId: string, reason: string): Promise<RouteStop> {
+  async failStop(
+    driverId: string,
+    stopId: string,
+    reason: string,
+  ): Promise<RouteStop> {
     const stop = await this.stopRepository.findOne({
       where: { id: stopId },
       relations: ["route"],
     });
     if (!stop) throw new NotFoundException("Parada no encontrada");
-    if (stop.route.carrierId !== driverId) throw new BadRequestException("No autorizado");
+    if (stop.route.carrierId !== driverId)
+      throw new BadRequestException("No autorizado");
 
     stop.status = "failed";
     stop.failureReason = reason;
@@ -221,20 +245,29 @@ export class DriverAppService {
     return saved;
   }
 
-  async getNavigationUrl(driverId: string, stopId: string): Promise<{ url: string; staticMapUrl: string | null }> {
+  async getNavigationUrl(
+    driverId: string,
+    stopId: string,
+  ): Promise<{ url: string; staticMapUrl: string | null }> {
     const stop = await this.stopRepository.findOne({
       where: { id: stopId },
       relations: ["route"],
     });
     if (!stop) throw new NotFoundException("Parada no encontrada");
-    if (stop.route.carrierId !== driverId) throw new BadRequestException("No autorizado");
+    if (stop.route.carrierId !== driverId)
+      throw new BadRequestException("No autorizado");
 
     const origin = await this.getDriverCurrentLocation(driverId);
     const destination = { lat: Number(stop.lat), lng: Number(stop.lng) };
 
     const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination.lat},${destination.lng}&travelmode=driving`;
 
-    const staticMapUrl = this.maps.staticMapUrl(origin, destination, undefined, { width: 400, height: 300 });
+    const staticMapUrl = this.maps.staticMapUrl(
+      origin,
+      destination,
+      undefined,
+      { width: 400, height: 300 },
+    );
 
     return { url: navUrl, staticMapUrl };
   }
@@ -323,10 +356,14 @@ export class DriverAppService {
 
   private async checkRouteCompletion(routeId: string): Promise<void> {
     const stops = await this.stopRepository.find({ where: { routeId } });
-    const allDone = stops.every((s) => s.status === "delivered" || s.status === "failed");
+    const allDone = stops.every(
+      (s) => s.status === "delivered" || s.status === "failed",
+    );
 
     if (allDone) {
-      const route = await this.routeRepository.findOne({ where: { id: routeId } });
+      const route = await this.routeRepository.findOne({
+        where: { id: routeId },
+      });
       if (route) {
         route.status = RouteStatus.COMPLETED;
         route.completedAt = new Date();
@@ -335,7 +372,9 @@ export class DriverAppService {
     }
   }
 
-  private async getDriverCurrentLocation(driverId: string): Promise<{ lat: number; lng: number }> {
+  private async getDriverCurrentLocation(
+    driverId: string,
+  ): Promise<{ lat: number; lng: number }> {
     return { lat: -34.6037, lng: -58.3816 };
   }
 }

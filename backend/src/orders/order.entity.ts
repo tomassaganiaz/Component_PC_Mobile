@@ -23,6 +23,14 @@ export enum OrderStatus {
   REFUNDED = "refunded",
 }
 
+export enum OrderFulfillmentStage {
+  AWAITING_PAYMENT = "awaiting_payment",
+  CENTER_RECEPTION = "center_reception",
+  TECHNICAL_INSPECTION = "technical_inspection",
+  SECURE_PACKAGING = "secure_packaging",
+  DISPATCH = "dispatch",
+}
+
 @Entity("orders")
 @Index(["buyerId", "status"])
 @Index(["status", "createdAt"])
@@ -35,6 +43,14 @@ export class Order {
 
   @Column({ type: "enum", enum: OrderStatus, default: OrderStatus.PENDING })
   status: OrderStatus;
+
+  @Column({
+    type: "varchar",
+    length: 32,
+    default: OrderFulfillmentStage.AWAITING_PAYMENT,
+    name: "fulfillment_stage",
+  })
+  fulfillmentStage: OrderFulfillmentStage;
 
   @Column({
     type: "varchar",

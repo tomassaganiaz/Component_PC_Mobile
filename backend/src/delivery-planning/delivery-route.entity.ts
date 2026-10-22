@@ -38,8 +38,8 @@ export enum DeliveryZone {
 }
 
 @Entity("delivery_routes")
-@Index(["date", "status"])
-@Index(["zone", "date"])
+@Index(["deliveryDate", "status"])
+@Index(["zone", "deliveryDate"])
 export class DeliveryRoute {
   @PrimaryGeneratedColumn("uuid")
   id: string;
@@ -56,16 +56,32 @@ export class DeliveryRoute {
   @Column({ type: "varchar", length: 100, nullable: true, name: "carrier_id" })
   carrierId: string;
 
-  @Column({ type: "varchar", length: 100, nullable: true, name: "carrier_name" })
+  @Column({
+    type: "varchar",
+    length: 100,
+    nullable: true,
+    name: "carrier_name",
+  })
   carrierName: string;
 
   @Column({ type: "varchar", length: 100, nullable: true, name: "driver_name" })
   driverName: string | null;
 
-  @Column({ type: "varchar", length: 20, nullable: true, name: "vehicle_plate" })
+  @Column({
+    type: "varchar",
+    length: 20,
+    nullable: true,
+    name: "vehicle_plate",
+  })
   vehiclePlate: string | null;
 
-  @Column({ type: "decimal", precision: 10, scale: 2, default: 0, name: "total_distance_km" })
+  @Column({
+    type: "decimal",
+    precision: 10,
+    scale: 2,
+    default: 0,
+    name: "total_distance_km",
+  })
   totalDistanceKm: number;
 
   @Column({ type: "integer", default: 0, name: "estimated_duration_minutes" })
@@ -100,7 +116,9 @@ export class RouteStop {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @ManyToOne(() => DeliveryRoute, (route) => route.stops, { onDelete: "CASCADE" })
+  @ManyToOne(() => DeliveryRoute, (route) => route.stops, {
+    onDelete: "CASCADE",
+  })
   @JoinColumn({ name: "route_id" })
   route: DeliveryRoute;
 
@@ -122,16 +140,36 @@ export class RouteStop {
   @Column({ type: "decimal", precision: 10, scale: 7, name: "lng" })
   lng: number;
 
-  @Column({ type: "varchar", length: 100, nullable: true, name: "contact_name" })
+  @Column({
+    type: "varchar",
+    length: 100,
+    nullable: true,
+    name: "contact_name",
+  })
   contactName: string;
 
-  @Column({ type: "varchar", length: 20, nullable: true, name: "contact_phone" })
+  @Column({
+    type: "varchar",
+    length: 20,
+    nullable: true,
+    name: "contact_phone",
+  })
   contactPhone: string;
 
-  @Column({ type: "varchar", length: 50, nullable: true, name: "time_window_start" })
+  @Column({
+    type: "varchar",
+    length: 50,
+    nullable: true,
+    name: "time_window_start",
+  })
   timeWindowStart: string;
 
-  @Column({ type: "varchar", length: 50, nullable: true, name: "time_window_end" })
+  @Column({
+    type: "varchar",
+    length: 50,
+    nullable: true,
+    name: "time_window_end",
+  })
   timeWindowEnd: string;
 
   @Column({
@@ -150,7 +188,13 @@ export class RouteStop {
   @Column({ type: "timestamptz", nullable: true, name: "delivered_at" })
   deliveredAt: Date;
 
-  @Column({ type: "decimal", precision: 10, scale: 2, nullable: true, name: "distance_from_previous_km" })
+  @Column({
+    type: "decimal",
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    name: "distance_from_previous_km",
+  })
   distanceFromPreviousKm: number;
 
   @Column({ type: "integer", nullable: true, name: "travel_time_minutes" })
@@ -180,21 +224,43 @@ export const DELIVERY_ZONES: ZoneConfig[] = [
     name: DeliveryZone.GRAN_BUENOS_AIRES_NORTE,
     center: { lat: -34.52, lng: -58.5 },
     radiusKm: 30,
-    cities: ["Vicente López", "San Isidro", "San Fernando", "Tigre", "Pilar", "Escobar"],
+    cities: [
+      "Vicente López",
+      "San Isidro",
+      "San Fernando",
+      "Tigre",
+      "Pilar",
+      "Escobar",
+    ],
     estimatedDaysFromCABA: { standard: 2, express: 1, pickup: 2 },
   },
   {
     name: DeliveryZone.GRAN_BUENOS_AIRES_SUR,
     center: { lat: -34.78, lng: -58.35 },
     radiusKm: 35,
-    cities: ["Lomas de Zamora", "Avellaneda", "Quilmes", "Berazategui", "Florencio Varela", "Almirante Brown"],
+    cities: [
+      "Lomas de Zamora",
+      "Avellaneda",
+      "Quilmes",
+      "Berazategui",
+      "Florencio Varela",
+      "Almirante Brown",
+    ],
     estimatedDaysFromCABA: { standard: 2, express: 1, pickup: 2 },
   },
   {
     name: DeliveryZone.GRAN_BUENOS_AIRES_OESTE,
     center: { lat: -34.65, lng: -58.65 },
     radiusKm: 40,
-    cities: ["Morón", "Ituzaingó", "Hurlingham", "Merlo", "Moreno", "General Rodríguez", "Luján"],
+    cities: [
+      "Morón",
+      "Ituzaingó",
+      "Hurlingham",
+      "Merlo",
+      "Moreno",
+      "General Rodríguez",
+      "Luján",
+    ],
     estimatedDaysFromCABA: { standard: 2, express: 1, pickup: 2 },
   },
   {
@@ -284,17 +350,24 @@ export function getEstimatedDays(
   service: "standard" | "express" | "pickup" = "standard",
 ): number {
   const zoneConfig = DELIVERY_ZONES.find((z) => z.name === zone);
-  if (!zoneConfig) return DELIVERY_ZONES[DELIVERY_ZONES.length - 1].estimatedDaysFromCABA[service];
+  if (!zoneConfig)
+    return DELIVERY_ZONES[DELIVERY_ZONES.length - 1].estimatedDaysFromCABA[
+      service
+    ];
   return zoneConfig.estimatedDaysFromCABA[service];
 }
 
-export function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+export function haversineKm(
+  a: { lat: number; lng: number },
+  b: { lat: number; lng: number },
+): number {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
   const lat1 = (a.lat * Math.PI) / 180;
   const lat2 = (b.lat * Math.PI) / 180;
   const s =
-    Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
   return 2 * R * Math.asin(Math.min(1, Math.sqrt(s)));
 }

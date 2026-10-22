@@ -47,15 +47,15 @@ export enum ProductStatus {
 }
 
 export enum SellerSecurityTier {
-  SECURE = 'secure',
-  NORMAL = 'normal',
-  NOT_SECURE = 'not_secure',
+  SECURE = "secure",
+  NORMAL = "normal",
+  NOT_SECURE = "not_secure",
 }
 
 /** Etiquetas para productos rotos. No se permiten pérdidas totales. */
 export enum BrokenTag {
-  REPARABLE = 'reparable',
-  PARTS = 'parts',
+  REPARABLE = "reparable",
+  PARTS = "parts",
 }
 
 @Entity("products")
@@ -197,10 +197,22 @@ export class Product {
   deletedAt: Date;
 
   // Ubicación física del producto (para envío/recogida)
-  @Column({ type: "decimal", precision: 10, scale: 7, nullable: true, name: "lat" })
+  @Column({
+    type: "decimal",
+    precision: 10,
+    scale: 7,
+    nullable: true,
+    name: "lat",
+  })
   lat: number | null;
 
-  @Column({ type: "decimal", precision: 10, scale: 7, nullable: true, name: "lng" })
+  @Column({
+    type: "decimal",
+    precision: 10,
+    scale: 7,
+    nullable: true,
+    name: "lng",
+  })
   lng: number | null;
 
   @Column({ type: "varchar", length: 500, nullable: true, name: "address" })

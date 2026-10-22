@@ -50,7 +50,11 @@ export class Notification {
   @Column({ type: "boolean", default: false })
   read: boolean;
 
-  @Column({ type: "enum", enum: NotificationChannel, default: NotificationChannel.IN_APP })
+  @Column({
+    type: "enum",
+    enum: NotificationChannel,
+    default: NotificationChannel.IN_APP,
+  })
   channel: NotificationChannel;
 
   @Column({ type: "jsonb", nullable: true })

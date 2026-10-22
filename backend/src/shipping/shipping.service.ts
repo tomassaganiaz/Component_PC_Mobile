@@ -3,11 +3,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { randomUUID } from "crypto";
 import { ConfigService } from "@nestjs/config";
-import {
-  Shipment,
-  ShipmentService,
-  ShipmentStatus,
-} from "./shipment.entity";
+import { Shipment, ShipmentService, ShipmentStatus } from "./shipment.entity";
 
 export interface ShippingQuoteOption {
   service: ShipmentService;

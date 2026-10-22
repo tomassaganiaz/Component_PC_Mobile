@@ -12,11 +12,21 @@ import { User } from "../users/user.entity";
 import { Product } from "../products/product.entity";
 import { Order } from "../orders/order.entity";
 import { OrderItemEntity } from "../orders/order-item.entity";
+import { ProductsModule } from "../products/products.module";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([MlCredential, MlWebhook, MlWebhookDeadLetter, User, Product, Order, OrderItemEntity]),
+    TypeOrmModule.forFeature([
+      MlCredential,
+      MlWebhook,
+      MlWebhookDeadLetter,
+      User,
+      Product,
+      Order,
+      OrderItemEntity,
+    ]),
     ScheduleModule.forRoot(),
+    ProductsModule,
   ],
   controllers: [MercadoLibreController],
   providers: [MercadoLibreService, MlImportService, MlWebhookRetryService],

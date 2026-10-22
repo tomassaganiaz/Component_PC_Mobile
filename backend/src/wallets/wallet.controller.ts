@@ -27,10 +27,7 @@ export class WalletController {
 
   @Post("payouts")
   @ApiOperation({ summary: "Solicitar un retiro" })
-  requestPayout(
-    @Body() dto: RequestPayoutDto,
-    @Request() req: ExpressRequest,
-  ) {
+  requestPayout(@Body() dto: RequestPayoutDto, @Request() req: ExpressRequest) {
     return this.walletService.requestPayout((req.user as any).id, dto.amount);
   }
 }

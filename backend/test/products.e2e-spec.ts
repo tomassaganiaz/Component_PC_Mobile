@@ -9,7 +9,10 @@ describe("Products (e2e)", () => {
   let productId: string;
   const suffix = Date.now();
 
-  const validProduct = (title: string, extra: Record<string, unknown> = {}) => ({
+  const validProduct = (
+    title: string,
+    extra: Record<string, unknown> = {},
+  ) => ({
     title,
     description: "Producto de prueba con descripción válida",
     price: 450,
@@ -204,7 +207,9 @@ describe("Products (e2e)", () => {
         .set("Authorization", `Bearer ${seller.token}`);
       expect(del.status).toBe(200);
 
-      const after = await request(app.getHttpServer()).get(`/api/products/${id}`);
+      const after = await request(app.getHttpServer()).get(
+        `/api/products/${id}`,
+      );
       expect(after.status).toBe(404);
     });
   });

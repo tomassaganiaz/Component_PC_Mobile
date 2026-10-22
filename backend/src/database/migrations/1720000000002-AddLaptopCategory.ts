@@ -1,7 +1,7 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from "typeorm";
 
 export class AddLaptopCategory1720000000002 implements MigrationInterface {
-  name = 'AddLaptopCategory1720000000002';
+  name = "AddLaptopCategory1720000000002";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Agrega el valor 'laptop' al enum de categorías sin depender del nombre

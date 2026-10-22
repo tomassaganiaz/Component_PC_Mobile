@@ -13,7 +13,12 @@ import {
 import { Request as ExpressRequest } from "express";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { OrdersService } from "./orders.service";
-import { CreateOrderDto, UpdateOrderDto, ReturnOrderDto, CheckoutCartDto } from "./dto";
+import {
+  CreateOrderDto,
+  UpdateOrderDto,
+  ReturnOrderDto,
+  CheckoutCartDto,
+} from "./dto";
 import { Order } from "./order.entity";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
@@ -64,7 +69,9 @@ export class OrdersController {
   @Get("sales")
   @UseGuards(RolesGuard)
   @Roles(UserRole.SELLER, UserRole.ADMIN)
-  @ApiOperation({ summary: "Obtener ventas del vendedor (órdenes de sus productos)" })
+  @ApiOperation({
+    summary: "Obtener ventas del vendedor (órdenes de sus productos)",
+  })
   findMySales(@Request() req: ExpressRequest) {
     return this.ordersService.findBySeller((req.user as any).id);
   }
@@ -73,7 +80,10 @@ export class OrdersController {
   @ApiOperation({
     summary: "Ventana de protección: devolución 10 días / cobertura 45 días",
   })
-  async getProtection(@Param("id", new ParseUUIDPipe()) id: string, @Request() req: ExpressRequest) {
+  async getProtection(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Request() req: ExpressRequest,
+  ) {
     const order = await this.ordersService.findOne(id);
     this.assertCanView(order, req.user as { id: string; role: string });
     return this.ordersService.getProtection(id);
@@ -97,13 +107,21 @@ export class OrdersController {
   @ApiOperation({
     summary: "Solicitar cobertura de la empresa (hasta 45 días)",
   })
-  requestCoverage(@Param("id", new ParseUUIDPipe()) id: string, @Request() req: ExpressRequest) {
+  requestCoverage(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Request() req: ExpressRequest,
+  ) {
     return this.ordersService.requestCoverage(id, (req.user as any).id);
   }
 
   @Get(":id")
-  @ApiOperation({ summary: "Obtener detalle de orden (comprador, vendedor o admin)" })
-  async findOne(@Param("id", new ParseUUIDPipe()) id: string, @Request() req: ExpressRequest) {
+  @ApiOperation({
+    summary: "Obtener detalle de orden (comprador, vendedor o admin)",
+  })
+  async findOne(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Request() req: ExpressRequest,
+  ) {
     const order = await this.ordersService.findOne(id);
     this.assertCanView(order, req.user as { id: string; role: string });
     return order;
@@ -113,9 +131,13 @@ export class OrdersController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiOperation({
-    summary: "Actualizar orden (solo admin; usar /pay, /ship, /deliver, /cancel)",
+    summary:
+      "Actualizar orden (solo admin; usar /pay, /ship, /deliver, /cancel)",
   })
-  update(@Param("id", new ParseUUIDPipe()) id: string, @Body() updateOrderDto: UpdateOrderDto) {
+  update(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Body() updateOrderDto: UpdateOrderDto,
+  ) {
     return this.ordersService.update(id, updateOrderDto);
   }
 
@@ -123,7 +145,10 @@ export class OrdersController {
   @ApiOperation({
     summary: "Confirmar pago del comprador y dejar los fondos en custodia",
   })
-  pay(@Param("id", new ParseUUIDPipe()) id: string, @Request() req: ExpressRequest) {
+  pay(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Request() req: ExpressRequest,
+  ) {
     return this.ordersService.pay(id, (req.user as any).id);
   }
 
@@ -131,19 +156,36 @@ export class OrdersController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.SELLER, UserRole.ADMIN)
   @ApiOperation({ summary: "Marcar pedido como enviado (vendedor)" })
-  ship(@Param("id", new ParseUUIDPipe()) id: string, @Request() req: ExpressRequest) {
+  ship(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Request() req: ExpressRequest,
+  ) {
     return this.ordersService.ship(id, (req.user as any).id);
+  }
+
+  @Post(":id/advance-fulfillment")
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: "Avanzar la etapa del centro técnico (solo admin)" })
+  advanceFulfillment(@Param("id", new ParseUUIDPipe()) id: string) {
+    return this.ordersService.advanceFulfillmentStage(id);
   }
 
   @Post(":id/deliver")
   @ApiOperation({ summary: "Confirmar recepción del producto (comprador)" })
-  deliver(@Param("id", new ParseUUIDPipe()) id: string, @Request() req: ExpressRequest) {
+  deliver(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Request() req: ExpressRequest,
+  ) {
     return this.ordersService.deliver(id, (req.user as any).id);
   }
 
   @Post(":id/cancel")
   @ApiOperation({ summary: "Cancelar orden (comprador o vendedor)" })
-  cancel(@Param("id", new ParseUUIDPipe()) id: string, @Request() req: ExpressRequest) {
+  cancel(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Request() req: ExpressRequest,
+  ) {
     return this.ordersService.cancel(id, (req.user as any).id);
   }
 }

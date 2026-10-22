@@ -38,7 +38,10 @@ describe("Admin (moderación) y upload de imágenes (e2e)", () => {
     await app.close();
   });
 
-  const deliveredOrder = async (): Promise<{ orderId: string; productId: string }> => {
+  const deliveredOrder = async (): Promise<{
+    orderId: string;
+    productId: string;
+  }> => {
     const product = await request(app.getHttpServer())
       .post("/api/products")
       .set("Authorization", `Bearer ${seller.token}`)
@@ -59,7 +62,9 @@ describe("Admin (moderación) y upload de imágenes (e2e)", () => {
     await request(app.getHttpServer())
       .post(`/api/payments/${orderId}/intent`)
       .set("Authorization", `Bearer ${buyer.token}`);
-    await request(app.getHttpServer()).post("/api/payments/webhook").send({ orderId });
+    await request(app.getHttpServer())
+      .post("/api/payments/webhook")
+      .send({ orderId });
     await request(app.getHttpServer())
       .post(`/api/orders/${orderId}/ship`)
       .set("Authorization", `Bearer ${seller.token}`);
@@ -89,7 +94,9 @@ describe("Admin (moderación) y upload de imágenes (e2e)", () => {
         .set("Authorization", `Bearer ${admin.token}`);
       expect(list.status).toBe(200);
       expect(Array.isArray(list.body.data)).toBe(true);
-      const found = list.body.data.find((r: { id: string }) => r.id === review.body.id);
+      const found = list.body.data.find(
+        (r: { id: string }) => r.id === review.body.id,
+      );
       expect(found).toBeDefined();
 
       const resolved = await request(app.getHttpServer())
@@ -125,7 +132,9 @@ describe("Admin (moderación) y upload de imágenes (e2e)", () => {
         .get("/api/reports?status=pending")
         .set("Authorization", `Bearer ${admin.token}`);
       expect(list.status).toBe(200);
-      const found = list.body.data.find((r: { id: string }) => r.id === created.body.id);
+      const found = list.body.data.find(
+        (r: { id: string }) => r.id === created.body.id,
+      );
       expect(found).toBeDefined();
 
       const resolved = await request(app.getHttpServer())

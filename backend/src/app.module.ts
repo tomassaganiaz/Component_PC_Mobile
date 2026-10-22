@@ -32,18 +32,6 @@ import { ThrottlerUserGuard } from "./common/throttler-user.guard";
       isGlobal: true,
       envFilePath: ".env",
     }),
-    ThrottlerModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        throttlers: [
-          {
-            ttl: configService.get("THROTTLE_TTL", 60) * 1000,
-            limit: configService.get("THROTTLE_LIMIT", 100),
-          },
-        ],
-      }),
-    }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -68,28 +56,29 @@ import { ThrottlerUserGuard } from "./common/throttler-user.guard";
               nodeEnv === "development" &&
               configService.get("DATABASE_LOGGING", "true") !== "false",
           };
-        }
-
-        return {
-          type: "postgres",
-          host: configService.get("DATABASE_HOST", "localhost"),
-          port: configService.get<number>("DATABASE_PORT", 5432),
-          username: configService.get("DATABASE_USER", "postgres"),
-          password: configService.get("DATABASE_PASSWORD", "postgres"),
-          database: configService.get("DATABASE_NAME", "ers_components"),
-          entities: [__dirname + "/**/*.entity{.ts,.js}"],
-          migrations: [__dirname + "/database/migrations/*{.ts,.js}"],
-          synchronize: nodeEnv === "development",
-          logging:
-            nodeEnv === "development" &&
-            configService.get("DATABASE_LOGGING", "true") !== "false",
-          ssl:
-            nodeEnv === "production"
-              ? { rejectUnauthorized: false }
-              : configService.get("DATABASE_SSL") === "true"
+        } else {
+          // Modo PostgreSQL por partes
+          return {
+            type: "postgres",
+            host: configService.get("DATABASE_HOST", "localhost"),
+            port: configService.get<number>("DATABASE_PORT", 5432),
+            username: configService.get("DATABASE_USER", "postgres"),
+            password: configService.get("DATABASE_PASSWORD", "postgres"),
+            database: configService.get("DATABASE_NAME", "ers_components"),
+            entities: [__dirname + "/**/*.entity{.ts,.js}"],
+            migrations: [__dirname + "/database/migrations/*{.ts,.js}"],
+            synchronize: nodeEnv === "development",
+            logging:
+              nodeEnv === "development" &&
+              configService.get("DATABASE_LOGGING", "true") !== "false",
+            ssl:
+              nodeEnv === "production"
                 ? { rejectUnauthorized: false }
-                : false,
-        };
+                : configService.get("DATABASE_SSL") === "true"
+                  ? { rejectUnauthorized: false }
+                  : false,
+          };
+        }
       },
     }),
     UsersModule,

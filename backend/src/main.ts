@@ -73,7 +73,8 @@ async function bootstrap() {
   // Swagger - Configuración completa
   const swaggerConfig = new DocumentBuilder()
     .setTitle("TechShield API")
-    .setDescription(`
+    .setDescription(
+      `
 # TechShield API - Marketplace de Componentes PC y Móviles
 
 Plataforma completa de compra-venta de componentes de hardware (CPUs, GPUs, RAM, almacenamiento, etc.) y dispositivos móviles con sistema de **escrow**, **verificación técnica**, **envíos integrados** y **integración con Mercado Libre**.
@@ -152,7 +153,8 @@ Plataforma completa de compra-venta de componentes de hardware (CPUs, GPUs, RAM,
 - Procesamiento asíncrono con retry exponencial (max 5 reintentos)
 - Dead Letter Queue tras 6 intentos fallidos
 - Health check: \`GET /api/mercadolibre/webhook/health\`
-    `)
+    `,
+    )
     .setVersion("1.0")
     .addBearerAuth(
       {
@@ -173,14 +175,33 @@ Plataforma completa de compra-venta de componentes de hardware (CPUs, GPUs, RAM,
     .addTag("Reviews", "⭐ Reseñas y quejas")
     .addTag("Analytics", "📊 Eventos de analytics")
     .addTag("Shipping", "🚚 Envíos, cotizaciones, tracking")
-    .addTag("Delivery Planning", "🗺️ Planificación automática de rutas de reparto")
-    .addTag("Driver App", "📱 App del repartidor (dashboard, navegación, estados)")
-    .addTag("Mercado Libre", "🔗 Integración completa con Mercado Libre (OAuth, publicaciones, webhooks)")
-    .addTag("Google Maps", "🗺️ Geocoding, Directions, Places, Static Maps, estimaciones")
-    .addTag("Notifications", "🔔 Notificaciones multi-canal (Push, Email, SMS, In-App)")
+    .addTag(
+      "Delivery Planning",
+      "🗺️ Planificación automática de rutas de reparto",
+    )
+    .addTag(
+      "Driver App",
+      "📱 App del repartidor (dashboard, navegación, estados)",
+    )
+    .addTag(
+      "Mercado Libre",
+      "🔗 Integración completa con Mercado Libre (OAuth, publicaciones, webhooks)",
+    )
+    .addTag(
+      "Google Maps",
+      "🗺️ Geocoding, Directions, Places, Static Maps, estimaciones",
+    )
+    .addTag(
+      "Notifications",
+      "🔔 Notificaciones multi-canal (Push, Email, SMS, In-App)",
+    )
     .addServer("http://localhost:3000", "Desarrollo local")
     .addServer("https://api.techshield.com", "Producción")
-    .setContact("TechShield Team", "https://techshield.com", "dev@techshield.com")
+    .setContact(
+      "TechShield Team",
+      "https://techshield.com",
+      "dev@techshield.com",
+    )
     .setLicense("MIT", "https://opensource.org/licenses/MIT")
     .build();
 

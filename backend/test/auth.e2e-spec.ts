@@ -38,7 +38,11 @@ describe("Auth (e2e)", () => {
     it("falla con password corto -> 400", async () => {
       const res = await request(app.getHttpServer())
         .post("/api/auth/register")
-        .send({ name: "Bad", email: `short.${suffix}@test.com`, password: "12345" });
+        .send({
+          name: "Bad",
+          email: `short.${suffix}@test.com`,
+          password: "12345",
+        });
       expect(res.status).toBe(400);
     });
 

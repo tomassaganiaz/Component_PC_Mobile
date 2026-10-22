@@ -1,7 +1,16 @@
-import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, In } from "typeorm";
-import { Product, ProductStatus, SellerSecurityTier, BrokenTag } from "./product.entity";
+import {
+  Product,
+  ProductStatus,
+  SellerSecurityTier,
+  BrokenTag,
+} from "./product.entity";
 import { ProductVariation } from "./product-variation.entity";
 import {
   CreateProductDto,
@@ -97,11 +106,11 @@ export class ProductsService {
     const result = await this.productRepository
       .createQueryBuilder()
       .update(Product)
-      .set({ stock: () => 'stock - 1' })
-      .where('id = :id', { id: productId })
-      .andWhere('stock > 0')
-      .andWhere('deleted_at IS NULL')
-      .returning(['stock'])
+      .set({ stock: () => "stock - 1" })
+      .where("id = :id", { id: productId })
+      .andWhere("stock > 0")
+      .andWhere("deleted_at IS NULL")
+      .returning(["stock"])
       .execute();
 
     if (!result.affected || !result.raw?.length) {
@@ -115,9 +124,9 @@ export class ProductsService {
     await this.productRepository
       .createQueryBuilder()
       .update(Product)
-      .set({ stock: () => 'stock + 1' })
-      .where('id = :id', { id: productId })
-      .andWhere('deleted_at IS NULL')
+      .set({ stock: () => "stock + 1" })
+      .where("id = :id", { id: productId })
+      .andWhere("deleted_at IS NULL")
       .execute();
   }
 

@@ -67,9 +67,15 @@ describe("MercadoLibreController", () => {
         mlUserId: "ml-123",
       });
 
-      const result = await controller.status({ user: { id: "user-123" } } as any);
+      const result = await controller.status({
+        user: { id: "user-123" },
+      } as any);
 
-      expect(result).toEqual({ configured: true, connected: true, mlUserId: "ml-123" });
+      expect(result).toEqual({
+        configured: true,
+        connected: true,
+        mlUserId: "ml-123",
+      });
       expect(mockService.getStatus).toHaveBeenCalledWith("user-123");
     });
   });
@@ -81,7 +87,9 @@ describe("MercadoLibreController", () => {
         configured: true,
       });
 
-      const result = await controller.authUrl({ user: { id: "user-123" } } as any);
+      const result = await controller.authUrl({
+        user: { id: "user-123" },
+      } as any);
 
       expect(result.url).toContain("mercadolibre.com.ar");
       expect(result.configured).toBe(true);
@@ -96,19 +104,35 @@ describe("MercadoLibreController", () => {
         pagination: { offset: 0, limit: 50, total: 100, hasMore: true },
       });
 
-      const result = await controller.sales({ user: { id: "user-123" } } as any, "0", "50");
+      const result = await controller.sales(
+        { user: { id: "user-123" } } as any,
+        "0",
+        "50",
+      );
 
       expect(result.source).toBe("mercadolibre");
       expect(result.sales).toHaveLength(1);
-      expect(result.pagination).toEqual({ offset: 0, limit: 50, total: 100, hasMore: true });
+      expect(result.pagination).toEqual({
+        offset: 0,
+        limit: 50,
+        total: 100,
+        hasMore: true,
+      });
     });
 
     it("uses defaults when offset/limit not provided", async () => {
-      mockService.getSales.mockResolvedValue({ source: "mock", sales: [], pagination: { offset: 0, limit: 50, total: 4, hasMore: false } });
+      mockService.getSales.mockResolvedValue({
+        source: "mock",
+        sales: [],
+        pagination: { offset: 0, limit: 50, total: 4, hasMore: false },
+      });
 
       await controller.sales({ user: { id: "user-123" } } as any);
 
-      expect(mockService.getSales).toHaveBeenCalledWith("user-123", { offset: 0, limit: 50 });
+      expect(mockService.getSales).toHaveBeenCalledWith("user-123", {
+        offset: 0,
+        limit: 50,
+      });
     });
   });
 
@@ -116,7 +140,9 @@ describe("MercadoLibreController", () => {
     it("disconnects account", async () => {
       mockService.disconnect.mockResolvedValue(undefined);
 
-      const result = await controller.disconnect({ user: { id: "user-123" } } as any);
+      const result = await controller.disconnect({
+        user: { id: "user-123" },
+      } as any);
 
       expect(result).toEqual({ success: true });
       expect(mockService.disconnect).toHaveBeenCalledWith("user-123");
@@ -131,18 +157,26 @@ describe("MercadoLibreController", () => {
         status: "active",
       });
 
-      const result = await controller.publish({ user: { id: "user-123" } } as any, "prod-123");
+      const result = await controller.publish(
+        { user: { id: "user-123" } } as any,
+        "prod-123",
+      );
 
       expect(result.id).toBe("MLA123456");
-      expect(mockService.publishItem).toHaveBeenCalledWith("user-123", "prod-123");
+      expect(mockService.publishItem).toHaveBeenCalledWith(
+        "user-123",
+        "prod-123",
+      );
     });
 
     it("propagates BadRequestException from service", async () => {
-      mockService.publishItem.mockRejectedValue(new BadRequestException("No stock"));
-
-      await expect(controller.publish({ user: { id: "user-123" } } as any, "prod-123")).rejects.toThrow(
-        BadRequestException,
+      mockService.publishItem.mockRejectedValue(
+        new BadRequestException("No stock"),
       );
+
+      await expect(
+        controller.publish({ user: { id: "user-123" } } as any, "prod-123"),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -155,7 +189,9 @@ describe("MercadoLibreController", () => {
         skipped: 2,
       });
 
-      const result = await controller.importSales({ user: { id: "user-123" } } as any);
+      const result = await controller.importSales({
+        user: { id: "user-123" },
+      } as any);
 
       expect(result.imported).toBe(3);
       expect(result.skipped).toBe(2);
@@ -165,7 +201,10 @@ describe("MercadoLibreController", () => {
 
   describe("updateItem", () => {
     it("updates ML item", async () => {
-      mockService.updateItem.mockResolvedValue({ id: "MLA123", status: "active" });
+      mockService.updateItem.mockResolvedValue({
+        id: "MLA123",
+        status: "active",
+      });
 
       const result = await controller.updateItem(
         { user: { id: "user-123" } } as any,
@@ -174,10 +213,14 @@ describe("MercadoLibreController", () => {
       );
 
       expect(result.id).toBe("MLA123");
-      expect(mockService.updateItem).toHaveBeenCalledWith("user-123", "MLA123", {
-        price: 500,
-        available_quantity: 3,
-      });
+      expect(mockService.updateItem).toHaveBeenCalledWith(
+        "user-123",
+        "MLA123",
+        {
+          price: 500,
+          available_quantity: 3,
+        },
+      );
     });
   });
 
@@ -185,7 +228,10 @@ describe("MercadoLibreController", () => {
     it("returns ML item details", async () => {
       mockService.getItem.mockResolvedValue({ id: "MLA123", title: "Test" });
 
-      const result = await controller.getItem({ user: { id: "user-123" } } as any, "MLA123");
+      const result = await controller.getItem(
+        { user: { id: "user-123" } } as any,
+        "MLA123",
+      );
 
       expect(result.id).toBe("MLA123");
       expect(mockService.getItem).toHaveBeenCalledWith("user-123", "MLA123");
@@ -205,7 +251,9 @@ describe("MercadoLibreController", () => {
       );
 
       expect(result.processed).toBe(false);
-      expect(result.message).toBe("Webhook encolado para procesamiento asíncrono");
+      expect(result.message).toBe(
+        "Webhook encolado para procesamiento asíncrono",
+      );
       expect(result.webhookId).toBe("webhook-123");
       expect(mockWebhookRetry.enqueueWebhook).toHaveBeenCalledWith({
         topic: "orders_v2",
@@ -218,7 +266,9 @@ describe("MercadoLibreController", () => {
     });
 
     it("returns error when missing required params", async () => {
-      const result = await controller.webhook("", "", "", "", { body: {} } as any);
+      const result = await controller.webhook("", "", "", "", {
+        body: {},
+      } as any);
 
       expect(result.processed).toBe(false);
       expect(result.message).toContain("Missing required");
@@ -233,9 +283,12 @@ describe("MercadoLibreController", () => {
         failed: [],
       });
 
-      const result = await controller.subscribe({ user: { id: "user-123" } } as any, {
-        topics: ["orders_v2", "payments"],
-      });
+      const result = await controller.subscribe(
+        { user: { id: "user-123" } } as any,
+        {
+          topics: ["orders_v2", "payments"],
+        },
+      );
 
       expect(result.subscribed).toContain("orders_v2");
       expect(result.subscribed).toContain("payments");
@@ -244,9 +297,13 @@ describe("MercadoLibreController", () => {
 
   describe("listSubscriptions", () => {
     it("returns active subscriptions", async () => {
-      mockService.listSubscriptions.mockResolvedValue([{ topic: "orders_v2", callback_url: "https://..." }]);
+      mockService.listSubscriptions.mockResolvedValue([
+        { topic: "orders_v2", callback_url: "https://..." },
+      ]);
 
-      const result = await controller.listSubscriptions({ user: { id: "user-123" } } as any);
+      const result = await controller.listSubscriptions({
+        user: { id: "user-123" },
+      } as any);
 
       expect(result).toHaveLength(1);
       expect(result[0].topic).toBe("orders_v2");
@@ -257,10 +314,16 @@ describe("MercadoLibreController", () => {
     it("unsubscribes from topic", async () => {
       mockService.unsubscribeTopic.mockResolvedValue(undefined);
 
-      const result = await controller.unsubscribe({ user: { id: "user-123" } } as any, "orders_v2");
+      const result = await controller.unsubscribe(
+        { user: { id: "user-123" } } as any,
+        "orders_v2",
+      );
 
       expect(result.success).toBe(true);
-      expect(mockService.unsubscribeTopic).toHaveBeenCalledWith("user-123", "orders_v2");
+      expect(mockService.unsubscribeTopic).toHaveBeenCalledWith(
+        "user-123",
+        "orders_v2",
+      );
     });
   });
 
@@ -272,7 +335,10 @@ describe("MercadoLibreController", () => {
         optional: [{ id: "COLOR", name: "Color" }],
       });
 
-      const result = await controller.categoryAttributes({ user: { id: "user-123" } } as any, "gpu");
+      const result = await controller.categoryAttributes(
+        { user: { id: "user-123" } } as any,
+        "gpu",
+      );
 
       expect(result.mlCategoryId).toBe("MLA1744");
       expect(result.required).toHaveLength(1);

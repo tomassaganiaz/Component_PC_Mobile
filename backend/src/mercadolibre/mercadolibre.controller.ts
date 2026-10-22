@@ -16,7 +16,15 @@ import {
   Req,
 } from "@nestjs/common";
 import { Request as ExpressRequest, Response } from "express";
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiBody, ApiHeader, ApiQuery } from "@nestjs/swagger";
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiParam,
+  ApiBody,
+  ApiHeader,
+  ApiQuery,
+} from "@nestjs/swagger";
 import { MercadoLibreService } from "./mercadolibre.service";
 import { MlImportService } from "./ml-import.service";
 import { MlWebhookRetryService } from "./ml-webhook-retry.service";
@@ -102,7 +110,10 @@ export class MercadoLibreController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Publicar producto en Mercado Libre" })
-  @ApiParam({ name: "productId", description: "ID del producto local a publicar" })
+  @ApiParam({
+    name: "productId",
+    description: "ID del producto local a publicar",
+  })
   async publish(
     @Request() req: ExpressRequest,
     @Param("productId") productId: string,
@@ -113,7 +124,10 @@ export class MercadoLibreController {
   @Post("import-sales")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Importar ventas de ML como órdenes locales (escrow/wallet/shipping)" })
+  @ApiOperation({
+    summary:
+      "Importar ventas de ML como órdenes locales (escrow/wallet/shipping)",
+  })
   async importSales(@Request() req: ExpressRequest) {
     return this.importService.importSales((req.user as any).id);
   }
@@ -121,22 +135,36 @@ export class MercadoLibreController {
   @Put("items/:mlItemId")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Actualizar publicación en ML (precio, stock, estado)" })
-  @ApiParam({ name: "mlItemId", description: "ID del item en Mercado Libre (ej: MLA123456789)" })
+  @ApiOperation({
+    summary: "Actualizar publicación en ML (precio, stock, estado)",
+  })
+  @ApiParam({
+    name: "mlItemId",
+    description: "ID del item en Mercado Libre (ej: MLA123456789)",
+  })
   @ApiBody({
     schema: {
       type: "object",
       properties: {
         price: { type: "number", example: 450.0 },
         available_quantity: { type: "integer", example: 5 },
-        status: { type: "string", enum: ["active", "paused", "closed"], example: "active" },
+        status: {
+          type: "string",
+          enum: ["active", "paused", "closed"],
+          example: "active",
+        },
       },
     },
   })
   async updateItem(
     @Request() req: ExpressRequest,
     @Param("mlItemId") mlItemId: string,
-    @Body() body: { price?: number; available_quantity?: number; status?: "active" | "paused" | "closed" },
+    @Body()
+    body: {
+      price?: number;
+      available_quantity?: number;
+      status?: "active" | "paused" | "closed";
+    },
   ) {
     return this.service.updateItem((req.user as any).id, mlItemId, body);
   }
@@ -155,8 +183,13 @@ export class MercadoLibreController {
 
   @Post("webhook")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Webhook de notificaciones de Mercado Libre (público)" })
-  @ApiHeader({ name: "x-meli-signature", description: "Firma HMAC-SHA256 de ML (opcional)" })
+  @ApiOperation({
+    summary: "Webhook de notificaciones de Mercado Libre (público)",
+  })
+  @ApiHeader({
+    name: "x-meli-signature",
+    description: "Firma HMAC-SHA256 de ML (opcional)",
+  })
   async webhook(
     @Headers("x-meli-signature") signature: string,
     @Query("topic") topic: string,
@@ -165,11 +198,16 @@ export class MercadoLibreController {
     @Req() req: ExpressRequest,
   ) {
     const rawBody = JSON.stringify(req.body ?? {});
-    this.logger.log(`Webhook ML: topic=${topic} resource=${resource} user_id=${userId}`);
+    this.logger.log(
+      `Webhook ML: topic=${topic} resource=${resource} user_id=${userId}`,
+    );
     if (!topic || !resource || !userId) {
-      return { processed: false, message: "Missing required query params: topic, resource, user_id" };
+      return {
+        processed: false,
+        message: "Missing required query params: topic, resource, user_id",
+      };
     }
-    
+
     // Encolar para procesamiento asíncrono con retry logic
     const webhookId = await this.webhookRetry.enqueueWebhook({
       topic,
@@ -179,25 +217,37 @@ export class MercadoLibreController {
       rawBody,
       receivedAt: new Date(),
     });
-    
-    return { 
-      processed: false, 
-      message: "Webhook encolado para procesamiento asíncrono", 
-      webhookId 
+
+    return {
+      processed: false,
+      message: "Webhook encolado para procesamiento asíncrono",
+      webhookId,
     };
   }
 
   @Post("subscriptions")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Suscribir tópicos de notificación en ML (programático)" })
+  @ApiOperation({
+    summary: "Suscribir tópicos de notificación en ML (programático)",
+  })
   @ApiBody({
     schema: {
       type: "object",
       properties: {
         topics: {
           type: "array",
-          items: { type: "string", enum: ["orders_v2", "orders", "payments", "shipments", "questions", "claims"] },
+          items: {
+            type: "string",
+            enum: [
+              "orders_v2",
+              "orders",
+              "payments",
+              "shipments",
+              "questions",
+              "claims",
+            ],
+          },
           example: ["orders_v2", "payments", "shipments"],
         },
       },
@@ -222,7 +272,10 @@ export class MercadoLibreController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Eliminar suscripción a un tópico en ML" })
-  @ApiParam({ name: "topic", description: "Tópico a desuscribir (ej: orders_v2)" })
+  @ApiParam({
+    name: "topic",
+    description: "Tópico a desuscribir (ej: orders_v2)",
+  })
   async unsubscribe(
     @Request() req: ExpressRequest,
     @Param("topic") topic: string,
@@ -234,9 +287,18 @@ export class MercadoLibreController {
   @Get("category-attributes/:category")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Ver atributos requeridos/opcionales de una categoría ML" })
-  @ApiParam({ name: "category", description: "Categoría local (cpu, gpu, ram, storage, motherboard, psu, case, cooling, monitor, keyboard, mouse, phone, tablet, laptop, other)" })
-  async categoryAttributes(@Request() req: ExpressRequest, @Param("category") category: string) {
+  @ApiOperation({
+    summary: "Ver atributos requeridos/opcionales de una categoría ML",
+  })
+  @ApiParam({
+    name: "category",
+    description:
+      "Categoría local (cpu, gpu, ram, storage, motherboard, psu, case, cooling, monitor, keyboard, mouse, phone, tablet, laptop, other)",
+  })
+  async categoryAttributes(
+    @Request() req: ExpressRequest,
+    @Param("category") category: string,
+  ) {
     return this.service.getCategoryAttributesForLocal(category);
   }
 
@@ -252,8 +314,18 @@ export class MercadoLibreController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Listar webhooks en Dead Letter Queue" })
-  @ApiQuery({ name: "limit", required: false, type: Number, description: "Límite (default 50)" })
-  @ApiQuery({ name: "offset", required: false, type: Number, description: "Offset (default 0)" })
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    type: Number,
+    description: "Límite (default 50)",
+  })
+  @ApiQuery({
+    name: "offset",
+    required: false,
+    type: Number,
+    description: "Offset (default 0)",
+  })
   async listDeadLetter(
     @Query("limit") limit?: string,
     @Query("offset") offset?: string,
@@ -270,6 +342,11 @@ export class MercadoLibreController {
   @ApiParam({ name: "id", description: "ID del registro en Dead Letter Queue" })
   async replayDeadLetter(@Param("id") id: string) {
     const success = await this.webhookRetry.replayDeadLetter(id);
-    return { success, message: success ? "Re-enviado para procesamiento" : "No se pudo re-procesar" };
+    return {
+      success,
+      message: success
+        ? "Re-enviado para procesamiento"
+        : "No se pudo re-procesar",
+    };
   }
 }

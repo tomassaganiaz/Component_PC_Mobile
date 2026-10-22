@@ -71,10 +71,22 @@ export class User {
   @Column({ type: "varchar", length: 500, nullable: true, name: "address" })
   address: string;
 
-  @Column({ type: "decimal", precision: 10, scale: 7, nullable: true, name: "lat" })
+  @Column({
+    type: "decimal",
+    precision: 10,
+    scale: 7,
+    nullable: true,
+    name: "lat",
+  })
   lat: number | null;
 
-  @Column({ type: "decimal", precision: 10, scale: 7, nullable: true, name: "lng" })
+  @Column({
+    type: "decimal",
+    precision: 10,
+    scale: 7,
+    nullable: true,
+    name: "lng",
+  })
   lng: number | null;
 
   @Column({ type: "varchar", length: 100, nullable: true, name: "city" })

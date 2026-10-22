@@ -8,7 +8,13 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from "@nestjs/swagger";
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+} from "@nestjs/swagger";
 import { GoogleMapsService } from "./googlemaps.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { ProductsService } from "../products/products.service";
@@ -25,13 +31,18 @@ export class GoogleMapsController {
     private readonly usersService: UsersService,
   ) {}
 
-  private getProductLocation(product: Product): { lat: number; lng: number } | null {
+  private getProductLocation(
+    product: Product,
+  ): { lat: number; lng: number } | null {
     // Prioridad: ubicación del producto > ubicación del vendedor
     if (product.lat != null && product.lng != null) {
       return { lat: Number(product.lat), lng: Number(product.lng) };
     }
     if (product.seller?.lat != null && product.seller?.lng != null) {
-      return { lat: Number(product.seller.lat), lng: Number(product.seller.lng) };
+      return {
+        lat: Number(product.seller.lat),
+        lng: Number(product.seller.lng),
+      };
     }
     return null;
   }
@@ -44,7 +55,9 @@ export class GoogleMapsController {
   }
 
   @Get("product-location/:productId")
-  @ApiOperation({ summary: "Ubicación del producto (lat/lng, dirección, mapa estático)" })
+  @ApiOperation({
+    summary: "Ubicación del producto (lat/lng, dirección, mapa estático)",
+  })
   @ApiParam({ name: "productId", description: "ID del producto" })
   async productLocation(@Param("productId") productId: string) {
     const product = await this.productsService.findOne(productId);
@@ -71,7 +84,8 @@ export class GoogleMapsController {
             address: product.address ?? product.seller?.address ?? null,
             city: product.city ?? product.seller?.city ?? null,
             province: product.province ?? product.seller?.province ?? null,
-            postalCode: product.postalCode ?? product.seller?.postalCode ?? null,
+            postalCode:
+              product.postalCode ?? product.seller?.postalCode ?? null,
           }
         : null,
       seller: product.seller
@@ -92,9 +106,20 @@ export class GoogleMapsController {
   @Get("delivery-estimate")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Estimación de entrega: fecha, distancia, ruta y mapa" })
-  @ApiQuery({ name: "productId", required: true, description: "ID del producto" })
-  @ApiQuery({ name: "service", required: false, enum: ["standard", "express", "pickup"], description: "Tipo de envío" })
+  @ApiOperation({
+    summary: "Estimación de entrega: fecha, distancia, ruta y mapa",
+  })
+  @ApiQuery({
+    name: "productId",
+    required: true,
+    description: "ID del producto",
+  })
+  @ApiQuery({
+    name: "service",
+    required: false,
+    enum: ["standard", "express", "pickup"],
+    description: "Tipo de envío",
+  })
   async deliveryEstimate(
     @Request() req: any,
     @Query("productId") productId: string,
@@ -111,24 +136,40 @@ export class GoogleMapsController {
     const destination = this.getBuyerLocation(buyer);
 
     if (!origin) {
-      throw new NotFoundException("El producto no tiene ubicación definida (ni vendedor)");
+      throw new NotFoundException(
+        "El producto no tiene ubicación definida (ni vendedor)",
+      );
     }
     if (!destination) {
-      throw new BadRequestException("Tu usuario no tiene dirección/coordenadas configuradas");
+      throw new BadRequestException(
+        "Tu usuario no tiene dirección/coordenadas configuradas",
+      );
     }
 
     // Obtener ruta y distancia
-    const directions = await this.maps.getDirections(origin, destination, "driving");
-    const distanceKm = directions?.distanceKm ?? this.haversineKm(origin, destination);
-    const durationMinutes = directions?.durationMinutes ?? Math.round(distanceKm / 50 * 60);
+    const directions = await this.maps.getDirections(
+      origin,
+      destination,
+      "driving",
+    );
+    const distanceKm =
+      directions?.distanceKm ?? this.haversineKm(origin, destination);
+    const durationMinutes =
+      directions?.durationMinutes ?? Math.round((distanceKm / 50) * 60);
 
     // Estimar fecha de entrega
-    const deliveryEstimate = this.maps.estimateDeliveryDate(distanceKm, service);
+    const deliveryEstimate = this.maps.estimateDeliveryDate(
+      distanceKm,
+      service,
+    );
 
     // Mapa estático con la ruta
     let staticMapUrl: string | null = null;
     if (this.maps.isConfigured()) {
-      staticMapUrl = this.maps.staticMapUrl(origin, destination, undefined, { width: 600, height: 400 });
+      staticMapUrl = this.maps.staticMapUrl(origin, destination, undefined, {
+        width: 600,
+        height: 400,
+      });
     }
 
     return {
@@ -159,9 +200,22 @@ export class GoogleMapsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Locales/puntos de recogida cercanos al producto" })
-  @ApiQuery({ name: "productId", required: true, description: "ID del producto" })
-  @ApiQuery({ name: "radius", required: false, type: Number, description: "Radio en metros (default 5000)" })
-  @ApiQuery({ name: "type", required: false, description: "Tipo de place (store, post_office, shipping_company, etc.)" })
+  @ApiQuery({
+    name: "productId",
+    required: true,
+    description: "ID del producto",
+  })
+  @ApiQuery({
+    name: "radius",
+    required: false,
+    type: Number,
+    description: "Radio en metros (default 5000)",
+  })
+  @ApiQuery({
+    name: "type",
+    required: false,
+    description: "Tipo de place (store, post_office, shipping_company, etc.)",
+  })
   async nearbyPickups(
     @Query("productId") productId: string,
     @Query("radius") radius?: string,
@@ -178,11 +232,23 @@ export class GoogleMapsController {
     const placeType = type || "store";
 
     // Buscar lugares cercanos (tiendas, puntos de envío, etc.)
-    const places = await this.maps.findNearbyPlaces(location, radiusMeters, placeType);
+    const places = await this.maps.findNearbyPlaces(
+      location,
+      radiusMeters,
+      placeType,
+    );
 
     // También buscar específicamente puntos de envío/correos
-    const shippingPlaces = await this.maps.findNearbyPlaces(location, radiusMeters, "post_office");
-    const courierPlaces = await this.maps.findNearbyPlaces(location, radiusMeters, "shipping_company");
+    const shippingPlaces = await this.maps.findNearbyPlaces(
+      location,
+      radiusMeters,
+      "post_office",
+    );
+    const courierPlaces = await this.maps.findNearbyPlaces(
+      location,
+      radiusMeters,
+      "shipping_company",
+    );
 
     const allPlaces = [
       ...(places || []),
@@ -190,9 +256,14 @@ export class GoogleMapsController {
       ...(courierPlaces || []),
     ]
       // Deduplicar por placeId
-      .filter((place, index, self) => index === self.findIndex((p) => p.placeId === place.placeId))
+      .filter(
+        (place, index, self) =>
+          index === self.findIndex((p) => p.placeId === place.placeId),
+      )
       // Ordenar por distancia (aproximado via haversine)
-      .sort((a, b) => this.haversineKm(location, a) - this.haversineKm(location, b))
+      .sort(
+        (a, b) => this.haversineKm(location, a) - this.haversineKm(location, b),
+      )
       .slice(0, 20);
 
     return {
@@ -210,7 +281,11 @@ export class GoogleMapsController {
 
   @Get("geocode")
   @ApiOperation({ summary: "Geocodificar dirección → lat/lng" })
-  @ApiQuery({ name: "address", required: true, description: "Dirección a geocodificar" })
+  @ApiQuery({
+    name: "address",
+    required: true,
+    description: "Dirección a geocodificar",
+  })
   async geocode(@Query("address") address: string) {
     if (!address) throw new BadRequestException("address requerido");
     const result = await this.maps.geocode(address);
@@ -222,7 +297,10 @@ export class GoogleMapsController {
   @ApiQuery({ name: "lat", required: true, type: Number })
   @ApiQuery({ name: "lng", required: true, type: Number })
   async reverseGeocode(@Query("lat") lat: string, @Query("lng") lng: string) {
-    const result = await this.maps.reverseGeocode(parseFloat(lat), parseFloat(lng));
+    const result = await this.maps.reverseGeocode(
+      parseFloat(lat),
+      parseFloat(lng),
+    );
     return { lat, lng, result };
   }
 
@@ -232,7 +310,11 @@ export class GoogleMapsController {
   @ApiQuery({ name: "originLng", required: true, type: Number })
   @ApiQuery({ name: "destLat", required: true, type: Number })
   @ApiQuery({ name: "destLng", required: true, type: Number })
-  @ApiQuery({ name: "mode", required: false, enum: ["driving", "walking", "transit"] })
+  @ApiQuery({
+    name: "mode",
+    required: false,
+    enum: ["driving", "walking", "transit"],
+  })
   async directions(
     @Query("originLat") originLat: string,
     @Query("originLng") originLng: string,
@@ -254,9 +336,23 @@ export class GoogleMapsController {
   @ApiQuery({ name: "originLng", required: true, type: Number })
   @ApiQuery({ name: "destLat", required: true, type: Number })
   @ApiQuery({ name: "destLng", required: true, type: Number })
-  @ApiQuery({ name: "waypoints", required: false, description: "lat,lng|lat,lng..." })
-  @ApiQuery({ name: "width", required: false, type: Number, description: "Default 600" })
-  @ApiQuery({ name: "height", required: false, type: Number, description: "Default 320" })
+  @ApiQuery({
+    name: "waypoints",
+    required: false,
+    description: "lat,lng|lat,lng...",
+  })
+  @ApiQuery({
+    name: "width",
+    required: false,
+    type: Number,
+    description: "Default 600",
+  })
+  @ApiQuery({
+    name: "height",
+    required: false,
+    type: Number,
+    description: "Default 320",
+  })
   staticMap(
     @Query("originLat") originLat: string,
     @Query("originLng") originLng: string,
@@ -277,12 +373,18 @@ export class GoogleMapsController {
       { lat: parseFloat(originLat), lng: parseFloat(originLng) },
       { lat: parseFloat(destLat), lng: parseFloat(destLng) },
       wp,
-      { width: width ? parseInt(width, 10) : 600, height: height ? parseInt(height, 10) : 320 },
+      {
+        width: width ? parseInt(width, 10) : 600,
+        height: height ? parseInt(height, 10) : 320,
+      },
     );
     return { staticMapUrl: url };
   }
 
-  private haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  private haversineKm(
+    a: { lat: number; lng: number },
+    b: { lat: number; lng: number },
+  ): number {
     const R = 6371;
     const dLat = ((b.lat - a.lat) * Math.PI) / 180;
     const dLng = ((b.lng - a.lng) * Math.PI) / 180;

@@ -1,9 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { randomUUID } from "crypto";
-import {
-  PaymentProvider,
-  PaymentResult,
-} from "./payment-provider.interface";
+import { PaymentProvider, PaymentResult } from "./payment-provider.interface";
 
 /**
  * Proveedor de pagos simulado. Genera identificadores locales y no realiza

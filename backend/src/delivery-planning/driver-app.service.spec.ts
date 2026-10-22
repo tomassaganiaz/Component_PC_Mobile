@@ -1,7 +1,17 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { DriverAppService, DriverDashboard, DriverRouteSummary, DriverStopDetail } from "./driver-app.service";
-import { DeliveryRoute, RouteStop, RouteStatus, DeliveryZone } from "./delivery-route.entity";
+import {
+  DriverAppService,
+  DriverDashboard,
+  DriverRouteSummary,
+  DriverStopDetail,
+} from "./driver-app.service";
+import {
+  DeliveryRoute,
+  RouteStop,
+  RouteStatus,
+  DeliveryZone,
+} from "./delivery-route.entity";
 import { NotFoundException, BadRequestException } from "@nestjs/common";
 import { GoogleMapsService } from "../googlemaps/googlemaps.service";
 
@@ -90,8 +100,14 @@ describe("DriverAppService", () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DriverAppService,
-        { provide: getRepositoryToken(DeliveryRoute), useValue: mockRouteRepository },
-        { provide: getRepositoryToken(RouteStop), useValue: mockStopRepository },
+        {
+          provide: getRepositoryToken(DeliveryRoute),
+          useValue: mockRouteRepository,
+        },
+        {
+          provide: getRepositoryToken(RouteStop),
+          useValue: mockStopRepository,
+        },
         { provide: GoogleMapsService, useValue: mockMapsService },
       ],
     }).compile();
@@ -135,8 +151,15 @@ describe("DriverAppService", () => {
 
       mockRouteRepository.find
         .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([{ ...mockRoute, stops: [{ status: "delivered" }, { status: "delivered" }] }])
-        .mockResolvedValueOnce([{ ...mockRoute, stops: [{ status: "delivered" }] }]);
+        .mockResolvedValueOnce([
+          {
+            ...mockRoute,
+            stops: [{ status: "delivered" }, { status: "delivered" }],
+          },
+        ])
+        .mockResolvedValueOnce([
+          { ...mockRoute, stops: [{ status: "delivered" }] },
+        ]);
 
       const result = await service.getDashboard("driver-123");
 
@@ -149,7 +172,9 @@ describe("DriverAppService", () => {
       const routeWithStops = { ...mockRoute, stops: mockStops };
       mockRouteRepository.findOne.mockResolvedValue(routeWithStops);
       mockStopRepository.find.mockResolvedValue(mockStops);
-      mockMapsService.staticMapUrl.mockReturnValue("https://maps.googleapis.com/staticmap?...");
+      mockMapsService.staticMapUrl.mockReturnValue(
+        "https://maps.googleapis.com/staticmap?...",
+      );
 
       const result = await service.getCurrentRouteDetail("driver-123");
 
@@ -175,9 +200,14 @@ describe("DriverAppService", () => {
       const routeWithStops = { ...mockRoute, stops: mockStops };
       mockRouteRepository.findOne.mockResolvedValue(routeWithStops);
       mockStopRepository.find.mockResolvedValue(mockStops);
-      mockMapsService.staticMapUrl.mockReturnValue("https://maps.googleapis.com/staticmap?...");
+      mockMapsService.staticMapUrl.mockReturnValue(
+        "https://maps.googleapis.com/staticmap?...",
+      );
 
-      const result = await service.getRouteDetailForDriver("driver-123", routeId);
+      const result = await service.getRouteDetailForDriver(
+        "driver-123",
+        routeId,
+      );
 
       expect(result).not.toBeNull();
       expect(result!.route.routeId).toBe(routeId);
@@ -187,7 +217,10 @@ describe("DriverAppService", () => {
     it("returns null when driver does not own route", async () => {
       mockRouteRepository.findOne.mockResolvedValue(null);
 
-      const result = await service.getRouteDetailForDriver("driver-123", routeId);
+      const result = await service.getRouteDetailForDriver(
+        "driver-123",
+        routeId,
+      );
 
       expect(result).toBeNull();
     });
@@ -195,9 +228,17 @@ describe("DriverAppService", () => {
 
   describe("arriveAtStop", () => {
     it("marks stop as arrived", async () => {
-      const stop = { ...mockStops[0], status: "pending", route: { carrierId: "driver-123" } };
+      const stop = {
+        ...mockStops[0],
+        status: "pending",
+        route: { carrierId: "driver-123" },
+      };
       mockStopRepository.findOne.mockResolvedValue(stop);
-      mockStopRepository.save.mockResolvedValue({ ...stop, status: "arrived", arrivedAt: new Date() });
+      mockStopRepository.save.mockResolvedValue({
+        ...stop,
+        status: "arrived",
+        arrivedAt: new Date(),
+      });
 
       const result = await service.arriveAtStop("driver-123", stopId);
 
@@ -208,32 +249,63 @@ describe("DriverAppService", () => {
     it("throws NotFoundException when stop not found", async () => {
       mockStopRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.arriveAtStop("driver-123", "non-existent")).rejects.toThrow(NotFoundException);
+      await expect(
+        service.arriveAtStop("driver-123", "non-existent"),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it("throws BadRequestException when stop not pending", async () => {
-      const stop = { ...mockStops[0], status: "arrived", route: { carrierId: "driver-123" } };
+      const stop = {
+        ...mockStops[0],
+        status: "arrived",
+        route: { carrierId: "driver-123" },
+      };
       mockStopRepository.findOne.mockResolvedValue(stop);
 
-      await expect(service.arriveAtStop("driver-123", stopId)).rejects.toThrow(BadRequestException);
+      await expect(service.arriveAtStop("driver-123", stopId)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("throws BadRequestException when driver doesn't own route", async () => {
-      const stop = { ...mockStops[0], status: "pending", route: { carrierId: "other-driver" } };
+      const stop = {
+        ...mockStops[0],
+        status: "pending",
+        route: { carrierId: "other-driver" },
+      };
       mockStopRepository.findOne.mockResolvedValue(stop);
 
-      await expect(service.arriveAtStop("driver-123", stopId)).rejects.toThrow(BadRequestException);
+      await expect(service.arriveAtStop("driver-123", stopId)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
   describe("deliverStop", () => {
     it("marks stop as delivered", async () => {
-      const stop = { ...mockStops[0], status: "arrived", route: { carrierId: "driver-123", id: routeId } };
+      const stop = {
+        ...mockStops[0],
+        status: "arrived",
+        route: { carrierId: "driver-123", id: routeId },
+      };
       mockStopRepository.findOne.mockResolvedValue(stop);
-      mockStopRepository.save.mockResolvedValue({ ...stop, status: "delivered", deliveredAt: new Date() });
-      mockStopRepository.find.mockResolvedValue([{ ...mockStops[0], status: "delivered" }, mockStops[1]]);
-      mockRouteRepository.findOne.mockResolvedValue({ ...mockRoute, id: routeId });
-      mockRouteRepository.save.mockResolvedValue({ ...mockRoute, status: RouteStatus.COMPLETED });
+      mockStopRepository.save.mockResolvedValue({
+        ...stop,
+        status: "delivered",
+        deliveredAt: new Date(),
+      });
+      mockStopRepository.find.mockResolvedValue([
+        { ...mockStops[0], status: "delivered" },
+        mockStops[1],
+      ]);
+      mockRouteRepository.findOne.mockResolvedValue({
+        ...mockRoute,
+        id: routeId,
+      });
+      mockRouteRepository.save.mockResolvedValue({
+        ...mockRoute,
+        status: RouteStatus.COMPLETED,
+      });
 
       const result = await service.deliverStop("driver-123", stopId);
 
@@ -244,27 +316,56 @@ describe("DriverAppService", () => {
     it("throws NotFoundException when stop not found", async () => {
       mockStopRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.deliverStop("driver-123", "non-existent")).rejects.toThrow(NotFoundException);
+      await expect(
+        service.deliverStop("driver-123", "non-existent"),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it("throws BadRequestException when already delivered", async () => {
-      const stop = { ...mockStops[0], status: "delivered", route: { carrierId: "driver-123" } };
+      const stop = {
+        ...mockStops[0],
+        status: "delivered",
+        route: { carrierId: "driver-123" },
+      };
       mockStopRepository.findOne.mockResolvedValue(stop);
 
-      await expect(service.deliverStop("driver-123", stopId)).rejects.toThrow(BadRequestException);
+      await expect(service.deliverStop("driver-123", stopId)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
   describe("failStop", () => {
     it("marks stop as failed with reason", async () => {
-      const stop = { ...mockStops[0], status: "arrived", route: { carrierId: "driver-123", id: routeId } };
+      const stop = {
+        ...mockStops[0],
+        status: "arrived",
+        route: { carrierId: "driver-123", id: routeId },
+      };
       mockStopRepository.findOne.mockResolvedValue(stop);
-      mockStopRepository.save.mockResolvedValue({ ...stop, status: "failed", failureReason: "Cliente no atiende" });
-      mockStopRepository.find.mockResolvedValue([{ ...mockStops[0], status: "failed" }, mockStops[1]]);
-      mockRouteRepository.findOne.mockResolvedValue({ ...mockRoute, id: routeId });
-      mockRouteRepository.save.mockResolvedValue({ ...mockRoute, status: RouteStatus.COMPLETED });
+      mockStopRepository.save.mockResolvedValue({
+        ...stop,
+        status: "failed",
+        failureReason: "Cliente no atiende",
+      });
+      mockStopRepository.find.mockResolvedValue([
+        { ...mockStops[0], status: "failed" },
+        mockStops[1],
+      ]);
+      mockRouteRepository.findOne.mockResolvedValue({
+        ...mockRoute,
+        id: routeId,
+      });
+      mockRouteRepository.save.mockResolvedValue({
+        ...mockRoute,
+        status: RouteStatus.COMPLETED,
+      });
 
-      const result = await service.failStop("driver-123", stopId, "Cliente no atiende");
+      const result = await service.failStop(
+        "driver-123",
+        stopId,
+        "Cliente no atiende",
+      );
 
       expect(result.status).toBe("failed");
       expect(result.failureReason).toBe("Cliente no atiende");
@@ -273,7 +374,9 @@ describe("DriverAppService", () => {
     it("throws NotFoundException when stop not found", async () => {
       mockStopRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.failStop("driver-123", "non-existent", "Motivo")).rejects.toThrow(NotFoundException);
+      await expect(
+        service.failStop("driver-123", "non-existent", "Motivo"),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -281,7 +384,9 @@ describe("DriverAppService", () => {
     it("returns navigation URL and static map", async () => {
       const stop = { ...mockStops[0], route: { carrierId: "driver-123" } };
       mockStopRepository.findOne.mockResolvedValue(stop);
-      mockMapsService.staticMapUrl.mockReturnValue("https://maps.googleapis.com/staticmap?...");
+      mockMapsService.staticMapUrl.mockReturnValue(
+        "https://maps.googleapis.com/staticmap?...",
+      );
 
       const result = await service.getNavigationUrl("driver-123", stopId);
 
@@ -293,7 +398,9 @@ describe("DriverAppService", () => {
     it("throws NotFoundException when stop not found", async () => {
       mockStopRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.getNavigationUrl("driver-123", "non-existent")).rejects.toThrow(NotFoundException);
+      await expect(
+        service.getNavigationUrl("driver-123", "non-existent"),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

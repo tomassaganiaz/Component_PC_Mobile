@@ -141,9 +141,7 @@ describe("Fase 2 (e2e): pagos y wallet", () => {
       const after = await request(app.getHttpServer())
         .get("/api/wallet")
         .set("Authorization", `Bearer ${seller.token}`);
-      expect(Number(after.body.balance)).toBe(
-        Number(before.body.balance) - 50,
-      );
+      expect(Number(after.body.balance)).toBe(Number(before.body.balance) - 50);
     });
 
     it("rechaza un retiro mayor al saldo -> 400", async () => {

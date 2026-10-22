@@ -10,8 +10,20 @@ import {
   NotFoundException,
   BadRequestException,
 } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery, ApiBody } from "@nestjs/swagger";
-import { DriverAppService, DriverDashboard, DriverRouteSummary, DriverStopDetail } from "./driver-app.service";
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+  ApiBody,
+} from "@nestjs/swagger";
+import {
+  DriverAppService,
+  DriverDashboard,
+  DriverRouteSummary,
+  DriverStopDetail,
+} from "./driver-app.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RouteStop } from "./delivery-route.entity";
 
@@ -31,7 +43,9 @@ export class DriverAppController {
   @Get("current-route")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Detalle de la ruta actual (asignada o en progreso)" })
+  @ApiOperation({
+    summary: "Detalle de la ruta actual (asignada o en progreso)",
+  })
   async getCurrentRoute(@Request() req: any): Promise<{
     route: DriverRouteSummary;
     stops: DriverStopDetail[];
@@ -43,8 +57,18 @@ export class DriverAppController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Historial de rutas del driver" })
-  @ApiQuery({ name: "limit", required: false, type: Number, description: "Default 20" })
-  @ApiQuery({ name: "offset", required: false, type: Number, description: "Default 0" })
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    type: Number,
+    description: "Default 20",
+  })
+  @ApiQuery({
+    name: "offset",
+    required: false,
+    type: Number,
+    description: "Default 0",
+  })
   async getRouteHistory(
     @Request() req: any,
     @Query("limit") limit?: string,
@@ -63,8 +87,12 @@ export class DriverAppController {
   @ApiOperation({ summary: "Detalle de una ruta específica" })
   @ApiParam({ name: "routeId", description: "ID de la ruta" })
   async getRouteDetail(@Request() req: any, @Param("routeId") routeId: string) {
-    const route = await this.driverApp.getRouteDetailForDriver(req.user.id, routeId);
-    if (!route) throw new NotFoundException("Ruta no encontrada o no autorizada");
+    const route = await this.driverApp.getRouteDetailForDriver(
+      req.user.id,
+      routeId,
+    );
+    if (!route)
+      throw new NotFoundException("Ruta no encontrada o no autorizada");
     return route;
   }
 
@@ -102,7 +130,10 @@ export class DriverAppController {
       type: "object",
       required: ["reason"],
       properties: {
-        reason: { type: "string", example: "Cliente no atiende / dirección incorrecta" },
+        reason: {
+          type: "string",
+          example: "Cliente no atiende / dirección incorrecta",
+        },
       },
     },
   })
@@ -118,12 +149,11 @@ export class DriverAppController {
   @Get("stops/:stopId/navigation")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "URL de navegación (Google Maps) y mapa estático para una parada" })
+  @ApiOperation({
+    summary: "URL de navegación (Google Maps) y mapa estático para una parada",
+  })
   @ApiParam({ name: "stopId", description: "ID de la parada" })
-  async getNavigation(
-    @Request() req: any,
-    @Param("stopId") stopId: string,
-  ) {
+  async getNavigation(@Request() req: any, @Param("stopId") stopId: string) {
     return this.driverApp.getNavigationUrl(req.user.id, stopId);
   }
 }

@@ -10,8 +10,19 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery, ApiBody } from "@nestjs/swagger";
-import { DeliveryPlanningService, PlannedRoute, DailyPlanResult } from "./delivery-planning.service";
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+  ApiBody,
+} from "@nestjs/swagger";
+import {
+  DeliveryPlanningService,
+  PlannedRoute,
+  DailyPlanResult,
+} from "./delivery-planning.service";
 import { DeliveryRoute } from "./delivery-route.entity";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RouteStop } from "./delivery-route.entity";
@@ -25,10 +36,15 @@ export class DeliveryPlanningController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Planificar rutas para una fecha (manual)" })
-  @ApiQuery({ name: "date", required: false, description: "Fecha YYYY-MM-DD (default: hoy)" })
+  @ApiQuery({
+    name: "date",
+    required: false,
+    description: "Fecha YYYY-MM-DD (default: hoy)",
+  })
   async planRoutes(@Query("date") date?: string): Promise<DailyPlanResult> {
     const planDate = date ? new Date(date) : new Date();
-    if (isNaN(planDate.getTime())) throw new BadRequestException("Fecha inválida");
+    if (isNaN(planDate.getTime()))
+      throw new BadRequestException("Fecha inválida");
     return this.planning.planDailyRoutes(planDate);
   }
 
@@ -36,10 +52,15 @@ export class DeliveryPlanningController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Obtener rutas planificadas para una fecha" })
-  @ApiQuery({ name: "date", required: false, description: "Fecha YYYY-MM-DD (default: hoy)" })
+  @ApiQuery({
+    name: "date",
+    required: false,
+    description: "Fecha YYYY-MM-DD (default: hoy)",
+  })
   async getRoutes(@Query("date") date?: string): Promise<DeliveryRoute[]> {
     const planDate = date ? new Date(date) : new Date();
-    if (isNaN(planDate.getTime())) throw new BadRequestException("Fecha inválida");
+    if (isNaN(planDate.getTime()))
+      throw new BadRequestException("Fecha inválida");
     return this.planning.getRoutesForDate(planDate);
   }
 
@@ -82,9 +103,21 @@ export class DeliveryPlanningController {
   })
   async assignCarrier(
     @Param("routeId") routeId: string,
-    @Body() body: { carrierId: string; carrierName: string; driverName?: string; vehiclePlate?: string },
+    @Body()
+    body: {
+      carrierId: string;
+      carrierName: string;
+      driverName?: string;
+      vehiclePlate?: string;
+    },
   ): Promise<DeliveryRoute> {
-    return this.planning.assignCarrier(routeId, body.carrierId, body.carrierName, body.driverName, body.vehiclePlate);
+    return this.planning.assignCarrier(
+      routeId,
+      body.carrierId,
+      body.carrierName,
+      body.driverName,
+      body.vehiclePlate,
+    );
   }
 
   @Post("routes/:routeId/start")

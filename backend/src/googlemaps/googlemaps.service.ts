@@ -16,7 +16,9 @@ export class GoogleMapsService {
   }
 
   /** Geocodifica una dirección → { lat, lng, formattedAddress } */
-  async geocode(address: string): Promise<{ lat: number; lng: number; formattedAddress: string } | null> {
+  async geocode(
+    address: string,
+  ): Promise<{ lat: number; lng: number; formattedAddress: string } | null> {
     if (!this.isConfigured()) return null;
 
     try {
@@ -71,7 +73,11 @@ export class GoogleMapsService {
     distanceKm: number;
     durationMinutes: number;
     polyline: string;
-    steps: Array<{ instruction: string; distanceKm: number; durationMinutes: number }>;
+    steps: Array<{
+      instruction: string;
+      distanceKm: number;
+      durationMinutes: number;
+    }>;
   } | null> {
     if (!this.isConfigured()) return null;
 
@@ -92,12 +98,12 @@ export class GoogleMapsService {
       const leg = route.legs[0];
       const steps = leg.steps.map((s: any) => ({
         instruction: s.html_instructions.replace(/<[^>]*>/g, ""),
-        distanceKm: Math.round(s.distance.value / 1000 * 10) / 10,
+        distanceKm: Math.round((s.distance.value / 1000) * 10) / 10,
         durationMinutes: Math.round(s.duration.value / 60),
       }));
 
       return {
-        distanceKm: Math.round(leg.distance.value / 1000 * 10) / 10,
+        distanceKm: Math.round((leg.distance.value / 1000) * 10) / 10,
         durationMinutes: Math.round(leg.duration.value / 60),
         polyline: route.overview_polyline.points,
         steps,
@@ -113,7 +119,12 @@ export class GoogleMapsService {
     origins: Array<{ lat: number; lng: number }>,
     destinations: Array<{ lat: number; lng: number }>,
     mode: "driving" | "walking" = "driving",
-  ): Promise<Array<{ originIndex: number; destIndex: number; distanceKm: number; durationMinutes: number }> | null> {
+  ): Promise<Array<{
+    originIndex: number;
+    destIndex: number;
+    distanceKm: number;
+    durationMinutes: number;
+  }> | null> {
     if (!this.isConfigured()) return null;
 
     try {
@@ -128,14 +139,19 @@ export class GoogleMapsService {
       const data = (await res.json()) as { status: string; rows: any[] };
       if (data.status !== "OK") return null;
 
-      const results: Array<{ originIndex: number; destIndex: number; distanceKm: number; durationMinutes: number }> = [];
+      const results: Array<{
+        originIndex: number;
+        destIndex: number;
+        distanceKm: number;
+        durationMinutes: number;
+      }> = [];
       data.rows.forEach((row, oi) => {
         row.elements.forEach((el: any, di: number) => {
           if (el.status === "OK") {
             results.push({
               originIndex: oi,
               destIndex: di,
-              distanceKm: Math.round(el.distance.value / 1000 * 10) / 10,
+              distanceKm: Math.round((el.distance.value / 1000) * 10) / 10,
               durationMinutes: Math.round(el.duration.value / 60),
             });
           }
@@ -172,7 +188,9 @@ export class GoogleMapsService {
     ];
     if (waypoints?.length) {
       waypoints.forEach((w, i) => {
-        markers.push(`markers=color:blue|label:${String.fromCharCode(65 + i)}|${w.lat},${w.lng}`);
+        markers.push(
+          `markers=color:blue|label:${String.fromCharCode(65 + i)}|${w.lat},${w.lng}`,
+        );
       });
     }
 
@@ -190,7 +208,14 @@ export class GoogleMapsService {
     radiusMeters: number = 5000,
     type: string = "store",
     keyword?: string,
-  ): Promise<Array<{ name: string; lat: number; lng: number; address: string; placeId: string; rating?: number }> | null> {
+  ): Promise<Array<{
+    name: string;
+    lat: number;
+    lng: number;
+    address: string;
+    placeId: string;
+    rating?: number;
+  }> | null> {
     if (!this.isConfigured()) return null;
 
     try {
@@ -203,7 +228,9 @@ export class GoogleMapsService {
       });
       if (keyword) params.append("keyword", keyword);
 
-      const res = await fetch(`${this.baseUrl}/place/nearbysearch/json?${params}`);
+      const res = await fetch(
+        `${this.baseUrl}/place/nearbysearch/json?${params}`,
+      );
       const data = (await res.json()) as { status: string; results: any[] };
       if (data.status !== "OK" || !data.results?.length) return [];
 
@@ -227,7 +254,8 @@ export class GoogleMapsService {
     service: "standard" | "express" | "pickup" = "standard",
     fromDate: Date = new Date(),
   ): { estimatedDate: Date; estimatedDays: number; text: string } {
-    const avgSpeedKmh = service === "express" ? 60 : service === "pickup" ? 30 : 50;
+    const avgSpeedKmh =
+      service === "express" ? 60 : service === "pickup" ? 30 : 50;
     const hours = distanceKm / avgSpeedKmh;
     const workingHoursPerDay = 8;
     const estimatedDays = Math.max(1, Math.ceil(hours / workingHoursPerDay));
@@ -243,7 +271,12 @@ export class GoogleMapsService {
     return {
       estimatedDate,
       estimatedDays,
-      text: estimatedDays === 1 ? "Mañana" : estimatedDays === 2 ? "En 2 días" : `En ${estimatedDays} días`,
+      text:
+        estimatedDays === 1
+          ? "Mañana"
+          : estimatedDays === 2
+            ? "En 2 días"
+            : `En ${estimatedDays} días`,
     };
   }
 }
