@@ -67,11 +67,19 @@ export class PaymentsService {
   }
 
   /** Confirma el pago (usado por el webhook simulado o por el cliente). */
-  async confirm(orderId: string): Promise<{
+  async confirm(
+    orderId: string,
+    requester: { id: string; role: string },
+  ): Promise<{
     payment: Payment;
     orderId: string;
     status: OrderStatus;
   }> {
+    const order = await this.ordersService.findOne(orderId);
+    if (order.buyerId !== requester.id && requester.role !== "admin") {
+      throw new ForbiddenException("Esta orden no te pertenece");
+    }
+
     const payment = await this.repository.findOne({
       where: { orderId, status: PaymentStatus.PENDING },
       order: { createdAt: "DESC" },
@@ -80,12 +88,12 @@ export class PaymentsService {
       throw new NotFoundException("No hay un pago pendiente para esta orden");
     }
 
-    const order = await this.ordersService.findOne(orderId);
+    // El pago recién queda SUCCEEDED si pay() tuvo éxito: antes un fallo de
+    // pay() (ej: sin stock) dejaba un cobro fantasma marcado como exitoso.
+    const paidOrder = await this.ordersService.pay(orderId, order.buyerId);
 
     payment.status = PaymentStatus.SUCCEEDED;
     await this.repository.save(payment);
-
-    const paidOrder = await this.ordersService.pay(orderId, order.buyerId);
 
     return { payment, orderId, status: paidOrder.status };
   }

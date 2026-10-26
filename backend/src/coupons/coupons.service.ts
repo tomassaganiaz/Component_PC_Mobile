@@ -81,9 +81,26 @@ export class CouponsService {
     };
   }
 
-  /** Registra el uso de un cupón. */
+  /**
+   * Registra el uso de un cupón de forma atómica y condicional:
+   * el UPDATE solo incrementa si sigue activo y debajo del límite, así que
+   * dos pagos concurrentes jamás exceden `usageLimit`.
+   */
   async redeem(code: string): Promise<void> {
     const normalized = code.trim().toUpperCase();
-    await this.repository.increment({ code: normalized }, "usedCount", 1);
+    const result = await this.repository
+      .createQueryBuilder()
+      .update(Coupon)
+      .set({ usedCount: () => "used_count + 1" })
+      .where("code = :code", { code: normalized })
+      .andWhere("active = true")
+      .andWhere("(usage_limit IS NULL OR used_count < usage_limit)")
+      .execute();
+
+    if (!result.affected) {
+      throw new BadRequestException(
+        "El cupón alcanzó su límite de uso o está inactivo",
+      );
+    }
   }
 }

@@ -13,6 +13,7 @@ describe("CouponsService", () => {
     create: jest.fn((v) => v),
     save: jest.fn((v) => Promise.resolve(v)),
     increment: jest.fn(),
+    createQueryBuilder: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -116,12 +117,31 @@ describe("CouponsService", () => {
   });
 
   describe("redeem", () => {
-    it("incrementa el contador de uso", async () => {
+    const qb = (affected: number) => ({
+      update: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ affected }),
+    });
+
+    it("incrementa el contador de uso de forma condicional", async () => {
+      const query = qb(1);
+      mockRepository.createQueryBuilder.mockReturnValue(query);
+
       await service.redeem("tech10");
-      expect(mockRepository.increment).toHaveBeenCalledWith(
-        { code: "TECH10" },
-        "usedCount",
-        1,
+
+      expect(query.execute).toHaveBeenCalled();
+      expect(query.andWhere).toHaveBeenCalledWith(
+        "(usage_limit IS NULL OR used_count < usage_limit)",
+      );
+    });
+
+    it("rechaza si el cupón está inactivo o agotado (affected = 0)", async () => {
+      mockRepository.createQueryBuilder.mockReturnValue(qb(0));
+
+      await expect(service.redeem("TECH10")).rejects.toThrow(
+        BadRequestException,
       );
     });
   });

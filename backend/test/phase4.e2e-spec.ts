@@ -1,11 +1,17 @@
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
-import { createTestApp, registerAndLogin, type TestUser } from "./test-app";
+import {
+  advanceFulfillmentStages,
+  createTestApp,
+  registerAndLogin,
+  type TestUser,
+} from "./test-app";
 
 describe("Fase 4 (e2e): envíos y tracking", () => {
   let app: INestApplication;
   let seller: TestUser;
   let buyer: TestUser;
+  let admin: TestUser;
   const suffix = Date.now();
 
   beforeAll(async () => {
@@ -19,6 +25,11 @@ describe("Fase 4 (e2e): envíos y tracking", () => {
       name: "F4 Buyer",
       email: `f4.buyer.${suffix}@test.com`,
       role: "buyer",
+    });
+    admin = await registerAndLogin(app, {
+      name: "F4 Admin",
+      email: `f4.admin.${suffix}@test.com`,
+      role: "admin",
     });
   });
 
@@ -73,9 +84,11 @@ describe("Fase 4 (e2e): envíos y tracking", () => {
         .expect(201);
       await request(app.getHttpServer())
         .post("/api/payments/webhook")
+        .set("Authorization", `Bearer ${buyer.token}`)
         .send({ orderId })
         .expect(201);
 
+      await advanceFulfillmentStages(app, orderId, admin.token);
       await request(app.getHttpServer())
         .post(`/api/orders/${orderId}/ship`)
         .set("Authorization", `Bearer ${seller.token}`)

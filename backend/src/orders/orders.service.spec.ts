@@ -61,6 +61,15 @@ describe("OrdersService", () => {
     markDelivered: jest.fn().mockResolvedValue(undefined),
   };
 
+  /** Query builder para los UPDATEs condicionales atómicos (pay/cancel/deliver). */
+  const updateQb = (affected = 1) => ({
+    update: jest.fn().mockReturnThis(),
+    set: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    execute: jest.fn().mockResolvedValue({ affected }),
+  });
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -165,7 +174,7 @@ describe("OrdersService", () => {
       expect(result).toEqual(expectedOrders);
       expect(mockRepository.find).toHaveBeenCalledWith({
         where: { buyerId: "buyer-uuid" },
-        relations: ["product"],
+        relations: ["product", "items", "items.product"],
         order: { createdAt: "DESC" },
       });
     });
@@ -285,6 +294,7 @@ describe("OrdersService", () => {
       };
 
       mockRepository.findOne.mockResolvedValue(existingOrder);
+      mockRepository.createQueryBuilder.mockReturnValue(updateQb());
       mockRepository.save.mockResolvedValue({
         ...existingOrder,
         status: OrderStatus.CANCELLED,
@@ -295,6 +305,7 @@ describe("OrdersService", () => {
       expect(result.status).toEqual(OrderStatus.CANCELLED);
       expect(mockProductsService.incrementStock).not.toHaveBeenCalled();
       expect(mockProductsService.update).not.toHaveBeenCalled();
+      expect(mockWalletService.credit).not.toHaveBeenCalled();
     });
 
     it("should cancel a paid order and restore stock", async () => {
@@ -308,6 +319,7 @@ describe("OrdersService", () => {
       };
 
       mockRepository.findOne.mockResolvedValue(existingOrder);
+      mockRepository.createQueryBuilder.mockReturnValue(updateQb());
       mockRepository.save.mockResolvedValue({
         ...existingOrder,
         status: OrderStatus.CANCELLED,
@@ -325,6 +337,13 @@ describe("OrdersService", () => {
       expect(result.status).toEqual(OrderStatus.CANCELLED);
       expect(mockProductsService.incrementStock).toHaveBeenCalledWith(
         "product-uuid",
+      );
+      // Cancelar una orden PAGADA debe reembolsar al comprador.
+      expect(mockWalletService.credit).toHaveBeenCalledWith(
+        "buyer-uuid",
+        expect.any(Number),
+        expect.stringContaining("Reembolso"),
+        "order-uuid",
       );
     });
 
@@ -379,6 +398,7 @@ describe("OrdersService", () => {
         createdAt: new Date(),
         items: [{ productId: "product-uuid", variationId: null, quantity: 1 }],
       });
+      mockRepository.createQueryBuilder.mockReturnValue(updateQb());
       mockProductsService.decrementStock.mockResolvedValue(4);
       mockRepository.save.mockImplementation((o) => Promise.resolve(o));
 
@@ -467,12 +487,109 @@ describe("OrdersService", () => {
         ...baseOrder,
         status: OrderStatus.SHIPPED,
       });
+      mockRepository.createQueryBuilder.mockReturnValue(updateQb());
       mockRepository.save.mockImplementation((o) => Promise.resolve(o));
 
       const result = await service.deliver("order-uuid", "buyer-uuid");
 
       expect(result.status).toEqual(OrderStatus.DELIVERED);
       expect(result.custodyEndDate).toBeInstanceOf(Date);
+    });
+
+    it("deliver: rejects an order that was not shipped", async () => {
+      mockRepository.findOne.mockResolvedValue({
+        ...baseOrder,
+        status: OrderStatus.PENDING,
+      });
+
+      await expect(service.deliver("order-uuid", "buyer-uuid")).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(mockWalletService.credit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("requestReturn", () => {
+    const returnedOrder = (status: OrderStatus) => ({
+      id: "order-uuid",
+      buyerId: "buyer-uuid",
+      status,
+      custodyStartDate: new Date(),
+      total: 100,
+      discount: 0,
+      repairFee: 0,
+      productId: "product-uuid",
+      items: [
+        {
+          productId: "product-uuid",
+          variationId: null,
+          quantity: 1,
+          unitPrice: 100,
+          product: { sellerId: "seller-uuid" },
+        },
+      ],
+      product: { id: "product-uuid", sellerId: "seller-uuid" },
+    });
+
+    it("reembolsa al comprador SIN debitar vendedores si aún no fue entregada", async () => {
+      mockRepository.findOne.mockResolvedValue(returnedOrder(OrderStatus.PAID));
+      mockRepository.createQueryBuilder.mockReturnValue(updateQb());
+      mockProductsService.findOne.mockResolvedValue({
+        id: "product-uuid",
+        status: ProductStatus.PUBLISHED,
+      });
+      mockProductsService.incrementStock.mockResolvedValue(undefined);
+      mockProductsService.update.mockResolvedValue({});
+
+      const result = await service.requestReturn(
+        "order-uuid",
+        "buyer-uuid",
+        "Producto con fallas",
+      );
+
+      expect(result.status).toEqual(OrderStatus.REFUNDED);
+      // Los vendedores nunca recibieron esta venta: no se les debe debitar.
+      expect(mockWalletService.debit).not.toHaveBeenCalled();
+      expect(mockWalletService.credit).toHaveBeenCalledWith(
+        "buyer-uuid",
+        100,
+        expect.stringContaining("Reembolso"),
+        "order-uuid",
+      );
+    });
+
+    it("debita a los vendedores cuando la orden SÍ fue entregada", async () => {
+      mockRepository.findOne.mockResolvedValue(
+        returnedOrder(OrderStatus.DELIVERED),
+      );
+      mockRepository.createQueryBuilder.mockReturnValue(updateQb());
+      mockProductsService.findOne.mockResolvedValue({
+        id: "product-uuid",
+        status: ProductStatus.PUBLISHED,
+      });
+      mockProductsService.incrementStock.mockResolvedValue(undefined);
+      mockProductsService.update.mockResolvedValue({});
+
+      const result = await service.requestReturn(
+        "order-uuid",
+        "buyer-uuid",
+        "Producto con fallas",
+      );
+
+      expect(result.status).toEqual(OrderStatus.REFUNDED);
+      expect(mockWalletService.debit).toHaveBeenCalledWith(
+        "seller-uuid",
+        100,
+        expect.stringContaining("Reembolso"),
+        "order-uuid",
+        { clampToZero: true },
+      );
+      expect(mockWalletService.credit).toHaveBeenCalledWith(
+        "buyer-uuid",
+        100,
+        expect.stringContaining("Reembolso"),
+        "order-uuid",
+      );
     });
   });
 

@@ -127,6 +127,12 @@ describe("Cart (e2e)", () => {
         .set("Authorization", `Bearer ${buyer.token}`);
       expect(cart.body.items).toHaveLength(0);
 
+      // La reserva de stock del checkout ocurre al pagar la orden.
+      await request(app.getHttpServer())
+        .post(`/api/orders/${res.body.id}/pay`)
+        .set("Authorization", `Bearer ${buyer.token}`)
+        .expect(201);
+
       const product = await request(app.getHttpServer()).get(
         `/api/products/${productA}`,
       );

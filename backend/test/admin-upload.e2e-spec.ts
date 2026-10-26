@@ -1,6 +1,11 @@
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
-import { createTestApp, registerAndLogin, type TestUser } from "./test-app";
+import {
+  advanceFulfillmentStages,
+  createTestApp,
+  registerAndLogin,
+  type TestUser,
+} from "./test-app";
 
 describe("Admin (moderación) y upload de imágenes (e2e)", () => {
   let app: INestApplication;
@@ -64,7 +69,10 @@ describe("Admin (moderación) y upload de imágenes (e2e)", () => {
       .set("Authorization", `Bearer ${buyer.token}`);
     await request(app.getHttpServer())
       .post("/api/payments/webhook")
+      .set("Authorization", `Bearer ${buyer.token}`)
       .send({ orderId });
+    // El envío exige pasar por las etapas del centro técnico.
+    await advanceFulfillmentStages(app, orderId, admin.token);
     await request(app.getHttpServer())
       .post(`/api/orders/${orderId}/ship`)
       .set("Authorization", `Bearer ${seller.token}`);

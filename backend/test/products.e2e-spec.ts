@@ -192,7 +192,7 @@ describe("Products (e2e)", () => {
         email: `products.delbuyer.${suffix}@test.com`,
         role: "buyer",
       });
-      await request(app.getHttpServer())
+      const orderRes = await request(app.getHttpServer())
         .post("/api/orders")
         .set("Authorization", `Bearer ${buyer.token}`)
         .send({
@@ -200,6 +200,12 @@ describe("Products (e2e)", () => {
           shippingAddress: "Calle 123",
           paymentMethod: "credit_card",
         })
+        .expect(201);
+
+      // La reserva de stock ocurre al pagar: recién ahí el producto queda "sold".
+      await request(app.getHttpServer())
+        .post(`/api/orders/${orderRes.body.id}/pay`)
+        .set("Authorization", `Bearer ${buyer.token}`)
         .expect(201);
 
       const del = await request(app.getHttpServer())

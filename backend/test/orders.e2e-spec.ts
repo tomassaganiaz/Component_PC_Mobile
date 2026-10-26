@@ -57,7 +57,7 @@ describe("Orders (e2e)", () => {
   });
 
   describe("POST /api/orders", () => {
-    it("crea una orden en pending y descuenta stock (queda sold)", async () => {
+    it("crea una orden en pending SIN consumir stock (la reserva es en pay)", async () => {
       productId = await createProduct(1, "Order GPU");
 
       const res = await request(app.getHttpServer())
@@ -77,16 +77,18 @@ describe("Orders (e2e)", () => {
       const product = await request(app.getHttpServer()).get(
         `/api/products/${productId}`,
       );
-      expect(product.body.stock).toBe(0);
-      expect(product.body.status).toBe("sold");
+      // La orden PENDING no bloquea el producto: el stock se reserva al pagar.
+      expect(product.body.stock).toBe(1);
+      expect(product.body.status).toBe("published");
     });
 
-    it("rechaza la compra si no hay stock -> 400", async () => {
+    it("rechaza la compra si el producto no tiene stock -> 400", async () => {
+      const outOfStockId = await createProduct(0, "Order GPU sin stock");
       const res = await request(app.getHttpServer())
         .post("/api/orders")
         .set("Authorization", `Bearer ${stranger.token}`)
         .send({
-          productId,
+          productId: outOfStockId,
           shippingAddress: "Otra dirección",
           paymentMethod: "credit_card",
         });
@@ -121,13 +123,19 @@ describe("Orders (e2e)", () => {
   });
 
   describe("Ciclo de vida (pay / ship / deliver)", () => {
-    it("el comprador paga -> paid", async () => {
+    it("el comprador paga -> paid (y recién ahí se reserva el stock)", async () => {
       const res = await request(app.getHttpServer())
         .post(`/api/orders/${orderId}/pay`)
         .set("Authorization", `Bearer ${buyer.token}`);
       expect(res.status).toBe(201);
       expect(res.body.status).toBe("paid");
       expect(res.body.custodyStartDate).toBeTruthy();
+
+      const product = await request(app.getHttpServer()).get(
+        `/api/products/${productId}`,
+      );
+      expect(product.body.stock).toBe(0);
+      expect(product.body.status).toBe("sold");
     });
 
     it("un comprador no puede marcar como enviado -> 403", async () => {
@@ -185,7 +193,7 @@ describe("Orders (e2e)", () => {
   });
 
   describe("Cancelación y reposición de stock", () => {
-    it("cancelar una orden pendiente repone el stock", async () => {
+    it("cancelar una orden PAGADA repone el stock", async () => {
       const pid = await createProduct(2, "Order GPU cancel");
 
       const created = await request(app.getHttpServer())
@@ -194,10 +202,16 @@ describe("Orders (e2e)", () => {
         .send({ productId: pid, shippingAddress: "x", paymentMethod: "card" });
       expect(created.status).toBe(201);
 
-      const before = await request(app.getHttpServer()).get(
+      // Al pagar se reserva stock (2 → 1); recién ahí cancelar debe reponerlo.
+      const paid = await request(app.getHttpServer())
+        .post(`/api/orders/${created.body.id}/pay`)
+        .set("Authorization", `Bearer ${buyer.token}`);
+      expect(paid.status).toBe(201);
+
+      const reserved = await request(app.getHttpServer()).get(
         `/api/products/${pid}`,
       );
-      expect(before.body.stock).toBe(1);
+      expect(reserved.body.stock).toBe(1);
 
       const cancel = await request(app.getHttpServer())
         .post(`/api/orders/${created.body.id}/cancel`)

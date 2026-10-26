@@ -1,6 +1,11 @@
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
-import { createTestApp, registerAndLogin, type TestUser } from "./test-app";
+import {
+  advanceFulfillmentStages,
+  createTestApp,
+  registerAndLogin,
+  type TestUser,
+} from "./test-app";
 
 describe("Fase 2 (e2e): pagos y wallet", () => {
   let app: INestApplication;
@@ -41,6 +46,7 @@ describe("Fase 2 (e2e): pagos y wallet", () => {
 
     const webhook = await request(app.getHttpServer())
       .post("/api/payments/webhook")
+      .set("Authorization", `Bearer ${buyer.token}`)
       .send({ orderId, event: "payment.succeeded" });
     expect(webhook.status).toBe(201);
     expect(webhook.body.status).toBe("paid");
@@ -109,6 +115,7 @@ describe("Fase 2 (e2e): pagos y wallet", () => {
       const productId = await createProduct(seller.token, 200);
       const orderId = await buyAndPay(productId);
 
+      await advanceFulfillmentStages(app, orderId, admin.token);
       await request(app.getHttpServer())
         .post(`/api/orders/${orderId}/ship`)
         .set("Authorization", `Bearer ${seller.token}`)
@@ -156,6 +163,7 @@ describe("Fase 2 (e2e): pagos y wallet", () => {
       const productId = await createProduct(seller.token, 150);
       const orderId = await buyAndPay(productId);
 
+      await advanceFulfillmentStages(app, orderId, admin.token);
       await request(app.getHttpServer())
         .post(`/api/orders/${orderId}/ship`)
         .set("Authorization", `Bearer ${seller.token}`)

@@ -267,20 +267,44 @@ export class OrdersService {
     return first ?? "tu pedido";
   }
 
-  /** Monto de la orden por vendedor (para acreditar/debitar en la wallet). */
+  /**
+   * Monto de la orden por vendedor: es lo que el comprador REALMENTE pagó.
+   * - descuenta el cupón proporcionalmente al peso de cada ítem;
+   * - excluye el fee de reparación (lo retiene la plataforma / centro técnico).
+   */
   private sellerShares(order: Order): Map<string, number> {
     const shares = new Map<string, number>();
-    order.items?.forEach((i) => {
-      const sellerId = i.product?.sellerId;
-      if (!sellerId) return;
-      shares.set(
-        sellerId,
-        (shares.get(sellerId) ?? 0) + Number(i.unitPrice) * i.quantity,
-      );
-    });
-    if (shares.size === 0 && order.product?.sellerId) {
-      shares.set(order.product.sellerId, Number(order.total));
+    const discount = Number(order.discount ?? 0);
+    const repairFee = Number(order.repairFee ?? 0);
+    const items = order.items ?? [];
+
+    if (items.length === 0) {
+      if (order.product?.sellerId) {
+        const net = Number(order.total) - repairFee;
+        shares.set(
+          order.product.sellerId,
+          Math.round(Math.max(0, net) * 100) / 100,
+        );
+      }
+      return shares;
     }
+
+    const grosses = items.map((i) => Number(i.unitPrice) * i.quantity);
+    const itemsTotal = grosses.reduce((sum, g) => sum + g, 0);
+    let repairRemaining = repairFee;
+
+    items.forEach((item, idx) => {
+      const sellerId = item.product?.sellerId;
+      if (!sellerId) return;
+      const gross = grosses[idx];
+      const allocatedDiscount =
+        itemsTotal > 0 ? (discount * gross) / itemsTotal : 0;
+      const repairShare = Math.min(repairRemaining, gross);
+      repairRemaining -= repairShare;
+      const net = gross - allocatedDiscount - repairShare;
+      const rounded = Math.round(Math.max(0, net) * 100) / 100;
+      shares.set(sellerId, (shares.get(sellerId) ?? 0) + rounded);
+    });
     return shares;
   }
 
@@ -354,37 +378,98 @@ export class OrdersService {
       );
     }
 
-    // La reserva de stock se hace acá (no al crear), de forma atómica.
-    await this.reserveOrderStock(order);
-
-    if (order.couponCode) {
-      await this.coupons.redeem(order.couponCode);
+    // Transición condicional atómica: ante dos pagos concurrentes (doble tap,
+    // webhook + cliente) solo uno pasa de PENDING a PAID, evitando doble
+    // reserva de stock y doble canje de cupón.
+    const transition = await this.orderRepository
+      .createQueryBuilder()
+      .update(Order)
+      .set({
+        status: OrderStatus.PAID,
+        fulfillmentStage: OrderFulfillmentStage.CENTER_RECEPTION,
+        custodyStartDate: () => "CURRENT_TIMESTAMP",
+      })
+      .where("id = :id AND status = :pending", {
+        id: orderId,
+        pending: OrderStatus.PENDING,
+      })
+      .execute();
+    if (!transition.affected) {
+      throw new BadRequestException("La orden no está pendiente de pago");
     }
-
     order.status = OrderStatus.PAID;
     order.fulfillmentStage = OrderFulfillmentStage.CENTER_RECEPTION;
     order.custodyStartDate = new Date();
-    const saved = await this.orderRepository.save(order);
 
-    // El vendedor recién se entera cuando hay pago real (no al crear la PENDING).
-    for (const sellerId of this.orderSellerIds(order)) {
+    try {
+      // La reserva de stock se hace acá (no al crear), de forma atómica.
+      await this.reserveOrderStock(order);
+
+      if (order.couponCode) {
+        // Re-valida vigencia/actividad/límite: pudo cambiar desde la creación.
+        await this.coupons.validate(
+          order.couponCode,
+          Number(order.total) + Number(order.discount ?? 0),
+        );
+        await this.coupons.redeem(order.couponCode);
+      }
+    } catch (err) {
+      // Compensación: la orden vuelve a PENDING para poder reintentarse.
+      await this.orderRepository
+        .createQueryBuilder()
+        .update(Order)
+        .set({
+          status: OrderStatus.PENDING,
+          fulfillmentStage: OrderFulfillmentStage.AWAITING_PAYMENT,
+          custodyStartDate: () => "NULL",
+        })
+        .where("id = :id AND status = :paid", {
+          id: orderId,
+          paid: OrderStatus.PAID,
+        })
+        .execute();
+      order.status = OrderStatus.PENDING;
+      order.fulfillmentStage = OrderFulfillmentStage.AWAITING_PAYMENT;
+      order.custodyStartDate = null as unknown as Date;
+      throw err;
+    }
+
+    // Novedades best-effort: un fallo de notificación jamás devuelve 500
+    // después de un pago ya persistido.
+    try {
+      // El vendedor recién se entera cuando hay pago real (no al crear la PENDING).
+      for (const sellerId of this.orderSellerIds(order)) {
+        await this.notifications.create(
+          sellerId,
+          NotificationType.SALE,
+          "Nueva venta",
+          `Tenés una nueva orden pagada por "${this.orderTitle(order)}".`,
+          { orderId: order.id },
+        );
+        await this.notifications.create(
+          sellerId,
+          NotificationType.ORDER_PAID,
+          "Venta pagada",
+          `El comprador pagó "${this.orderTitle(order)}". Prepará el envío.`,
+          { orderId: order.id },
+        );
+      }
+
+      // El comprador también recibe el aviso de su compra confirmada.
       await this.notifications.create(
-        sellerId,
-        NotificationType.SALE,
-        "Nueva venta",
-        `Tenés una nueva orden pagada por "${this.orderTitle(order)}".`,
+        order.buyerId,
+        NotificationType.ORDER_CREATED,
+        "Compra confirmada",
+        `Tu compra de "${this.orderTitle(order)}" fue confirmada. Seguí el estado acá.`,
         { orderId: order.id },
       );
-      await this.notifications.create(
-        sellerId,
-        NotificationType.ORDER_PAID,
-        "Venta pagada",
-        `El comprador pagó "${this.orderTitle(order)}". Prepará el envío.`,
-        { orderId: order.id },
+    } catch (err) {
+      this.logger.warn(
+        `No se pudieron notificar el pago de la orden ${order.id}: ${err}`,
       );
     }
 
-    return saved;
+    return order;
   }
 
   /** Avanza una orden por las etapas controladas por el centro técnico. */
@@ -414,7 +499,33 @@ export class OrdersService {
     if (next === OrderFulfillmentStage.TECHNICAL_INSPECTION) {
       order.status = OrderStatus.IN_CUSTODY;
     }
-    return this.orderRepository.save(order);
+    const saved = await this.orderRepository.save(order);
+
+    // Novedades para el comprador: inspección, preparación y despacho.
+    const stageLabel: Partial<Record<OrderFulfillmentStage, string>> = {
+      [OrderFulfillmentStage.TECHNICAL_INSPECTION]: "en inspección técnica",
+      [OrderFulfillmentStage.SECURE_PACKAGING]:
+        "en preparación y embalaje seguro",
+      [OrderFulfillmentStage.DISPATCH]: "lista para el despacho",
+    };
+    const label = stageLabel[next];
+    if (label) {
+      try {
+        await this.notifications.create(
+          order.buyerId,
+          NotificationType.ORDER_STAGE,
+          "Tu compra avanza",
+          `Tu pedido "${this.orderTitle(order)}" está ${label}.`,
+          { orderId: order.id, stage: next },
+        );
+      } catch (err) {
+        this.logger.warn(
+          `No se pudo notificar la etapa de la orden ${order.id}: ${err}`,
+        );
+      }
+    }
+
+    return saved;
   }
 
   /** El vendedor marca el producto como enviado. */
@@ -437,13 +548,19 @@ export class OrdersService {
 
     await this.shipping.createForOrder(order.id);
 
-    await this.notifications.create(
-      order.buyerId,
-      NotificationType.ORDER_SHIPPED,
-      "Pedido enviado",
-      `Tu pedido "${this.orderTitle(order)}" está en camino.`,
-      { orderId: order.id },
-    );
+    try {
+      await this.notifications.create(
+        order.buyerId,
+        NotificationType.ORDER_SHIPPED,
+        "Pedido enviado",
+        `Tu pedido "${this.orderTitle(order)}" está en camino.`,
+        { orderId: order.id },
+      );
+    } catch (err) {
+      this.logger.warn(
+        `No se pudo notificar el envío de la orden ${order.id}: ${err}`,
+      );
+    }
 
     return saved;
   }
@@ -453,35 +570,77 @@ export class OrdersService {
     const order = await this.findOne(orderId);
     this.assertOwner(order, buyerId, "buyer");
 
-    if (order.status !== OrderStatus.SHIPPED) {
+    if (
+      order.status !== OrderStatus.SHIPPED &&
+      order.status !== OrderStatus.DELIVERED
+    ) {
       throw new BadRequestException("Solo se pueden recibir órdenes enviadas");
     }
 
+    if (order.status === OrderStatus.SHIPPED) {
+      // Transición condicional atómica: un doble tap no puede acreditar
+      // dos veces a los vendedores.
+      const transition = await this.orderRepository
+        .createQueryBuilder()
+        .update(Order)
+        .set({
+          status: OrderStatus.DELIVERED,
+          custodyEndDate: () => "CURRENT_TIMESTAMP",
+        })
+        .where("id = :id AND status = :shipped", {
+          id: orderId,
+          shipped: OrderStatus.SHIPPED,
+        })
+        .execute();
+      if (!transition.affected) {
+        // Otra request ganó la carrera: si ya quedó DELIVERED, reintentamos
+        // solo las acreditaciones (idempotentes); si no, error.
+        const current = await this.findOne(orderId);
+        if (current.status !== OrderStatus.DELIVERED) {
+          throw new BadRequestException(
+            "Solo se pueden recibir órdenes enviadas",
+          );
+        }
+      }
+    }
     order.status = OrderStatus.DELIVERED;
     order.custodyEndDate = new Date();
-    const saved = await this.orderRepository.save(order);
 
-    await this.shipping.markDelivered(order.id);
-
-    await this.notifications.create(
-      order.buyerId,
-      NotificationType.ORDER_DELIVERED,
-      "Entrega confirmada",
-      `Confirmaste la recepción de "${this.orderTitle(order)}".`,
-      { orderId: order.id },
-    );
-    for (const sellerId of this.orderSellerIds(order)) {
-      await this.notifications.create(
-        sellerId,
-        NotificationType.ORDER_DELIVERED,
-        "Producto entregado",
-        `El comprador confirmó la entrega de "${this.orderTitle(order)}".`,
-        { orderId: order.id },
+    try {
+      await this.shipping.markDelivered(order.id);
+    } catch (err) {
+      this.logger.warn(
+        `No se pudo marcar el envío de la orden ${order.id} como entregado: ${err}`,
       );
     }
 
-    // Libera los fondos: acredita a cada vendedor su parte.
+    try {
+      await this.notifications.create(
+        order.buyerId,
+        NotificationType.ORDER_DELIVERED,
+        "Entrega confirmada",
+        `Confirmaste la recepción de "${this.orderTitle(order)}".`,
+        { orderId: order.id },
+      );
+      for (const sellerId of this.orderSellerIds(order)) {
+        await this.notifications.create(
+          sellerId,
+          NotificationType.ORDER_DELIVERED,
+          "Producto entregado",
+          `El comprador confirmó la entrega de "${this.orderTitle(order)}".`,
+          { orderId: order.id },
+        );
+      }
+    } catch (err) {
+      this.logger.warn(
+        `No se pudieron notificar la entrega de la orden ${order.id}: ${err}`,
+      );
+    }
+
+    // Libera los fondos: acredita a cada vendedor su parte (idempotente:
+    // si el request se repite, los asientos por orden ya existen).
     for (const [sellerId, amount] of this.sellerShares(order)) {
+      if (!(amount > 0)) continue;
       await this.walletService.credit(
         sellerId,
         amount,
@@ -490,7 +649,7 @@ export class OrdersService {
       );
     }
 
-    return saved;
+    return order;
   }
 
   private daysLeft(from: Date, until: Date): number {
@@ -589,11 +748,35 @@ export class OrdersService {
       );
     }
 
+    const wasDelivered = order.status === OrderStatus.DELIVERED;
+    const reasonText = reason || "Devolución solicitada por el comprador";
+
+    // Transición condicional atómica: dos devoluciones concurrentes solo
+    // restauran stock y reembolsan una única vez.
+    const transition = await this.orderRepository
+      .createQueryBuilder()
+      .update(Order)
+      .set({
+        status: OrderStatus.REFUNDED,
+        cancellationReason: reasonText,
+        custodyEndDate: () => "CURRENT_TIMESTAMP",
+      })
+      .where("id = :id AND status IN (:...statuses)", {
+        id: orderId,
+        statuses: refundable,
+      })
+      .execute();
+    if (!transition.affected) {
+      const current = await this.findOne(orderId);
+      if (current.status === OrderStatus.REFUNDED) {
+        return current; // idempotente
+      }
+      throw new BadRequestException("Esta orden no puede devolverse");
+    }
     order.status = OrderStatus.REFUNDED;
-    order.cancellationReason =
-      reason || "Devolución solicitada por el comprador";
+    order.cancellationReason = reasonText;
     order.custodyEndDate = new Date();
-    const saved = await this.orderRepository.save(order);
+    const saved = order;
 
     // El producto vuelve al laboratorio: se le hacen revisiones y testeo antes de revenderlo
     await this.restoreOrderStock(order);
@@ -607,14 +790,20 @@ export class OrdersService {
       } as any);
     }
 
-    // Reembolso efectivo: debita al vendedor y acredita al comprador.
-    for (const [sellerId, amount] of this.sellerShares(order)) {
-      await this.walletService.debit(
-        sellerId,
-        amount,
-        `Reembolso · orden #${order.id.slice(0, 8).toUpperCase()}`,
-        order.id,
-      );
+    // Reembolso efectivo: se debita a los vendedores SOLO si la venta ya les
+    // fue acreditada (DELIVERED). En PAID/IN_CUSTODY el dinero nunca llegó a
+    // sus wallets: debitarlos les robaría saldo de otras ventas.
+    if (wasDelivered) {
+      for (const [sellerId, amount] of this.sellerShares(order)) {
+        if (!(amount > 0)) continue;
+        await this.walletService.debit(
+          sellerId,
+          amount,
+          `Reembolso · orden #${order.id.slice(0, 8).toUpperCase()}`,
+          order.id,
+          { clampToZero: true },
+        );
+      }
     }
     await this.walletService.credit(
       order.buyerId,
@@ -662,7 +851,7 @@ export class OrdersService {
   async findByBuyer(buyerId: string): Promise<Order[]> {
     return this.orderRepository.find({
       where: { buyerId },
-      relations: ["product"],
+      relations: ["product", "items", "items.product"],
       order: { createdAt: "DESC" },
     });
   }
@@ -760,38 +949,78 @@ export class OrdersService {
     }
 
     const wasPaid = order.status === OrderStatus.PAID;
+    const reason = order.cancellationReason ?? "Cancelada por el usuario";
+
+    // Transición condicional atómica: dos cancelaciones concurrentes solo
+    // restauran stock y reembolsan una única vez.
+    const transition = await this.orderRepository
+      .createQueryBuilder()
+      .update(Order)
+      .set({
+        status: OrderStatus.CANCELLED,
+        cancellationReason: reason,
+        custodyEndDate: () => "CURRENT_TIMESTAMP",
+      })
+      .where("id = :id AND status IN (:...statuses)", {
+        id,
+        statuses: cancellable,
+      })
+      .execute();
+    if (!transition.affected) {
+      // Otra request ya la canceló: operación idempotente.
+      return this.findOne(id);
+    }
     order.status = OrderStatus.CANCELLED;
-    order.cancellationReason =
-      order.cancellationReason ?? "Cancelada por el usuario";
+    order.cancellationReason = reason;
     order.custodyEndDate = new Date();
-    const saved = await this.orderRepository.save(order);
+
     // Solo las PAID reservaron stock (la reserva se hace en pay).
     // Las PENDING nunca tocaron stock, así que no hay nada que devolver.
     if (wasPaid) {
       await this.restoreOrderStock(order);
+
+      // Reembolso al comprador: sin esto el dinero en custodia se evapora.
+      try {
+        await this.walletService.credit(
+          order.buyerId,
+          Number(order.total),
+          `Reembolso por cancelación · orden #${order.id.slice(0, 8).toUpperCase()}`,
+          order.id,
+        );
+      } catch (err) {
+        this.logger.error(
+          `No se pudo acreditar el reembolso de la orden ${order.id}: ${err}`,
+        );
+      }
     }
 
-    if (isBuyer) {
-      for (const sellerId of this.orderSellerIds(order)) {
+    try {
+      if (isBuyer) {
+        for (const sellerId of this.orderSellerIds(order)) {
+          await this.notifications.create(
+            sellerId,
+            NotificationType.ORDER_CANCELLED,
+            "Orden cancelada",
+            `Se canceló la orden por "${this.orderTitle(order)}".`,
+            { orderId: order.id },
+          );
+        }
+      } else {
         await this.notifications.create(
-          sellerId,
+          order.buyerId,
           NotificationType.ORDER_CANCELLED,
           "Orden cancelada",
-          `Se canceló la orden por "${this.orderTitle(order)}".`,
+          `El vendedor canceló la orden por "${this.orderTitle(order)}".`,
           { orderId: order.id },
         );
       }
-    } else {
-      await this.notifications.create(
-        order.buyerId,
-        NotificationType.ORDER_CANCELLED,
-        "Orden cancelada",
-        `El vendedor canceló la orden por "${this.orderTitle(order)}".`,
-        { orderId: order.id },
+    } catch (err) {
+      this.logger.warn(
+        `No se pudo notificar la cancelación de la orden ${order.id}: ${err}`,
       );
     }
 
-    return saved;
+    return order;
   }
 
   /**

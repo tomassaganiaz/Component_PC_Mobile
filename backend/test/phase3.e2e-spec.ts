@@ -99,6 +99,12 @@ describe("Fase 3 (e2e): variaciones/SKU y panel admin", () => {
       expect(res.status).toBe(201);
       expect(Number(res.body.total)).toBe(150);
 
+      // La reserva de la variante ocurre al pagar.
+      await request(app.getHttpServer())
+        .post(`/api/orders/${res.body.id}/pay`)
+        .set("Authorization", `Bearer ${buyer.token}`)
+        .expect(201);
+
       const variations = await request(app.getHttpServer()).get(
         `/api/products/${productId}/variations`,
       );

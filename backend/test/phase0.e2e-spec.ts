@@ -125,6 +125,23 @@ describe("Fase 0 (e2e): reputación, notificaciones y cupones", () => {
   });
 
   describe("Notificaciones", () => {
+    beforeAll(async () => {
+      // El vendedor se entera de la venta al PAGAR la orden (no al crearla).
+      const order = await request(app.getHttpServer())
+        .post("/api/orders")
+        .set("Authorization", `Bearer ${buyer.token}`)
+        .send({
+          productId,
+          shippingAddress: "Calle F0",
+          paymentMethod: "card",
+        });
+      expect(order.status).toBe(201);
+      const pay = await request(app.getHttpServer())
+        .post(`/api/orders/${order.body.id}/pay`)
+        .set("Authorization", `Bearer ${buyer.token}`);
+      expect(pay.status).toBe(201);
+    });
+
     it("el vendedor recibe una notificación de venta", async () => {
       const res = await request(app.getHttpServer())
         .get("/api/notifications")

@@ -1,11 +1,17 @@
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
-import { createTestApp, registerAndLogin, type TestUser } from "./test-app";
+import {
+  advanceFulfillmentStages,
+  createTestApp,
+  registerAndLogin,
+  type TestUser,
+} from "./test-app";
 
 describe("Google Maps / tracking del paquete (e2e)", () => {
   let app: INestApplication;
   let seller: TestUser;
   let buyer: TestUser;
+  let admin: TestUser;
   const suffix = Date.now();
 
   const shipOrder = async (): Promise<string> => {
@@ -36,8 +42,10 @@ describe("Google Maps / tracking del paquete (e2e)", () => {
       .expect(201);
     await request(app.getHttpServer())
       .post("/api/payments/webhook")
+      .set("Authorization", `Bearer ${buyer.token}`)
       .send({ orderId })
       .expect(201);
+    await advanceFulfillmentStages(app, orderId, admin.token);
     await request(app.getHttpServer())
       .post(`/api/orders/${orderId}/ship`)
       .set("Authorization", `Bearer ${seller.token}`)
@@ -56,6 +64,11 @@ describe("Google Maps / tracking del paquete (e2e)", () => {
       name: "Maps Buyer",
       email: `maps.buyer.${suffix}@test.com`,
       role: "buyer",
+    });
+    admin = await registerAndLogin(app, {
+      name: "Maps Admin",
+      email: `maps.admin.${suffix}@test.com`,
+      role: "admin",
     });
   });
 

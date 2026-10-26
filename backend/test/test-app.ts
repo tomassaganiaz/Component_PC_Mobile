@@ -4,8 +4,10 @@ import {
   ValidationPipe,
 } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
+import { getRepositoryToken } from "@nestjs/typeorm";
 import request from "supertest";
 import { AppModule } from "../src/app.module";
+import { User } from "../src/users/user.entity";
 
 /** Crea la app Nest real contra la base de datos de test (ver setup-env.ts). */
 export async function createTestApp(): Promise<INestApplication> {
@@ -47,7 +49,20 @@ export async function registerAndLogin(
   const password = opts.password ?? "password123";
   const reg = await request(app.getHttpServer())
     .post("/api/auth/register")
-    .send({ name: opts.name, email: opts.email, password, role: opts.role });
+    .send({
+      name: opts.name,
+      email: opts.email,
+      password,
+      // El registro público ya no acepta role "admin" (evita escalada de rol):
+      // en los tests se crea como buyer y se asciende directo en la BD.
+      role: opts.role === "admin" ? undefined : opts.role,
+    });
+  expect(reg.status).toBe(201);
+
+  if (opts.role === "admin" && reg.body?.id) {
+    const users = app.get(getRepositoryToken(User));
+    await users.update({ id: reg.body.id }, { role: "admin" });
+  }
 
   const login = await request(app.getHttpServer())
     .post("/api/auth/login")
@@ -64,4 +79,21 @@ export async function registerAndLogin(
   }
 
   return { token: login.body.access_token, id: reg.body?.id };
+}
+
+/**
+ * Avanza la orden por las 3 etapas del centro técnico
+ * (recepción → inspección → sellado → despacho). Requisito previo a ship().
+ */
+export async function advanceFulfillmentStages(
+  app: INestApplication,
+  orderId: string,
+  adminToken: string,
+): Promise<void> {
+  for (let i = 0; i < 3; i++) {
+    await request(app.getHttpServer())
+      .post(`/api/orders/${orderId}/advance-fulfillment`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .expect(201);
+  }
 }
