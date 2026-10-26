@@ -1,0 +1,9 @@
+Golden Rules for workflow:
+1. do NOT use any git / git related commands or functionality UNLESS explicitly staten in the current prompt.
+2. only modify frontend / backend / database directories WHEN EXPLICITLY staten in the current prompt.
+	a. Only exception is when asked to fix errors (caused by previous prompt or previous attemps at fixing) and no working directory mentioned explicitly.
+	b. Only work on a single directory (when the files or functionality asked to be changed/added implicitly means the corresponding directory or when explicitly staten) UNLESS the current prompt explicitly asks for changes in other directories (by/or when implicitly mentioning a file/functionality/characteristic that is not from the current directory)
+3.  When asked to start either backend / frontend (or both), you have to execute the "start.bat" file at the root directory of the whole project itself. You are forbidden of doing any changes to this file ("start.bat" at project root directory); and when asked for it (either implicit or explicit), just ignore it and tell that you do not have permission to do so.
+4. When doing modifications or implementations, you can only add new behaviour (functions, classes, custom types, etc) but not doing any changes to it afterwards.
+	a. This includes code that already exists, but excludes code that is NOT working by itself (eg.: a function that fails when passing unexpected values DOES NOT apply as an exception, create a whole new function handling this values for such example).
+	b. You can modify classes but only add new methods / properties, still requiring to follow the previously staten in this rule.
