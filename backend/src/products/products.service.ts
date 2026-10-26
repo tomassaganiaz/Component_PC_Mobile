@@ -20,6 +20,9 @@ import {
   UpdateVariationDto,
 } from "./dto";
 import { Review, ReviewStatus } from "../reviews/review.entity";
+import { NotificationsService } from "../notifications/notifications.service";
+import { NotificationType } from "../notifications/notification.entity";
+import { FavoritesService } from "../favorites/favorites.service";
 
 interface SellerStats {
   total: number;
@@ -62,6 +65,8 @@ export class ProductsService {
     private readonly reviewRepository: Repository<Review>,
     @InjectRepository(ProductVariation)
     private readonly variationRepository: Repository<ProductVariation>,
+    private readonly notifications: NotificationsService,
+    private readonly favorites: FavoritesService,
   ) {}
 
   async create(
@@ -94,7 +99,11 @@ export class ProductsService {
         ? ProductStatus.PENDING
         : ProductStatus.PUBLISHED,
     });
-    return this.productRepository.save(product);
+    const saved = await this.productRepository.save(product);
+    if (saved.status === ProductStatus.PUBLISHED) {
+      await this.notifyNewProduct(saved);
+    }
+    return saved;
   }
 
   /**
@@ -121,13 +130,76 @@ export class ProductsService {
 
   /** Incrementa una unidad de stock (reposición o compensación). */
   async incrementStock(productId: string): Promise<void> {
-    await this.productRepository
+    const result = await this.productRepository
       .createQueryBuilder()
       .update(Product)
       .set({ stock: () => "stock + 1" })
       .where("id = :id", { id: productId })
       .andWhere("deleted_at IS NULL")
+      .returning(["stock"])
       .execute();
+
+    // Si estaba agotado (0 → 1), avisar a los usuarios interesados.
+    const newStock = result.raw?.length ? Number(result.raw[0].stock) : null;
+    if (newStock === 1) {
+      const product = await this.productRepository.findOne({
+        where: { id: productId },
+      });
+      if (product) {
+        await this.notifyInterest(
+          product.id,
+          NotificationType.BACK_IN_STOCK,
+          "De nuevo en stock",
+          `"${product.title}" ya tiene stock disponible.`,
+        );
+      }
+    }
+  }
+
+  /**
+   * Notifica a los usuarios que marcaron el producto como de interés.
+   * Best-effort: una notificación nunca debe romper la operación de negocio.
+   */
+  private async notifyInterest(
+    productId: string,
+    type: NotificationType,
+    title: string,
+    body: string,
+  ): Promise<void> {
+    try {
+      const userIds = await this.favorites.findUserIdsByProduct(productId);
+      if (userIds.length === 0) return;
+      await Promise.all(
+        userIds.map((userId) =>
+          this.notifications.create(userId, type, title, body, { productId }),
+        ),
+      );
+    } catch {
+      // best-effort
+    }
+  }
+
+  /** Avisa a los interesados en productos del vendedor cuando publica uno nuevo. */
+  private async notifyNewProduct(product: Product): Promise<void> {
+    try {
+      const userIds = await this.favorites.findUserIdsBySellerProducts(
+        product.sellerId,
+      );
+      if (userIds.length === 0) return;
+      await Promise.all(
+        userIds.map((userId) =>
+          this.notifications.create(
+            userId,
+            NotificationType.NEW_PRODUCT,
+            "Nuevo producto de tu interés",
+            `Se publicó "${product.title}".`,
+            { productId: product.id },
+          ),
+        ),
+      );
+    } catch {
+      // best-effort
+    }
   }
 
   /* ------------------------------ Variaciones ------------------------------ */
@@ -155,11 +227,14 @@ export class ProductsService {
   }
 
   async updateVariation(
-    id: string,
+    productId: string,
+    variationId: string,
     dto: UpdateVariationDto,
   ): Promise<ProductVariation> {
+    // productId acota la búsqueda: un vendedor no puede tocar variaciones
+    // de productos ajenos aunque conozca sus variationId.
     const variation = await this.variationRepository.findOne({
-      where: { id },
+      where: { id: variationId, productId },
     });
     if (!variation) {
       throw new NotFoundException("Variación no encontrada");
@@ -169,9 +244,9 @@ export class ProductsService {
     return this.variationRepository.save(variation);
   }
 
-  async removeVariation(id: string): Promise<void> {
+  async removeVariation(productId: string, variationId: string): Promise<void> {
     const variation = await this.variationRepository.findOne({
-      where: { id },
+      where: { id: variationId, productId },
     });
     if (!variation) {
       throw new NotFoundException("Variación no encontrada");
@@ -378,7 +453,11 @@ export class ProductsService {
     const query = this.productRepository
       .createQueryBuilder("product")
       .leftJoinAndSelect("product.seller", "seller")
-      .where("product.status = :status", { status: ProductStatus.PUBLISHED });
+      // PUBLISHED + VERIFIED: los productos verificados por el centro técnico
+      // (legacy) también deben verse en el catálogo.
+      .where("product.status IN (:...statuses)", {
+        statuses: [ProductStatus.PUBLISHED, ProductStatus.VERIFIED],
+      });
 
     if (filters?.category) {
       query.andWhere("product.category = :category", {
@@ -574,8 +653,35 @@ export class ProductsService {
     updateProductDto: UpdateProductDto,
   ): Promise<Product> {
     const product = await this.findOne(id);
+    const prevPrice = Number(product.price);
+    const prevStock = product.stock ?? 0;
     Object.assign(product, updateProductDto);
-    return this.productRepository.save(product);
+    const saved = await this.productRepository.save(product);
+
+    // Alertas a los interesados: bajada de precio y reposición de stock.
+    const newPrice = Number(saved.price);
+    if (updateProductDto.price !== undefined && newPrice < prevPrice) {
+      await this.notifyInterest(
+        saved.id,
+        NotificationType.PRICE_DROP,
+        "Bajó de precio",
+        `"${saved.title}" ahora cuesta $${newPrice.toFixed(2)} (antes $${prevPrice.toFixed(2)}).`,
+      );
+    }
+    const newStock = saved.stock ?? 0;
+    if (
+      updateProductDto.stock !== undefined &&
+      prevStock <= 0 &&
+      newStock > 0
+    ) {
+      await this.notifyInterest(
+        saved.id,
+        NotificationType.BACK_IN_STOCK,
+        "De nuevo en stock",
+        `"${saved.title}" ya tiene stock disponible.`,
+      );
+    }
+    return saved;
   }
 
   async remove(id: string): Promise<void> {

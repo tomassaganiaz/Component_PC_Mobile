@@ -10,6 +10,9 @@ import {
 import { Review } from "../reviews/review.entity";
 import { ProductVariation } from "./product-variation.entity";
 import { NotFoundException } from "@nestjs/common";
+import { NotificationsService } from "../notifications/notifications.service";
+import { NotificationType } from "../notifications/notification.entity";
+import { FavoritesService } from "../favorites/favorites.service";
 
 describe("ProductsService", () => {
   let service: ProductsService;
@@ -21,6 +24,15 @@ describe("ProductsService", () => {
     findOne: jest.fn(),
     softRemove: jest.fn(),
     createQueryBuilder: jest.fn(),
+  };
+
+  const mockNotifications = {
+    create: jest.fn().mockResolvedValue(undefined),
+  };
+
+  const mockFavorites = {
+    findUserIdsByProduct: jest.fn().mockResolvedValue([]),
+    findUserIdsBySellerProducts: jest.fn().mockResolvedValue([]),
   };
 
   const mockReviewRepository = {
@@ -53,6 +65,8 @@ describe("ProductsService", () => {
           provide: getRepositoryToken(ProductVariation),
           useValue: mockVariationRepository,
         },
+        { provide: NotificationsService, useValue: mockNotifications },
+        { provide: FavoritesService, useValue: mockFavorites },
       ],
     }).compile();
 
@@ -61,6 +75,9 @@ describe("ProductsService", () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+    // Restaura los valores por defecto (mockClear no resetea implementaciones).
+    mockFavorites.findUserIdsByProduct.mockResolvedValue([]);
+    mockFavorites.findUserIdsBySellerProducts.mockResolvedValue([]);
   });
 
   describe("create", () => {
@@ -92,6 +109,37 @@ describe("ProductsService", () => {
         sellerId: "seller-uuid",
         status: ProductStatus.PUBLISHED,
       });
+    });
+
+    it("notifies followers when a product is published", async () => {
+      const savedProduct = {
+        id: "uuid-123",
+        ...createProductDto,
+        sellerId: "seller-uuid",
+        status: ProductStatus.PUBLISHED,
+      };
+
+      mockRepository.create.mockReturnValue(savedProduct);
+      mockRepository.save.mockResolvedValue(savedProduct);
+      mockFavorites.findUserIdsBySellerProducts.mockResolvedValue(["u1", "u2"]);
+
+      await service.create(createProductDto, "seller-uuid");
+
+      expect(mockNotifications.create).toHaveBeenCalledTimes(2);
+      expect(mockNotifications.create).toHaveBeenCalledWith(
+        "u1",
+        NotificationType.NEW_PRODUCT,
+        expect.any(String),
+        expect.stringContaining("RTX 3080 Ti"),
+        { productId: "uuid-123" },
+      );
+      expect(mockNotifications.create).toHaveBeenCalledWith(
+        "u2",
+        NotificationType.NEW_PRODUCT,
+        expect.any(String),
+        expect.stringContaining("RTX 3080 Ti"),
+        { productId: "uuid-123" },
+      );
     });
   });
 
@@ -275,6 +323,76 @@ describe("ProductsService", () => {
       expect(result.price).toEqual(200);
     });
 
+    it("notifies followers when the price drops", async () => {
+      const existingProduct = {
+        id: "uuid-123",
+        title: "Old Title",
+        price: 100,
+        stock: 5,
+        status: ProductStatus.PUBLISHED,
+        sellerId: "seller-uuid",
+        seller: { acceptsTesting: true },
+        createdAt: new Date("2026-01-01"),
+        warrantyDays: 90,
+        coverageExtended: false,
+        condition: ProductCondition.USED,
+        category: ProductCategory.GPU,
+      };
+      const updateDto = { price: 80 };
+
+      mockRepository.findOne.mockResolvedValue(existingProduct);
+      mockRepository.save.mockResolvedValue({
+        ...existingProduct,
+        ...updateDto,
+      });
+      mockFavorites.findUserIdsByProduct.mockResolvedValue(["u1"]);
+
+      await service.update("uuid-123", updateDto);
+
+      expect(mockNotifications.create).toHaveBeenCalledWith(
+        "u1",
+        NotificationType.PRICE_DROP,
+        expect.any(String),
+        expect.stringContaining("$80.00"),
+        { productId: "uuid-123" },
+      );
+    });
+
+    it("notifies followers when stock goes from 0 to available", async () => {
+      const existingProduct = {
+        id: "uuid-123",
+        title: "Old Title",
+        price: 100,
+        stock: 0,
+        status: ProductStatus.PUBLISHED,
+        sellerId: "seller-uuid",
+        seller: { acceptsTesting: true },
+        createdAt: new Date("2026-01-01"),
+        warrantyDays: 90,
+        coverageExtended: false,
+        condition: ProductCondition.USED,
+        category: ProductCategory.GPU,
+      };
+      const updateDto = { stock: 3 };
+
+      mockRepository.findOne.mockResolvedValue(existingProduct);
+      mockRepository.save.mockResolvedValue({
+        ...existingProduct,
+        ...updateDto,
+      });
+      mockFavorites.findUserIdsByProduct.mockResolvedValue(["u1"]);
+
+      await service.update("uuid-123", updateDto);
+
+      expect(mockNotifications.create).toHaveBeenCalledWith(
+        "u1",
+        NotificationType.BACK_IN_STOCK,
+        expect.any(String),
+        expect.any(String),
+        { productId: "uuid-123" },
+      );
+    });
+
     it("should throw NotFoundException if product not found", async () => {
       mockRepository.findOne.mockResolvedValue(null);
 
@@ -356,6 +474,7 @@ describe("ProductsService", () => {
         set: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
+        returning: jest.fn().mockReturnThis(),
         execute: jest.fn().mockResolvedValue({ affected: 1 }),
       };
       mockRepository.createQueryBuilder.mockReturnValue(qb);
@@ -364,6 +483,32 @@ describe("ProductsService", () => {
 
       expect(qb.set).toHaveBeenCalled();
       expect(qb.execute).toHaveBeenCalled();
+    });
+
+    it("incrementStock notifies followers when the product was out of stock", async () => {
+      const qb = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        returning: jest.fn().mockReturnThis(),
+        execute: jest
+          .fn()
+          .mockResolvedValue({ affected: 1, raw: [{ stock: 1 }] }),
+      };
+      mockRepository.createQueryBuilder.mockReturnValue(qb);
+      mockRepository.findOne.mockResolvedValue({ id: "p1", title: "GPU" });
+      mockFavorites.findUserIdsByProduct.mockResolvedValue(["u1"]);
+
+      await service.incrementStock("p1");
+
+      expect(mockNotifications.create).toHaveBeenCalledWith(
+        "u1",
+        NotificationType.BACK_IN_STOCK,
+        expect.any(String),
+        expect.stringContaining("GPU"),
+        { productId: "p1" },
+      );
     });
   });
 });

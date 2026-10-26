@@ -8,10 +8,14 @@ import { ProductVariation } from "./product-variation.entity";
 import { Review } from "../reviews/review.entity";
 import { Order } from "../orders/order.entity";
 import { User } from "../users/user.entity";
+import { NotificationsModule } from "../notifications/notifications.module";
+import { FavoritesModule } from "../favorites/favorites.module";
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Product, ProductVariation, Review, Order, User]),
+    NotificationsModule,
+    FavoritesModule,
   ],
   controllers: [ProductsController],
   providers: [ProductsService, ProductsSeed],

@@ -15,6 +15,7 @@ import { ChatModule } from "./chat/chat.module";
 import { AnalyticsModule } from "./analytics/analytics.module";
 import { MediaModule } from "./media/media.module";
 import { NotificationsModule } from "./notifications/notifications.module";
+import { FavoritesModule } from "./favorites/favorites.module";
 import { CouponsModule } from "./coupons/coupons.module";
 import { CartModule } from "./cart/cart.module";
 import { PaymentsModule } from "./payments/payments.module";
@@ -93,6 +94,7 @@ import { ThrottlerUserGuard } from "./common/throttler-user.guard";
     AnalyticsModule,
     MediaModule,
     NotificationsModule,
+    FavoritesModule,
     CouponsModule,
     CartModule,
     PaymentsModule,
