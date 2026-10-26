@@ -29,8 +29,10 @@ export default function ProductImage({
   width,
   priority = false,
 }: Props) {
-  const [failed, setFailed] = useState(false);
-  const showFallback = !uri || failed;
+  // Se guarda la URI que falló (no un boolean): si cambia la imagen, la nueva
+  // no hereda el "failed" de la anterior y la galería no queda contaminada.
+  const [failedUri, setFailedUri] = useState<string | null>(null);
+  const showFallback = !uri || failedUri === uri;
   const source = uri ? optimizedImageUrl(uri, width ?? 400) : uri;
 
   if (showFallback) {
@@ -56,7 +58,7 @@ export default function ProductImage({
       priority={priority ? 'high' : 'normal'}
       recyclingKey={source}
       placeholder={{ blurhash: 'L4NqR*^+00tR~qj[4nof00Rj~qay' }}
-      onError={() => setFailed(true)}
+      onError={() => setFailedUri(uri ?? null)}
     />
   );
 }

@@ -104,7 +104,7 @@ export default function AdminScreen({ nav }: { nav: Nav }) {
     }
   };
 
-  const handleResolveReport = async (id: string, status: 'resolved' | 'rejected') => {
+  const handleResolveReport = async (id: string, status: 'resolved' | 'dismissed') => {
     setActingId(id);
     setError(null);
     try {
@@ -248,7 +248,7 @@ export default function AdminScreen({ nav }: { nav: Nav }) {
                           <Text className="text-xs font-semibold text-emerald-300">{t('admin.resolve')}</Text>
                         </Pressable>
                         <Pressable
-                          onPress={() => handleResolveReport(r.id, 'rejected')}
+                          onPress={() => handleResolveReport(r.id, 'dismissed')}
                           disabled={actingId === r.id}
                           className="flex-1 flex-row items-center justify-center gap-1.5 rounded-lg border border-red-500/40 bg-red-500/10 py-2"
                         >

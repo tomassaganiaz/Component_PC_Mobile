@@ -134,8 +134,9 @@ export function Avatar({
   initial?: string;
   ringColor?: string;
 }) {
-  const [failed, setFailed] = useState(false);
-  const showFallback = !uri || failed;
+  // URI fallida (no boolean): un avatar no herda el error de la imagen anterior.
+  const [failedUri, setFailedUri] = useState<string | null>(null);
+  const showFallback = !uri || failedUri === uri;
 
   return (
     <View
@@ -151,7 +152,7 @@ export function Avatar({
       {showFallback ? (
         <Text style={{ color: colors.accentCyan, fontSize: size * 0.4, fontWeight: '700' }}>{initial}</Text>
       ) : (
-        <Image source={{ uri }} style={{ width: size, height: size }} onError={() => setFailed(true)} />
+        <Image source={{ uri }} style={{ width: size, height: size }} onError={() => setFailedUri(uri ?? null)} />
       )}
     </View>
   );

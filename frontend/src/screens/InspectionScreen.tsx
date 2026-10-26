@@ -131,8 +131,9 @@ function OrderTracking({
     setReturnLoading(true);
     setReturnError(null);
     try {
-      await requestOrderReturn(order.id, returnReason.trim());
+      const updated = await requestOrderReturn(order.id, returnReason.trim());
       setReturnDone(true);
+      onUpdated(updated);
     } catch (err) {
       setReturnError(err instanceof Error ? err.message : t('inspection.errReturn'));
     } finally {
@@ -484,7 +485,7 @@ function OrderTracking({
           </View>
           <View className="rounded border border-line bg-elevated px-2 py-0.5">
             <Text className="font-mono text-[11px] text-cyan-300">
-              Fase {displayedStep} de {steps.length}
+              {t('inspection.phase', { n: displayedStep, total: steps.length })}
             </Text>
           </View>
         </View>
@@ -852,6 +853,11 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
           if (!cancelled) setOrder(current);
         })
         .catch(() => undefined);
+      void getOrderProtection(orderId)
+        .then((p) => {
+          if (!cancelled) setProtection(p);
+        })
+        .catch(() => undefined);
     }, 15000);
     return () => {
       cancelled = true;
@@ -890,7 +896,14 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
           loading={orderLoading}
           error={orderError}
           nav={nav}
-          onUpdated={(o) => setOrder(o)}
+          onUpdated={(o) => {
+            setOrder(o);
+            // Cada acción (pagar/cancelar/devolver) cambia la protección:
+            // se refresca junto con la orden para no mostrar estados viejos.
+            getOrderProtection(o.id)
+              .then((p) => setProtection(p))
+              .catch(() => undefined);
+          }}
         />
       ) : (
       <ScrollView
@@ -978,7 +991,7 @@ export default function InspectionScreen({ nav, orderId }: { nav: Nav; orderId?:
               <Text className="text-xl font-semibold text-slate-100">{t('inspection.trace')}</Text>
             </View>
             <View className="rounded border border-line bg-elevated px-2 py-0.5">
-              <Text className="font-mono text-[11px] text-cyan-300">Fase {displayedStep} de {steps.length}</Text>
+              <Text className="font-mono text-[11px] text-cyan-300">{t('inspection.phase', { n: displayedStep, total: steps.length })}</Text>
             </View>
           </View>
 

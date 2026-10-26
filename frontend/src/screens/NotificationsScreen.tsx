@@ -15,8 +15,17 @@ const TYPE_ICON: Record<string, string> = {
   order_shipped: 'local_shipping',
   order_delivered: 'check_circle',
   order_cancelled: 'close',
+  order_stage: 'autorenew',
   review: 'star',
   system: 'notifications',
+  new_product: 'storefront',
+  price_drop: 'trending_down',
+  back_in_stock: 'inventory_2',
+  delivery_assigned: 'local_shipping',
+  delivery_started: 'navigation',
+  delivery_approaching: 'place',
+  delivery_completed: 'check_circle',
+  delivery_failed: 'block',
 };
 
 export default function NotificationsScreen({ nav }: { nav: Nav }) {
@@ -77,6 +86,13 @@ export default function NotificationsScreen({ nav }: { nav: Nav }) {
                   key={n.id}
                   onPress={() => {
                     if (!n.read) void markRead(n.id);
+                    // Si la notificación apunta a un producto/orden, navegar al detalle.
+                    const meta = n.metadata ?? {};
+                    if (typeof meta.productId === 'string') {
+                      nav.go({ name: 'detail', productId: meta.productId });
+                    } else if (typeof meta.orderId === 'string') {
+                      nav.go({ name: 'inspection', orderId: meta.orderId });
+                    }
                   }}
                   className={`flex-row items-start gap-3 rounded-xl border p-3 ${
                     n.read ? 'border-line bg-panel' : 'border-primary/30 bg-primary/5'

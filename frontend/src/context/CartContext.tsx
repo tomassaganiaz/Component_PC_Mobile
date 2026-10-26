@@ -50,7 +50,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [session]);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) {
+      // Cierre de sesión: nunca dejar visible el carrito del usuario anterior
+      // (el badge y la lista se limpian antes de que cargue el próximo user).
+      void (async () => {
+        await Promise.resolve();
+        setItems([]);
+      })();
+      return;
+    }
     let cancelled = false;
     (async () => {
       try {

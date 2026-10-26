@@ -6,7 +6,7 @@ import ProductImage from '../components/ProductImage';
 import { Avatar, ProgressBar } from '../components/ui';
 import { useI18n } from '../i18n';
 import { useCart } from '../context/CartContext';
-import { confirmPayment, createOrder, createPaymentIntent, createReport, getProductVariations, getSellerReputation, getSellerReviews, getTrustBadge, validateCoupon } from '../services/api';
+import { confirmPayment, createOrder, createPaymentIntent, createReport, getFavoriteProductIds, getProductVariations, getSellerReputation, getSellerReviews, getTrustBadge, toggleFavorite, validateCoupon } from '../services/api';
 import type { CouponValidation, OrderItem, ProductVariation, ReviewItem, SecurityProfile, SellerReputation } from '../services/api';
 import ReputationMeter from '../components/ReputationMeter';
 import { useTrack } from '../hooks/useTrack';
@@ -14,19 +14,19 @@ import { IMAGES } from '../data/mock';
 import { colors, glow, shadow } from '../theme';
 import type { ExploreCard, Nav, SellerTier } from '../types';
 
-const tierMeta: Record<SellerTier, { label: string; cls: string; dot: string }> = {
+const tierMeta: Record<SellerTier, { labelKey: string; cls: string; dot: string }> = {
   secure: {
-    label: 'VENDEDOR SEGURO',
+    labelKey: 'seller.tierSecure',
     cls: 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300',
     dot: colors.accentEmerald,
   },
   normal: {
-    label: 'VENDEDOR NORMAL',
+    labelKey: 'seller.tierNormal',
     cls: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300',
     dot: colors.accentCyan,
   },
   not_secure: {
-    label: 'VENDEDOR NO SEGURO',
+    labelKey: 'seller.tierNotSecure',
     cls: 'border-red-500/40 bg-red-500/10 text-red-400',
     dot: colors.diagnosticRed,
   },
@@ -145,19 +145,19 @@ function VerificationData({ product }: { product: ExploreCard }) {
   );
 }
 
-const badgeMeta: Record<SecurityProfile['badge'], { label: string; cls: string; dot: string }> = {
+const badgeMeta: Record<SecurityProfile['badge'], { labelKey: string; cls: string; dot: string }> = {
   safe: {
-    label: 'VENDEDOR SEGURO',
+    labelKey: 'seller.tierSecure',
     cls: 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300',
     dot: colors.accentEmerald,
   },
   intermediate: {
-    label: 'VENDEDOR NORMAL',
+    labelKey: 'seller.tierNormal',
     cls: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300',
     dot: colors.accentCyan,
   },
   unsafe: {
-    label: 'VENDEDOR NO SEGURO',
+    labelKey: 'seller.tierNotSecure',
     cls: 'border-red-500/40 bg-red-500/10 text-red-400',
     dot: colors.diagnosticRed,
   },
@@ -231,7 +231,7 @@ function SellerSecurity({
         <View className="flex-row flex-wrap items-center gap-1.5">
           <View className={`flex-row items-center gap-1.5 rounded border px-2.5 py-1 ${meta.cls}`}>
             <View className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: meta.dot }} />
-            <Text className="font-mono text-[11px] font-bold tracking-wider">{meta.label}</Text>
+            <Text className="font-mono text-[11px] font-bold tracking-wider">{t(meta.labelKey)}</Text>
           </View>
           {stats.identityVerified ? (
             <View className="flex-row items-center gap-1 rounded border border-sky-500/40 bg-sky-950/50 px-2 py-1">
@@ -311,6 +311,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
   const { add: addToCart } = useCart();
   const outOfStock = (product.stock ?? 1) <= 0;
   const [addedToCart, setAddedToCart] = useState(false);
+  const [cartError, setCartError] = useState<string | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
@@ -329,6 +330,23 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
   const [couponApplying, setCouponApplying] = useState(false);
   const [repairRequested, setRepairRequested] = useState(false);
   const [variations, setVariations] = useState<ProductVariation[]>([]);
+  const [favorited, setFavorited] = useState(false);
+  const [favBusy, setFavBusy] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { productIds } = await getFavoriteProductIds();
+        if (!cancelled) setFavorited(productIds.includes(product.id));
+      } catch {
+        // sin estado de favoritos
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [product.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -344,6 +362,37 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
       cancelled = true;
     };
   }, [product.id]);
+
+  // Auto-aplicar el cupón con debounce: valida solo, sin apretar "Aplicar".
+  useEffect(() => {
+    let cancelled = false;
+    const code = couponCode.trim();
+    const timer = setTimeout(async () => {
+      if (!code) {
+        setCouponApplied(null);
+        setCouponError(null);
+        setCouponApplying(false);
+        return;
+      }
+      setCouponApplying(true);
+      setCouponError(null);
+      try {
+        const res = await validateCoupon(code, Number(product.price));
+        if (cancelled) return;
+        setCouponApplied(res);
+      } catch (err) {
+        if (cancelled) return;
+        setCouponApplied(null);
+        setCouponError(err instanceof Error ? err.message : t('product.checkout.couponError'));
+      } finally {
+        if (!cancelled) setCouponApplying(false);
+      }
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [couponCode, product.price, t]);
 
   const [reviewsOpen, setReviewsOpen] = useState(false);
   const [sellerReviews, setSellerReviews] = useState<ReviewItem[]>([]);
@@ -390,12 +439,30 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
 
   const handleAddToCart = async () => {
     if (outOfStock) return;
+    setCartError(null);
     try {
       await addToCart(product.id, 1);
       setAddedToCart(true);
       setTimeout(() => setAddedToCart(false), 1500);
+    } catch (err) {
+      // Antes el error se tragaba y el botón "no hacía nada".
+      const message = err instanceof Error ? err.message : '';
+      setCartError(message || t('cart.errAdd'));
+    }
+  };
+
+  const handleToggleFavorite = async () => {
+    if (favBusy) return;
+    const next = !favorited;
+    setFavorited(next); // optimista
+    setFavBusy(true);
+    try {
+      const res = await toggleFavorite(product.id);
+      setFavorited(res.favorited);
     } catch {
-      // sin carrito
+      setFavorited(!next); // revertir si falló
+    } finally {
+      setFavBusy(false);
     }
   };
 
@@ -419,6 +486,26 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
       setOrderError(t('product.checkout.errAddress'));
       return;
     }
+    // Si hay un código escrito pero sin validar (o cambió respecto del aplicado),
+    // chequearlo ahora: si es inválido no se continúa con la orden.
+    const code = couponCode.trim();
+    let couponCodeToSend: string | undefined =
+      code && couponApplied ? couponApplied.code : undefined;
+    if (code && (!couponApplied || couponApplied.code.toUpperCase() !== code.toUpperCase())) {
+      setCouponApplying(true);
+      setCouponError(null);
+      try {
+        const res = await validateCoupon(code, Number(product.price));
+        setCouponApplied(res);
+        couponCodeToSend = res.code;
+      } catch (err) {
+        setCouponApplied(null);
+        setCouponError(err instanceof Error ? err.message : t('product.checkout.couponError'));
+        setCouponApplying(false);
+        return;
+      }
+      setCouponApplying(false);
+    }
     setPlacing(true);
     setOrderError(null);
     try {
@@ -426,7 +513,7 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
         productId: product.id,
         shippingAddress: shippingAddress.trim(),
         paymentMethod,
-        couponCode: couponApplied?.code,
+        couponCode: couponCodeToSend,
         repairRequested:
           product.broken && product.brokenTag === 'reparable'
             ? repairRequested
@@ -442,11 +529,15 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
         /* queda pendiente */
       }
       setCreatedOrder(paid);
-      trackEvent('purchase', {
-        orderId: order.id,
-        productId: product.id,
-        metadata: { total: Number(order.total), paymentMethod },
-      });
+      // Solo se trackea "purchase" si el pago se confirmó realmente
+      // (un pago pendiente no es una compra completada).
+      if (paid.status === 'paid') {
+        trackEvent('purchase', {
+          orderId: order.id,
+          productId: product.id,
+          metadata: { total: Number(order.total), paymentMethod },
+        });
+      }
     } catch (err) {
       setOrderError(err instanceof Error ? err.message : t('product.checkout.errOrder'));
     } finally {
@@ -1088,6 +1179,14 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
         </View>
       </Modal>
 
+      {/* Error del carrito (visible junto a la barra de compra) */}
+      {cartError ? (
+        <View className="flex-row items-center gap-2 border-t border-red-500/40 bg-red-500/10 px-4 py-2">
+          <AppIcon name="report" size={15} color={colors.diagnosticRed} />
+          <Text className="flex-1 text-xs text-red-400">{cartError}</Text>
+        </View>
+      ) : null}
+
       {/* Sticky purchase bar */}
       <View
         className="w-full flex-row items-center gap-3 bg-surface/95 px-4 py-3"
@@ -1100,6 +1199,19 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
             <Text className="font-mono text-[11px] text-text-secondary">{product.currency}</Text>
           </View>
         </View>
+        <Pressable
+          onPress={handleToggleFavorite}
+          disabled={favBusy}
+          className="h-[52px] w-[52px] items-center justify-center rounded-xl border border-line bg-panel"
+          accessibilityRole="button"
+          accessibilityLabel={favorited ? t('product.unfavorite') : t('product.favorite')}
+        >
+          <AppIcon
+            name={favorited ? 'favorite' : 'favorite_border'}
+            size={22}
+            color={favorited ? colors.diagnosticRed : colors.secondary}
+          />
+        </Pressable>
         <Pressable
           onPress={handleAddToCart}
           disabled={outOfStock}
@@ -1249,44 +1361,67 @@ export default function ProductDetailScreen({ nav, product }: { nav: Nav; produc
         <View className="flex-1 items-center justify-end bg-black/70">
           <View className="w-full rounded-t-3xl border-t border-line bg-panel p-5" style={shadow.bottom}>
             {createdOrder ? (
-              <View className="flex flex-col items-center gap-3 py-4">
-                <View
-                  className="h-16 w-16 items-center justify-center rounded-2xl border border-secondary/40 bg-secondary/10"
-                  style={glow(colors.secondary, 18, 0.35)}
-                >
-                  <AppIcon name="check_circle" size={34} color={colors.accentEmerald} />
-                </View>
-                <Text className="text-xl font-bold text-text-primary">{t('product.checkout.success')}</Text>
-                <Text className="text-center text-xs leading-relaxed text-text-secondary">
-                  Tus {product.currency} ${Number(createdOrder.total).toFixed(2)} quedaron retenidos en la bóveda
-                  TechShield. El vendedor no cobra hasta que recibas y verifiques el producto.
-                </Text>
-                <View className="mt-1 flex-row items-center gap-1.5 rounded-lg border border-line bg-panel px-3 py-2">
-                  <AppIcon name="verified" size={15} color={colors.accentCyan} />
-                  <Text className="font-mono text-[11px] text-text-secondary">
-                    ORDER ID: #{createdOrder.id.slice(0, 8).toUpperCase()}
-                  </Text>
-                </View>
-                <Pressable
-                  onPress={() => {
-                    setCheckoutOpen(false);
-                    nav.go({ name: 'inspection', orderId: createdOrder.id });
-                  }}
-                  className="mt-2 w-full flex-row items-center justify-center gap-2 rounded-xl bg-secondary py-3.5"
-                  style={shadow.panel}
-                >
-                  <AppIcon name="verified_user" size={20} color={colors.onSecondary} />
-                  <Text className="text-base font-semibold text-on-secondary">
-                    Ver seguimiento en custodia
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => setCheckoutOpen(false)}
-                  className="w-full items-center justify-center rounded-xl border border-line bg-panel py-3"
-                >
-                  <Text className="text-sm font-semibold text-text-secondary">{t('product.checkout.keepExploring')}</Text>
-                </Pressable>
-              </View>
+              (() => {
+                const paidOk = createdOrder.status === 'paid';
+                return (
+                  <View className="flex flex-col items-center gap-3 py-4">
+                    <View
+                      className={`h-16 w-16 items-center justify-center rounded-2xl border ${
+                        paidOk
+                          ? 'border-secondary/40 bg-secondary/10'
+                          : 'border-amber-500/40 bg-amber-500/10'
+                      }`}
+                      style={
+                        paidOk
+                          ? glow(colors.secondary, 18, 0.35)
+                          : glow(colors.diagnosticAmber, 18, 0.3)
+                      }
+                    >
+                      <AppIcon
+                        name={paidOk ? 'check_circle' : 'hourglass_empty'}
+                        size={34}
+                        color={paidOk ? colors.accentEmerald : colors.diagnosticAmber}
+                      />
+                    </View>
+                    <Text className="text-xl font-bold text-text-primary">
+                      {paidOk ? t('product.checkout.success') : t('product.checkout.pendingTitle')}
+                    </Text>
+                    <Text className="text-center text-xs leading-relaxed text-text-secondary">
+                      {paidOk
+                        ? t('product.checkout.successDesc', {
+                            currency: product.currency,
+                            total: Number(createdOrder.total).toFixed(2),
+                          })
+                        : t('product.checkout.pendingDesc')}
+                    </Text>
+                    <View className="mt-1 flex-row items-center gap-1.5 rounded-lg border border-line bg-panel px-3 py-2">
+                      <AppIcon name="verified" size={15} color={colors.accentCyan} />
+                      <Text className="font-mono text-[11px] text-text-secondary">
+                        ORDER ID: #{createdOrder.id.slice(0, 8).toUpperCase()}
+                      </Text>
+                    </View>
+                    <Pressable
+                      onPress={() => {
+                        setCheckoutOpen(false);
+                        nav.go({ name: 'inspection', orderId: createdOrder.id });
+                      }}
+                      className="mt-2 w-full flex-row items-center justify-center gap-2 rounded-xl bg-secondary py-3.5"
+                      style={shadow.panel}
+                    >
+                      <AppIcon name="verified_user" size={20} color={colors.onSecondary} />
+                      <Text className="text-base font-semibold text-on-secondary">
+                        {paidOk ? t('product.checkout.trackCustody') : t('product.checkout.pendingCta')}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => setCheckoutOpen(false)}
+                      className="w-full items-center justify-center rounded-xl border border-line bg-panel py-3"
+                    >
+                      <Text className="text-sm font-semibold text-text-secondary">{t('product.checkout.keepExploring')}</Text>
+                    </Pressable>
+                  </View>
+                );
+              })()
             ) : (
               <>
                 <View className="flex-row items-center gap-2">

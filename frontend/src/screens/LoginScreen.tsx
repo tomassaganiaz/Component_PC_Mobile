@@ -301,12 +301,12 @@ export default function LoginScreen({ onLogin }: { onLogin: (session: LoginSucce
                 <Text className="text-base font-semibold text-text-primary">{t('login.otp.title')}</Text>
               </View>
               <Text className="text-xs leading-relaxed text-text-secondary">
-                Ingresá el código de 6 dígitos enviado a tu dispositivo para completar el acceso.
+                {t('login.otp.desc')}
               </Text>
               {otpHint ? (
                 <View className="rounded-lg border border-cyan-500/40 bg-cyan-950/40 px-3 py-2">
                   <Text className="font-mono text-xs text-cyan-300">
-                    Demo (no hay SMS): código = {otpHint}
+                    {t('login.otp.demo', { code: otpHint })}
                   </Text>
                 </View>
               ) : null}

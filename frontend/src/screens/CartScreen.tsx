@@ -19,6 +19,7 @@ export default function CartScreen({ nav }: { nav: Nav }) {
   const [address, setAddress] = useState('');
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [listError, setListError] = useState<string | null>(null);
   const [doneOrder, setDoneOrder] = useState<OrderItem | null>(null);
 
   const subtotal = items.reduce(
@@ -38,14 +39,17 @@ export default function CartScreen({ nav }: { nav: Nav }) {
         shippingAddress: address.trim(),
         paymentMethod: 'credit_card',
       });
-      // Pago: intención + confirmación (mock).
+      // Pago: intencion + confirmacion (mock). Si falla, la orden queda
+      // pendiente y la pantalla de resultado lo refleja (no se finge el cobro).
+      let paid = order;
       try {
         await createPaymentIntent(order.id);
         await confirmPayment(order.id);
+        paid = { ...order, status: 'paid' };
       } catch {
         /* queda pendiente */
       }
-      setDoneOrder(order);
+      setDoneOrder(paid);
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : t('cart.errCheckout'));
@@ -54,20 +58,57 @@ export default function CartScreen({ nav }: { nav: Nav }) {
     }
   };
 
+  // Stepper/quitar con feedback: antes los rechazos (400 por límite 99,
+  // 404 de ítem borrado) quedaban como promesas sin manejar y sin aviso.
+  const handleQty = async (itemId: string, qty: number) => {
+    try {
+      await updateQty(itemId, qty);
+      setListError(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '';
+      setListError(message || t('cart.errUpdate'));
+      await refresh();
+    }
+  };
+
+  const handleRemoveItem = async (itemId: string) => {
+    try {
+      await remove(itemId);
+      setListError(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '';
+      setListError(message || t('cart.errUpdate'));
+      await refresh();
+    }
+  };
+
   if (doneOrder) {
+    const paidOk = doneOrder.status === 'paid';
     return (
       <View className="flex-1 bg-surface">
         <AppHeader subtitle={t('cart.subtitle')} activeTab />
         <View className="flex-1 items-center justify-center gap-3 px-8">
           <View
-            className="h-16 w-16 items-center justify-center rounded-2xl border border-secondary/40 bg-secondary/10"
-            style={glow(colors.secondary, 16, 0.3)}
+            className={`h-16 w-16 items-center justify-center rounded-2xl border ${
+              paidOk
+                ? 'border-secondary/40 bg-secondary/10'
+                : 'border-amber-500/40 bg-amber-500/10'
+            }`}
+            style={paidOk ? glow(colors.secondary, 16, 0.3) : glow(colors.diagnosticAmber, 16, 0.3)}
           >
-            <AppIcon name="check_circle" size={34} color={colors.accentEmerald} />
+            <AppIcon
+              name={paidOk ? 'check_circle' : 'hourglass_empty'}
+              size={34}
+              color={paidOk ? colors.accentEmerald : colors.diagnosticAmber}
+            />
           </View>
-          <Text className="text-2xl font-bold text-text-primary">{t('cart.successTitle')}</Text>
+          <Text className="text-2xl font-bold text-text-primary">
+            {paidOk ? t('cart.successTitle') : t('cart.pendingTitle')}
+          </Text>
           <Text className="text-center text-sm leading-relaxed text-text-secondary">
-            {t('cart.successDesc', { total: Number(doneOrder.total).toFixed(2) })}
+            {paidOk
+              ? t('cart.successDesc', { total: Number(doneOrder.total).toFixed(2) })
+              : t('cart.pendingDesc')}
           </Text>
           <Pressable
             onPress={() => nav.go({ name: 'inspection', orderId: doneOrder.id })}
@@ -101,6 +142,13 @@ export default function CartScreen({ nav }: { nav: Nav }) {
             {t('cart.items', { n: count })}
           </Text>
         </View>
+
+        {listError ? (
+          <View className="mx-4 mt-2 flex-row items-start gap-2 rounded-lg border border-red-500/40 bg-red-500/10 p-3">
+            <AppIcon name="report" size={16} color={colors.diagnosticRed} />
+            <Text className="flex-1 text-xs leading-relaxed text-red-400">{listError}</Text>
+          </View>
+        ) : null}
 
         {items.length === 0 ? (
           <View className="px-4 pt-6">
@@ -141,9 +189,11 @@ export default function CartScreen({ nav }: { nav: Nav }) {
                     <View className="flex-row items-center gap-2">
                       <Pressable
                         onPress={() => {
-                          if (item.quantity > 1) void updateQty(item.id, item.quantity - 1);
+                          if (item.quantity > 1) void handleQty(item.id, item.quantity - 1);
                         }}
+                        disabled={item.quantity <= 1}
                         className="h-7 w-7 items-center justify-center rounded-lg border border-line bg-elevated"
+                        style={item.quantity <= 1 ? { opacity: 0.5 } : undefined}
                       >
                         <AppIcon name="remove" size={15} color={colors.textSecondary} />
                       </Pressable>
@@ -151,14 +201,19 @@ export default function CartScreen({ nav }: { nav: Nav }) {
                         {item.quantity}
                       </Text>
                       <Pressable
-                        onPress={() => void updateQty(item.id, item.quantity + 1)}
+                        onPress={() => {
+                          // El backend limita la cantidad a 99 por ítem.
+                          if (item.quantity < 99) void handleQty(item.id, item.quantity + 1);
+                        }}
+                        disabled={item.quantity >= 99}
                         className="h-7 w-7 items-center justify-center rounded-lg border border-line bg-elevated"
+                        style={item.quantity >= 99 ? { opacity: 0.5 } : undefined}
                       >
                         <AppIcon name="add" size={15} color={colors.textSecondary} />
                       </Pressable>
                     </View>
                     <Pressable
-                      onPress={() => void remove(item.id)}
+                      onPress={() => void handleRemoveItem(item.id)}
                       className="h-8 w-8 items-center justify-center rounded-lg"
                     >
                       <AppIcon name="delete" size={17} color={colors.diagnosticRed} />

@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import AppIcon from './AppIcon';
 import ProductImage from './ProductImage';
 import { ProgressBar } from './ui';
+import { useI18n } from '../i18n';
 import { colors, shadow } from '../theme';
 import type { ExploreCard, SellerTier, Tone } from '../types';
 
@@ -19,10 +20,10 @@ const gradeTones: Record<'primary' | 'secondary', string> = {
   secondary: 'bg-primary-soft border-secondary/40 text-secondary',
 };
 
-const tierMeta: Record<SellerTier, { label: string; cls: string }> = {
-  secure: { label: 'VENDEDOR SEGURO', cls: 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300' },
-  normal: { label: 'VENDEDOR NORMAL', cls: 'bg-cyan-500/10 border-cyan-500/40 text-cyan-300' },
-  not_secure: { label: 'VENDEDOR NO SEGURO', cls: 'bg-red-500/10 border-red-500/40 text-red-400' },
+const tierMeta: Record<SellerTier, { labelKey: string; cls: string }> = {
+  secure: { labelKey: 'seller.tierSecure', cls: 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300' },
+  normal: { labelKey: 'seller.tierNormal', cls: 'bg-cyan-500/10 border-cyan-500/40 text-cyan-300' },
+  not_secure: { labelKey: 'seller.tierNotSecure', cls: 'bg-red-500/10 border-red-500/40 text-red-400' },
 };
 
 function VerifiedBadge() {
@@ -192,6 +193,7 @@ export default function ProductCard({
   onPress: () => void;
   onBuy: () => void;
 }) {
+  const { t } = useI18n();
   const tier = card.sellerTier ? tierMeta[card.sellerTier] : null;
   const outOfStock = (card.stock ?? 1) <= 0;
 
@@ -210,7 +212,7 @@ export default function ProductCard({
             <View className="absolute inset-0 z-10 items-center justify-center bg-black/45">
               <View className="rounded border border-red-500/60 bg-red-500/90 px-2.5 py-1">
                 <Text className="font-mono text-[10px] font-bold uppercase tracking-wider text-white">
-                  Sin stock
+                  {t('product.outOfStock')}
                 </Text>
               </View>
             </View>
@@ -259,7 +261,7 @@ export default function ProductCard({
 
       {tier ? (
         <View className={`self-start rounded border px-1.5 py-0.5 ${tier.cls}`}>
-          <Text className="font-mono text-[10px] font-semibold tracking-wider">{tier.label}</Text>
+          <Text className="font-mono text-[10px] font-semibold tracking-wider">{t(tier.labelKey)}</Text>
         </View>
       ) : null}
 

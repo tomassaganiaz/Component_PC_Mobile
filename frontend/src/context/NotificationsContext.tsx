@@ -55,7 +55,17 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   }, [session]);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) {
+      // Cierre de sesión: limpiar notificaciones y contadores del usuario
+      // anterior (el badge de la campana no debe heredarse entre cuentas).
+      void (async () => {
+        await Promise.resolve();
+        setItems([]);
+        setUnread(0);
+        prevUnread.current = 0;
+      })();
+      return;
+    }
     let cancelled = false;
     void initNotifications();
 

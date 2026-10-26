@@ -90,6 +90,11 @@ const MAP: Record<string, MIconName> = {
   place: 'place',
   build: 'build',
   edit: 'edit',
+  favorite: 'favorite',
+  favorite_border: 'favorite-border',
+  autorenew: 'autorenew',
+  trending_down: 'trending-down',
+  navigation: 'navigation',
 };
 
 interface Props {

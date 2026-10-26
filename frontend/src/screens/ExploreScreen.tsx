@@ -65,6 +65,10 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
   const [retryNonce, setRetryNonce] = useState(0);
   const [appending, setAppending] = useState(false);
   const fetchedKeyRef = useRef('');
+  // Secuencia de requests: solo el último en iniciar puede escribir resultados
+  // (evita que una respuesta lenta vieja pise la query actual o deje el
+  // spinner "Consultando auditoría..." colgado para siempre).
+  const requestSeqRef = useRef(0);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -104,8 +108,11 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
 
   const fetchPage = useCallback(
     async (targetPage: number, append: boolean) => {
+      const seq = ++requestSeqRef.current;
+      const isStale = () => seq !== requestSeqRef.current;
       try {
         const data = await getProducts({ ...queryFilters, page: targetPage, limit: PAGE_SIZE });
+        if (isStale()) return;
         const items = data.items.map(toExploreCard);
         if (append) {
           appendResults(items, data.page, data.hasMore, data.total);
@@ -113,6 +120,7 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
           setResults(items, false, queryKey, data.page, data.hasMore, data.total);
         }
       } catch {
+        if (isStale()) return;
         if (!append) {
           const fallback = filterMock({ ...queryFilters, page: 1, limit: PAGE_SIZE });
           setResults(fallback, true, queryKey, 1, false, fallback.length);
@@ -192,7 +200,7 @@ export default function ExploreScreen({ nav }: { nav: Nav }) {
     <View className="px-4">
       <ProductCard
         card={item}
-        checked={passedSecurityFilters(item, effectiveFilters)}
+        checked={item.verified === true && passedSecurityFilters(item, effectiveFilters)}
         onPress={() => nav.go({ name: 'detail', productId: item.id, product: item })}
         onBuy={() => nav.go({ name: 'detail', productId: item.id, product: item })}
       />
