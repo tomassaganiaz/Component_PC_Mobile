@@ -50,6 +50,14 @@ const PRODUCT_IMAGES: Record<string, string> = {
   "DDR5 Corsair 32GB 6000MHz": "/static/products/ddr5-corsair.webp",
   "MacBook Air M3 13 Sellada": "/static/products/macbook-air-m3.webp",
   "Notebook Gamer Lenovo Legion 5": "/static/products/notebook-legion-5.webp",
+  "SSD Samsung 990 Pro 2TB": "/static/products/samsung-990-pro-2tb.jpg",
+  "SSD M.2 NVMe Crucial P3 1TB": "/static/products/crucial-p3-1tb.jpg",
+  "Motherboard B550 Aorus Pro":
+    "/static/products/motherboard-b550-aorus-pro.jpg",
+  "Placa madre B450 rota (reparable)":
+    "/static/products/motherboard-b550-aorus-pro.jpg",
+  "RTX 3070 Ti FE": "/static/products/rtx-3070ti.webp",
+  "G.Skill Trident Z5 32GB DDR5 6000": "/static/products/ddr5-corsair.webp",
 };
 
 interface SeedSeller {
