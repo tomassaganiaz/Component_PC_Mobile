@@ -1,16 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 
 import AppHeader from '../components/AppHeader';
 import AppIcon from '../components/AppIcon';
 import BottomNav from '../components/BottomNav';
 import ReviewModal from '../components/ReviewModal';
+import type { ReviewTarget } from '../components/ReviewModal';
 import { Avatar } from '../components/ui';
 import { useThemeCtx } from '../context/ThemeContext';
 import { useI18n } from '../i18n';
 import {
   deleteProduct,
   getMyOrders,
+  getMyReviews,
   getProductsBySeller,
   getProfile,
   updateProduct,
@@ -60,8 +63,8 @@ export default function ProfileScreen({
   const [profile, setProfile] = useState<UserProfile>(session.user);
   const { theme, toggle } = useThemeCtx();
   const [orders, setOrders] = useState<OrderItem[]>([]);
-  const [reviewOrder, setReviewOrder] = useState<OrderItem | null>(null);
-  const [reviewedOrderIds, setReviewedOrderIds] = useState<Set<string>>(new Set());
+  const [reviewTarget, setReviewTarget] = useState<ReviewTarget | null>(null);
+  const [reviewedProductIds, setReviewedProductIds] = useState<Set<string>>(new Set());
   const [verifying, setVerifying] = useState<'phone' | 'identity' | null>(null);
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [listings, setListings] = useState<ApiProduct[]>([]);
@@ -116,20 +119,29 @@ export default function ProfileScreen({
     };
   }, [session.access_token]);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const data = await getMyOrders();
-        if (!cancelled) setOrders(data);
-      } catch {
-        // sin órdenes
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  // Órdenes + reseñas del comprador: se recargan al montar y al volver a la pestaña,
+  // para que el botón de reseña refleje el estado real del servidor.
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      (async () => {
+        try {
+          const [ordersData, reviewsData] = await Promise.all([
+            getMyOrders(),
+            getMyReviews().catch(() => []), // si falla, al menos cargan las órdenes
+          ]);
+          if (cancelled) return;
+          setOrders(ordersData);
+          setReviewedProductIds(new Set(reviewsData.map((r) => r.productId)));
+        } catch {
+          // sin órdenes
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, []),
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -242,6 +254,10 @@ export default function ProfileScreen({
       return (p.stock ?? 1) <= 0
         ? { label: t('profile.listingOutOfStock'), cls: 'border-red-500/40 bg-red-500/10 text-red-400' }
         : { label: t('profile.listingPublished'), cls: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300' };
+    }
+    if (p.status === 'pending') {
+      // En auditoría: no es un borrador y no puede activarse manualmente.
+      return { label: t('profile.listingAudit'), cls: 'border-amber-500/40 bg-amber-500/10 text-amber-300' };
     }
     return { label: t('profile.listingDraft'), cls: 'border-line bg-inset text-text-secondary' };
   };
@@ -393,7 +409,32 @@ export default function ProfileScreen({
             <View className="flex flex-col gap-2">
               {orders.map((order) => {
                 const reviewable = order.status === 'delivered' || order.status === 'refunded';
-                const alreadyReviewed = reviewedOrderIds.has(order.id);
+                // Cada orden puede tener varios productos (carrito); uno solo → botón único.
+                const items: NonNullable<OrderItem['items']> =
+                  order.items && order.items.length > 0
+                    ? order.items
+                    : order.productId
+                      ? [
+                          {
+                            id: order.id,
+                            productId: order.productId,
+                            quantity: 1,
+                            unitPrice: Number(order.total),
+                            product: order.product,
+                          },
+                        ]
+                      : [];
+                const single = items.length === 1 ? items[0] : null;
+                const singleReviewed = single ? reviewedProductIds.has(single.productId) : false;
+                const headerTitle =
+                  order.product?.title ??
+                  (single ? single.product?.title : null) ??
+                  `Orden #${order.id.slice(0, 8).toUpperCase()}`;
+                const openReview = (productId: string, title: string) => {
+                  if (!reviewedProductIds.has(productId)) {
+                    setReviewTarget({ order, productId, title });
+                  }
+                };
                 return (
                   <View key={order.id} className="rounded-xl border border-line bg-panel p-3">
                     <Pressable
@@ -405,7 +446,7 @@ export default function ProfileScreen({
                       </View>
                       <View className="min-w-0 flex-1">
                         <Text className="truncate text-sm font-semibold text-text-primary">
-                          {order.product?.title ?? `Orden #${order.id.slice(0, 8).toUpperCase()}`}
+                          {headerTitle}
                         </Text>
                         <Text className="font-mono text-[11px] text-text-secondary">
                           ${Number(order.total).toFixed(2)} · #{order.id.slice(0, 8).toUpperCase()}
@@ -418,13 +459,52 @@ export default function ProfileScreen({
                       </View>
                       <AppIcon name="arrow_forward" size={18} color={colors.textMuted} />
                     </Pressable>
-                    {reviewable ? (
+                    {reviewable && items.length > 1 ? (
+                      <View className="mt-2.5 flex-col gap-1.5">
+                        {items.map((it) => {
+                          const reviewed = reviewedProductIds.has(it.productId);
+                          const itemTitle =
+                            it.product?.title ??
+                            `Producto #${it.productId.slice(0, 6).toUpperCase()}`;
+                          return (
+                            <Pressable
+                              key={it.productId}
+                              onPress={() => openReview(it.productId, itemTitle)}
+                              className={`flex-row items-center gap-2 rounded-lg border px-2.5 py-2 ${
+                                reviewed
+                                  ? 'border-line bg-inset opacity-60'
+                                  : 'border-amber-500/40 bg-amber-500/10'
+                              }`}
+                            >
+                              <AppIcon
+                                name="star"
+                                size={14}
+                                color={reviewed ? colors.textMuted : colors.diagnosticAmber}
+                              />
+                              <Text
+                                className="flex-1 truncate text-xs font-semibold"
+                                style={{ color: reviewed ? colors.textMuted : colors.textPrimary }}
+                              >
+                                {itemTitle}
+                              </Text>
+                              <Text
+                                className="text-[11px] font-semibold"
+                                style={{
+                                  color: reviewed ? colors.textMuted : colors.diagnosticAmber,
+                                }}
+                              >
+                                {reviewed ? 'Reseña enviada' : 'Reseñar'}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    ) : null}
+                    {reviewable && single ? (
                       <Pressable
-                        onPress={() => {
-                          if (!alreadyReviewed) setReviewOrder(order);
-                        }}
+                        onPress={() => openReview(single.productId, headerTitle)}
                         className={`mt-2.5 flex-row items-center justify-center gap-1.5 rounded-lg border py-2 ${
-                          alreadyReviewed
+                          singleReviewed
                             ? 'border-line bg-inset opacity-60'
                             : 'border-amber-500/40 bg-amber-500/10'
                         }`}
@@ -432,13 +512,13 @@ export default function ProfileScreen({
                         <AppIcon
                           name="star"
                           size={15}
-                          color={alreadyReviewed ? colors.textMuted : colors.diagnosticAmber}
+                          color={singleReviewed ? colors.textMuted : colors.diagnosticAmber}
                         />
                         <Text
                           className="text-xs font-semibold"
-                          style={{ color: alreadyReviewed ? colors.textMuted : colors.diagnosticAmber }}
+                          style={{ color: singleReviewed ? colors.textMuted : colors.diagnosticAmber }}
                         >
-                          {alreadyReviewed ? 'Reseña enviada' : 'Reseñar esta compra'}
+                          {singleReviewed ? 'Reseña enviada' : 'Reseñar esta compra'}
                         </Text>
                       </Pressable>
                     ) : null}
@@ -545,11 +625,11 @@ export default function ProfileScreen({
 
         {/* Review modal */}
         <ReviewModal
-          visible={!!reviewOrder}
-          order={reviewOrder}
-          onClose={() => setReviewOrder(null)}
-          onSubmitted={(orderId) => {
-            setReviewedOrderIds((prev) => new Set(prev).add(orderId));
+          visible={!!reviewTarget}
+          target={reviewTarget}
+          onClose={() => setReviewTarget(null)}
+          onSubmitted={(productId) => {
+            setReviewedProductIds((prev) => new Set(prev).add(productId));
           }}
         />
 
@@ -631,7 +711,7 @@ export default function ProfileScreen({
                 className="w-full rounded-xl border border-line bg-surface-low px-3 py-2.5 text-sm text-text-primary"
               />
 
-              {editItem ? (
+              {editItem && (editItem.status === 'published' || editItem.status === 'draft') ? (
                 <Pressable
                   onPress={togglePause}
                   disabled={savingEdit}
@@ -747,16 +827,18 @@ export default function ProfileScreen({
               <Text className="flex-1 text-sm text-text-primary">{t('profile.securityFilters')}</Text>
               <AppIcon name="arrow_forward" size={18} color={colors.textMuted} />
             </Pressable>
-            <Pressable
-onPress={() => nav.go({ name: 'analytics' })}
-              className="flex-row items-center gap-3 rounded-xl border border-line bg-panel p-3"
-            >
-              <View className="h-8 w-8 items-center justify-center rounded-lg bg-elevated">
-                <AppIcon name="equalizer" size={17} color={colors.primary} />
-              </View>
-              <Text className="flex-1 text-sm text-text-primary">{t('profile.analytics')}</Text>
-              <AppIcon name="arrow_forward" size={18} color={colors.textMuted} />
-            </Pressable>
+            {profile.role === 'admin' ? (
+              <Pressable
+                onPress={() => nav.go({ name: 'analytics' })}
+                className="flex-row items-center gap-3 rounded-xl border border-line bg-panel p-3"
+              >
+                <View className="h-8 w-8 items-center justify-center rounded-lg bg-elevated">
+                  <AppIcon name="equalizer" size={17} color={colors.primary} />
+                </View>
+                <Text className="flex-1 text-sm text-text-primary">{t('profile.analytics')}</Text>
+                <AppIcon name="arrow_forward" size={18} color={colors.textMuted} />
+              </Pressable>
+            ) : null}
             <Pressable
               onPress={toggle}
               className="flex-row items-center gap-3 rounded-xl border border-line bg-panel p-3"

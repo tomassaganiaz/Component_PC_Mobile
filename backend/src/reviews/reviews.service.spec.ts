@@ -141,6 +141,92 @@ describe("ReviewsService", () => {
       await expect(service.create(createDto, "buyer-uuid")).rejects.toThrow(
         ConflictException,
       );
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: { productId: "product-uuid", buyerId: "buyer-uuid" },
+      });
+    });
+
+    it("should allow a review for another product of the same order", async () => {
+      const mockOrder = {
+        id: "order-uuid",
+        buyerId: "buyer-uuid",
+        productId: null,
+        status: OrderStatus.DELIVERED,
+        items: [
+          {
+            productId: "product-1",
+            product: { id: "product-1", sellerId: "seller-uuid" },
+          },
+          {
+            productId: "product-2",
+            product: { id: "product-2", sellerId: "seller-uuid" },
+          },
+        ],
+      };
+      const secondDto = { ...createDto, productId: "product-2" };
+      const savedReview = {
+        id: "review-uuid-2",
+        ...secondDto,
+        buyerId: "buyer-uuid",
+        sellerId: "seller-uuid",
+        isVerifiedPurchase: true,
+        status: ReviewStatus.APPROVED,
+      };
+
+      mockOrdersService.findOne.mockResolvedValue(mockOrder);
+      mockRepository.findOne.mockResolvedValue(null);
+      mockRepository.create.mockReturnValue(savedReview);
+      mockRepository.save.mockResolvedValue(savedReview);
+
+      const result = await service.create(secondDto, "buyer-uuid");
+
+      expect(result).toEqual(savedReview);
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: { productId: "product-2", buyerId: "buyer-uuid" },
+      });
+    });
+
+    it("should throw ConflictException if the product was reviewed in another order", async () => {
+      const mockOrder = {
+        id: "other-order-uuid",
+        buyerId: "buyer-uuid",
+        productId: "product-uuid",
+        status: OrderStatus.DELIVERED,
+        product: { sellerId: "seller-uuid" },
+      };
+
+      mockOrdersService.findOne.mockResolvedValue(mockOrder);
+      mockRepository.findOne.mockResolvedValue({ id: "existing-review" });
+
+      await expect(service.create(createDto, "buyer-uuid")).rejects.toThrow(
+        ConflictException,
+      );
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: { productId: "product-uuid", buyerId: "buyer-uuid" },
+      });
+    });
+
+    it("should map a unique constraint violation on save to ConflictException", async () => {
+      const mockOrder = {
+        id: "order-uuid",
+        buyerId: "buyer-uuid",
+        productId: "product-uuid",
+        status: OrderStatus.DELIVERED,
+        product: { sellerId: "seller-uuid" },
+      };
+
+      mockOrdersService.findOne.mockResolvedValue(mockOrder);
+      mockRepository.findOne.mockResolvedValue(null);
+      mockRepository.create.mockReturnValue({ id: "new-review" });
+      mockRepository.save.mockRejectedValue({
+        code: "23505",
+        message:
+          'duplicate key value violates unique constraint "unique_buyer_product"',
+      });
+
+      await expect(service.create(createDto, "buyer-uuid")).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it("should set status to PENDING for complaints", async () => {
@@ -190,6 +276,33 @@ describe("ReviewsService", () => {
       await expect(service.create(complaintDto, "buyer-uuid")).rejects.toThrow(
         BadRequestException,
       );
+    });
+  });
+
+  describe("findMyReviews", () => {
+    it("should return the buyer reviews with minimal fields", async () => {
+      const expected = [
+        { id: "review-1", productId: "product-1", orderId: "order-1" },
+        { id: "review-2", productId: "product-2", orderId: "order-1" },
+      ];
+      mockRepository.find.mockResolvedValue(expected);
+
+      const result = await service.findMyReviews("buyer-uuid");
+
+      expect(result).toEqual(expected);
+      expect(mockRepository.find).toHaveBeenCalledWith({
+        where: { buyerId: "buyer-uuid" },
+        select: [
+          "id",
+          "productId",
+          "orderId",
+          "type",
+          "rating",
+          "status",
+          "createdAt",
+        ],
+        order: { createdAt: "DESC" },
+      });
     });
   });
 

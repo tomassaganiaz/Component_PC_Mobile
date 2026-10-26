@@ -65,8 +65,10 @@ describe("Reviews (e2e)", () => {
   });
 
   describe("GET /api/reviews", () => {
-    it("devuelve listado paginado de reseñas", async () => {
-      const res = await request(app.getHttpServer()).get("/api/reviews");
+    it("devuelve listado paginado de reseñas (autenticado)", async () => {
+      const res = await request(app.getHttpServer())
+        .get("/api/reviews")
+        .set("Authorization", `Bearer ${buyer.token}`);
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body.data)).toBe(true);
       expect(typeof res.body.total).toBe("number");
@@ -105,17 +107,24 @@ describe("Reviews (e2e)", () => {
     });
 
     it("devuelve 404 para una reseña inexistente", async () => {
-      const res = await request(app.getHttpServer()).get(
-        "/api/reviews/00000000-0000-0000-0000-000000000000",
-      );
+      const res = await request(app.getHttpServer())
+        .get("/api/reviews/00000000-0000-0000-0000-000000000000")
+        .set("Authorization", `Bearer ${buyer.token}`);
       expect(res.status).toBe(404);
     });
 
     it("devuelve 400 para un id que no es uuid", async () => {
+      const res = await request(app.getHttpServer())
+        .get("/api/reviews/not-a-uuid")
+        .set("Authorization", `Bearer ${buyer.token}`);
+      expect(res.status).toBe(400);
+    });
+
+    it("devuelve 401 sin autenticación", async () => {
       const res = await request(app.getHttpServer()).get(
         "/api/reviews/not-a-uuid",
       );
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(401);
     });
   });
 });

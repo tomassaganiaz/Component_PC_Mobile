@@ -9,6 +9,7 @@ import {
   UseGuards,
   Request,
   ParseUUIDPipe,
+  ForbiddenException,
 } from "@nestjs/common";
 import { Request as ExpressRequest } from "express";
 import {
@@ -22,7 +23,8 @@ import { CreateReviewDto, UpdateReviewStatusDto, FilterReviewDto } from "./dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
-import { TrustBadge } from "./review.entity";
+import { TrustBadge, ReviewStatus } from "./review.entity";
+import { UserRole } from "../users/user.entity";
 
 @ApiTags("Reviews")
 @Controller("reviews")
@@ -42,7 +44,7 @@ export class ReviewsController {
   })
   @ApiResponse({
     status: 409,
-    description: "Ya existe una reseña para esta compra",
+    description: "Ya existe una reseña del comprador para este producto",
   })
   create(
     @Body() createReviewDto: CreateReviewDto,
@@ -51,9 +53,34 @@ export class ReviewsController {
     return this.reviewsService.create(createReviewDto, (req.user as any).id);
   }
 
+  @Get("my")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Reseñas del comprador autenticado" })
+  findMyReviews(@Request() req: ExpressRequest) {
+    return this.reviewsService.findMyReviews((req.user as any).id);
+  }
+
   @Get()
-  @ApiOperation({ summary: "Listar reseñas con filtros" })
-  findAll(@Query() filters: FilterReviewDto) {
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Listar reseñas con filtros (autenticado)" })
+  async findAll(
+    @Query() filters: FilterReviewDto,
+    @Request() req: ExpressRequest,
+  ) {
+    const user = req.user as { id: string; role: string };
+    // Solo admins pueden ver estados de moderación (pending/rejected/resolved):
+    // expone quejas aún no aprobadas y la PII de sus compradores.
+    if (
+      filters.status &&
+      filters.status !== ReviewStatus.APPROVED &&
+      user.role !== UserRole.ADMIN
+    ) {
+      throw new ForbiddenException(
+        "Solo administradores pueden filtrar reseñas por estado",
+      );
+    }
     return this.reviewsService.findAll(filters);
   }
 
@@ -112,9 +139,27 @@ export class ReviewsController {
   }
 
   @Get(":id")
-  @ApiOperation({ summary: "Obtener detalle de una reseña" })
-  findOne(@Param("id", new ParseUUIDPipe()) id: string) {
-    return this.reviewsService.findOne(id);
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Obtener detalle de una reseña (partes interesadas)",
+  })
+  async findOne(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Request() req: ExpressRequest,
+  ) {
+    const review = await this.reviewsService.findOne(id);
+    const user = req.user as { id: string; role: string };
+    const isInterested =
+      user.role === UserRole.ADMIN ||
+      review.buyerId === user.id ||
+      review.sellerId === user.id;
+    if (!isInterested) {
+      throw new ForbiddenException(
+        "Solo las partes de la reseña pueden ver su detalle",
+      );
+    }
+    return review;
   }
 
   @Patch(":id/resolve")

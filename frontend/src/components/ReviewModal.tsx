@@ -1,11 +1,18 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import AppIcon from './AppIcon';
 import { useI18n } from '../i18n';
-import { createReview } from '../services/api';
+import { ApiError, createReview } from '../services/api';
 import type { OrderItem, ReviewType } from '../services/api';
 import { colors, glow, shadow } from '../theme';
+
+/** Producto concreto a reseñar dentro de una orden. */
+export type ReviewTarget = {
+  order: OrderItem;
+  productId: string;
+  title: string;
+};
 
 const TYPES: { value: ReviewType; label: string; tone: string }[] = [
   { value: 'positive', label: 'Positiva', tone: colors.accentEmerald },
@@ -31,14 +38,14 @@ function Stars({ value, onChange }: { value: number; onChange: (v: number) => vo
 
 export default function ReviewModal({
   visible,
-  order,
+  target,
   onClose,
   onSubmitted,
 }: {
   visible: boolean;
-  order: OrderItem | null;
+  target: ReviewTarget | null;
   onClose: () => void;
-  onSubmitted: (orderId: string) => void;
+  onSubmitted: (productId: string) => void;
 }) {
   const { t } = useI18n();
   const [type, setType] = useState<ReviewType>('positive');
@@ -48,23 +55,30 @@ export default function ReviewModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  // Cada apertura/envío invalida los resultados de requests anteriores en vuelo.
+  const attemptRef = useRef(0);
 
   const reset = () => {
+    attemptRef.current += 1;
     setType('positive');
     setRating(5);
     setComment('');
     setComplaintReason('');
+    setSubmitting(false);
     setError(null);
     setDone(false);
   };
 
+  // Todas las vías de cierre pasan por handleClose → reset, así que al reabrir
+  // siempre se arranca limpio; attemptRef invalida requests anteriores en vuelo.
   const handleClose = () => {
     reset();
     onClose();
   };
 
   const handleSubmit = async () => {
-    if (!order) return;
+    if (!target) return;
+    const { order, productId } = target;
     setError(null);
     if (type === 'complaint' && complaintReason.trim().length < 20) {
       setError('La razón de la queja debe tener al menos 20 caracteres.');
@@ -74,26 +88,33 @@ export default function ReviewModal({
       setError('El comentario debe tener al menos 10 caracteres.');
       return;
     }
+    const attempt = ++attemptRef.current;
     setSubmitting(true);
     try {
       await createReview({
-        productId: order.productId,
+        productId,
         orderId: order.id,
         rating,
         type,
         comment: comment.trim() || undefined,
         complaintReason: type === 'complaint' ? complaintReason.trim() : undefined,
       });
-      setDone(true);
-      onSubmitted(order.id);
+      onSubmitted(productId);
+      if (attempt === attemptRef.current) setDone(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo enviar la reseña.');
+      if (err instanceof ApiError && err.status === 409) {
+        // La reseña ya existe en el servidor: marcar y mostrar confirmación.
+        onSubmitted(productId);
+        if (attempt === attemptRef.current) setDone(true);
+      } else if (attempt === attemptRef.current) {
+        setError(err instanceof Error ? err.message : 'No se pudo enviar la reseña.');
+      }
     } finally {
-      setSubmitting(false);
+      if (attempt === attemptRef.current) setSubmitting(false);
     }
   };
 
-  const title = order?.product?.title ?? (order ? `Orden #${order.id.slice(0, 8).toUpperCase()}` : '');
+  const title = target?.title ?? '';
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>

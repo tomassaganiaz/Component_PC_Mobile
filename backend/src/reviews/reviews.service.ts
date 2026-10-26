@@ -43,6 +43,29 @@ export interface SellerReputation {
   breakdown: { positive: number; neutral: number; complaint: number };
 }
 
+/** Detecta violación de índice único en Postgres (23505) o SQLite. */
+function isUniqueViolation(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as {
+    code?: string;
+    driverError?: { code?: string; message?: string };
+    message?: string;
+  };
+  const code = e.driverError?.code ?? e.code;
+  if (
+    code === "23505" ||
+    code === "SQLITE_CONSTRAINT" ||
+    code === "SQLITE_CONSTRAINT_UNIQUE" ||
+    code === "SQLITE_CONSTRAINT_PRIMARYKEY"
+  ) {
+    return true;
+  }
+  const message = e.driverError?.message ?? e.message;
+  return (
+    typeof message === "string" && message.includes("UNIQUE constraint failed")
+  );
+}
+
 const REPUTATION_LEVELS: { level: number; color: string; label: string }[] = [
   { level: 1, color: "#ef4444", label: "Malo" },
   { level: 2, color: "#f97316", label: "Regular" },
@@ -93,13 +116,14 @@ export class ReviewsService {
       );
     }
 
-    // Check if review already exists for this order
+    // Una reseña por producto y comprador (el índice único lo garantiza en BD).
+    // De esta forma cada producto de una orden multi-producto puede reseñarse.
     const existingReview = await this.reviewRepository.findOne({
-      where: { orderId, buyerId },
+      where: { productId, buyerId },
     });
 
     if (existingReview) {
-      throw new ConflictException("Ya has reseñado esta compra");
+      throw new ConflictException("Ya has reseñado este producto");
     }
 
     // Validate complaint has reason
@@ -118,7 +142,32 @@ export class ReviewsService {
           : ReviewStatus.APPROVED,
     });
 
-    return this.reviewRepository.save(review);
+    try {
+      return await this.reviewRepository.save(review);
+    } catch (err) {
+      // Carrera concurrente: otro request insertó la misma (comprador, producto).
+      if (isUniqueViolation(err)) {
+        throw new ConflictException("Ya has reseñado este producto");
+      }
+      throw err;
+    }
+  }
+
+  /** Reseñas del comprador autenticado (para hidratar la UI). */
+  async findMyReviews(buyerId: string): Promise<Review[]> {
+    return this.reviewRepository.find({
+      where: { buyerId },
+      select: [
+        "id",
+        "productId",
+        "orderId",
+        "type",
+        "rating",
+        "status",
+        "createdAt",
+      ],
+      order: { createdAt: "DESC" },
+    });
   }
 
   async findAll(
@@ -276,13 +325,22 @@ export class ReviewsService {
   }> {
     const badgeData = await this.getTrustBadge(sellerId);
 
-    const totalSales = await this.dataSource
+    // Órdenes del carrito no tienen product_id: se cuentan vía items
+    // (DISTINCT para no duplicar órdenes con varios ítems del mismo vendedor).
+    const salesRow = await this.dataSource
       .getRepository("Order")
       .createQueryBuilder("order")
-      .innerJoin("order.product", "product")
-      .where("product.sellerId = :sellerId", { sellerId })
+      .leftJoin("order.items", "item")
+      .leftJoin("item.product", "itemProduct")
+      .leftJoin("order.product", "product")
+      .where(
+        "(itemProduct.sellerId = :sellerId OR product.sellerId = :sellerId)",
+        { sellerId },
+      )
       .andWhere("order.status = :status", { status: OrderStatus.DELIVERED })
-      .getCount();
+      .select("COUNT(DISTINCT order.id)", "cnt")
+      .getRawOne<{ cnt: string }>();
+    const totalSales = Number(salesRow?.cnt ?? 0);
 
     return {
       totalSales,
@@ -323,25 +381,34 @@ export class ReviewsService {
 
     const since = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
     const orderRepo = this.dataSource.getRepository("Order");
+    // Cubre órdenes directas (product_id) y del carrito (items), con
+    // COUNT(DISTINCT) para no inflar por ítems repetidos del mismo vendedor.
     const base = () =>
       orderRepo
         .createQueryBuilder("o")
-        .innerJoin("o.product", "p")
-        .where("p.sellerId = :sellerId", { sellerId });
+        .leftJoin("o.items", "item")
+        .leftJoin("item.product", "itemProduct")
+        .leftJoin("o.product", "p")
+        .where("(itemProduct.sellerId = :sellerId OR p.sellerId = :sellerId)", {
+          sellerId,
+        });
+    const countOrders = async (
+      status: OrderStatus,
+      minDate?: Date,
+    ): Promise<number> => {
+      const qb = base().andWhere("o.status = :s", { s: status });
+      if (minDate) qb.andWhere("o.createdAt >= :since", { since: minDate });
+      const row = await qb
+        .select("COUNT(DISTINCT o.id)", "cnt")
+        .getRawOne<{ cnt: string }>();
+      return Number(row?.cnt ?? 0);
+    };
 
     const [totalSales, transactionsLast60d, cancelledLast60d] =
       await Promise.all([
-        base()
-          .andWhere("o.status = :s", { s: OrderStatus.DELIVERED })
-          .getCount(),
-        base()
-          .andWhere("o.status = :s", { s: OrderStatus.DELIVERED })
-          .andWhere("o.createdAt >= :since", { since })
-          .getCount(),
-        base()
-          .andWhere("o.status = :s", { s: OrderStatus.CANCELLED })
-          .andWhere("o.createdAt >= :since", { since })
-          .getCount(),
+        countOrders(OrderStatus.DELIVERED),
+        countOrders(OrderStatus.DELIVERED, since),
+        countOrders(OrderStatus.CANCELLED),
       ]);
 
     const level = this.computeReputationLevel(

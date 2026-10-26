@@ -1,4 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { ForbiddenException } from "@nestjs/common";
 import { ReviewsController } from "./reviews.controller";
 import { ReviewsService } from "./reviews.service";
 import { ReviewType, ReviewStatus, TrustBadge } from "./review.entity";
@@ -69,9 +70,34 @@ describe("ReviewsController", () => {
 
       mockReviewsService.findAll.mockResolvedValue(expectedResponse);
 
-      const result = await controller.findAll({});
+      const result = await controller.findAll({}, {
+        user: { id: "buyer-uuid", role: "buyer" },
+      } as any);
 
       expect(result).toEqual(expectedResponse);
+    });
+
+    it("should forbid moderation statuses for non-admins", async () => {
+      await expect(
+        controller.findAll(
+          { status: "pending" } as any,
+          {
+            user: { id: "buyer-uuid", role: "buyer" },
+          } as any,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockReviewsService.findAll).not.toHaveBeenCalled();
+
+      // Un admin sí puede listar quejas pendientes.
+      mockReviewsService.findAll.mockResolvedValue({ data: [], total: 0 });
+      await expect(
+        controller.findAll(
+          { status: "pending" } as any,
+          {
+            user: { id: "admin-uuid", role: "admin" },
+          } as any,
+        ),
+      ).resolves.toEqual({ data: [], total: 0 });
     });
   });
 
@@ -135,18 +161,36 @@ describe("ReviewsController", () => {
   });
 
   describe("findOne", () => {
-    it("should return a review by id", async () => {
+    it("should return a review by id (para el comprador dueño)", async () => {
       const expectedReview = {
         id: "review-uuid",
         rating: 5,
         comment: "Great product",
+        buyerId: "buyer-uuid",
+        sellerId: "seller-uuid",
       };
 
       mockReviewsService.findOne.mockResolvedValue(expectedReview);
 
-      const result = await controller.findOne("review-uuid");
+      const result = await controller.findOne("review-uuid", {
+        user: { id: "buyer-uuid", role: "buyer" },
+      } as any);
 
       expect(result).toEqual(expectedReview);
+    });
+
+    it("should forbid access to uninvolved users", async () => {
+      mockReviewsService.findOne.mockResolvedValue({
+        id: "review-uuid",
+        buyerId: "buyer-uuid",
+        sellerId: "seller-uuid",
+      });
+
+      await expect(
+        controller.findOne("review-uuid", {
+          user: { id: "stranger-uuid", role: "buyer" },
+        } as any),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 

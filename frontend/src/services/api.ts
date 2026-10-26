@@ -40,23 +40,34 @@ export function getAuthToken(): string | null {
   return authToken;
 }
 
+// Single-flight: si dos requests reciben 401 al mismo tiempo, comparten el
+// MISMO refresh. El backend revoca el token usado, así que dos refreshes en
+// paralelo harían que el segundo fallara aunque el primero hubiera servido.
+let refreshInFlight: Promise<boolean> | null = null;
+
 async function refreshSession(): Promise<boolean> {
-  if (!refreshToken) return false;
-  try {
-    const res = await fetch(`${API_URL}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
-    });
-    if (!res.ok) return false;
-    const data = await res.json();
-    authToken = data.access_token;
-    refreshToken = data.refresh_token;
-    onTokensRefreshed?.(data.access_token, data.refresh_token);
-    return true;
-  } catch {
-    return false;
-  }
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = (async () => {
+    if (!refreshToken) return false;
+    try {
+      const res = await fetch(`${API_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      authToken = data.access_token;
+      refreshToken = data.refresh_token;
+      onTokensRefreshed?.(data.access_token, data.refresh_token);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+  return refreshInFlight;
 }
 
 interface RequestOptions {
@@ -321,6 +332,20 @@ export function createReview(input: CreateReviewInput): Promise<ReviewItem> {
   });
 }
 
+export interface MyReview {
+  id: string;
+  productId: string;
+  orderId: string | null;
+  type: ReviewType;
+  rating: number;
+  status: string;
+  createdAt: string;
+}
+
+export function getMyReviews(): Promise<MyReview[]> {
+  return request<MyReview[]>('/reviews/my');
+}
+
 export function getSellerReviews(sellerId: string): Promise<ReviewItem[]> {
   return request<ReviewItem[]>(`/reviews/seller/${sellerId}`);
 }
@@ -572,7 +597,7 @@ export function getReports(status = 'pending', limit = 50): Promise<{ data: Repo
 
 export function resolveReport(
   id: string,
-  status: 'resolved' | 'rejected',
+  status: 'resolved' | 'dismissed',
   resolutionNotes?: string,
 ): Promise<ReportItem> {
   return request<ReportItem>(`/reports/${id}`, {
@@ -671,6 +696,16 @@ export function markNotificationRead(id: string): Promise<AppNotification> {
 
 export function markAllNotificationsRead(): Promise<{ success: boolean }> {
   return request<{ success: boolean }>('/notifications/read-all', { method: 'PATCH' });
+}
+
+/* ------------------------------- Favorites ------------------------------- */
+
+export function getFavoriteProductIds(): Promise<{ productIds: string[] }> {
+  return request<{ productIds: string[] }>('/favorites');
+}
+
+export function toggleFavorite(productId: string): Promise<{ favorited: boolean }> {
+  return request<{ favorited: boolean }>(`/favorites/${productId}`, { method: 'POST' });
 }
 
 /* ------------------------------- Coupons -------------------------------- */
