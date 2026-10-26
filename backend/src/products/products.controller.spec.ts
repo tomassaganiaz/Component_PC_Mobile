@@ -141,6 +141,47 @@ describe("ProductsController", () => {
       ).rejects.toThrow();
       expect(mockProductsService.update).not.toHaveBeenCalled();
     });
+
+    it("should strip status/verified from non-admin sellers", async () => {
+      mockProductsService.findOne.mockResolvedValue({
+        id: "uuid-123",
+        sellerId: "seller-1",
+        status: ProductStatus.PENDING,
+      });
+      mockProductsService.update.mockResolvedValue({ id: "uuid-123" });
+      const req = { user: { id: "seller-1", role: "seller" } } as any;
+
+      // Un producto EN AUDITORÍA no puede pasar a publicado ni marcar verified.
+      await controller.update(
+        "uuid-123",
+        { status: ProductStatus.PUBLISHED, verified: true, title: "x" } as any,
+        req,
+      );
+
+      expect(mockProductsService.update).toHaveBeenCalledWith("uuid-123", {
+        title: "x",
+      });
+    });
+
+    it("should allow sellers to pause a published listing", async () => {
+      mockProductsService.findOne.mockResolvedValue({
+        id: "uuid-123",
+        sellerId: "seller-1",
+        status: ProductStatus.PUBLISHED,
+      });
+      mockProductsService.update.mockResolvedValue({ id: "uuid-123" });
+      const req = { user: { id: "seller-1", role: "seller" } } as any;
+
+      await controller.update(
+        "uuid-123",
+        { status: ProductStatus.DRAFT } as any,
+        req,
+      );
+
+      expect(mockProductsService.update).toHaveBeenCalledWith("uuid-123", {
+        status: ProductStatus.DRAFT,
+      });
+    });
   });
 
   describe("remove", () => {

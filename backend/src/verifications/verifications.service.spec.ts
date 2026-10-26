@@ -72,8 +72,10 @@ describe("VerificationsService", () => {
       const result = await service.create(createDto, "admin-uuid");
 
       expect(result).toEqual(savedVerification);
+      // PASS: publicado + check (no desaparece del catálogo).
       expect(mockProductsService.update).toHaveBeenCalledWith("product-uuid", {
-        status: ProductStatus.VERIFIED,
+        status: ProductStatus.PUBLISHED,
+        verified: true,
         hoursOfUse: 500,
         physicalState: "Buen estado",
       });
@@ -109,6 +111,7 @@ describe("VerificationsService", () => {
 
       expect(mockProductsService.update).toHaveBeenCalledWith("product-uuid", {
         status: ProductStatus.DRAFT,
+        verified: false,
         hoursOfUse: 500,
         physicalState: "Buen estado",
       });

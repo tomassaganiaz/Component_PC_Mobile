@@ -3,6 +3,7 @@ import {
   Logger,
   BadRequestException,
   NotFoundException,
+  UnauthorizedException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -1034,6 +1035,10 @@ export class MercadoLibreService {
       return { processed: false, message: "Usuario no conectado a ML" };
     }
 
+    const configuredSecret = this.config.get("ML_CLIENT_SECRET", "");
+    if (configuredSecret && (!signature || !rawBody)) {
+      return { processed: false, message: "Invalid signature" };
+    }
     if (signature && rawBody) {
       const valid = this.verifySignature(
         rawBody,
@@ -1230,7 +1235,10 @@ export class MercadoLibreService {
   }
 
   /** Obtiene atributos de categoría ML para una categoría local (para UI de validación previa). */
-  async getCategoryAttributesForLocal(localCategory: string): Promise<{
+  async getCategoryAttributesForLocal(
+    localCategory: string,
+    userId: string,
+  ): Promise<{
     mlCategoryId: string | null;
     required: Array<{
       id: string;
@@ -1256,7 +1264,7 @@ export class MercadoLibreService {
     }
 
     const cred = await this.credentialRepository.findOne({
-      where: { userId: "" },
+      where: { userId },
     });
     if (!cred?.accessToken) {
       return {
@@ -1312,6 +1320,22 @@ export class MercadoLibreService {
     return { mlCategoryId, required, optional };
   }
 
+  /**
+   * Verifica la firma HMAC del webhook ANTES de encolarlo (lanza 401 si
+   * falla). Con ML_CLIENT_SECRET configurado la firma es OBLIGATORIA; sin
+   * secreto configurado (dev/test) se omite la verificación.
+   */
+  assertWebhookSignature(rawBody: string, signature?: string): void {
+    const secret = this.config.get("ML_CLIENT_SECRET", "");
+    if (!secret) return;
+    if (!signature || !rawBody) {
+      throw new UnauthorizedException("Firma del webhook ausente");
+    }
+    if (!this.verifySignature(rawBody, signature, secret)) {
+      throw new UnauthorizedException("Firma del webhook inválida");
+    }
+  }
+
   private verifySignature(
     payload: string,
     signature: string,
@@ -1327,10 +1351,11 @@ export class MercadoLibreService {
       .createHmac("sha256", secret)
       .update(payload)
       .digest("hex");
-    return crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(expected),
-    );
+    const a = Buffer.from(signature);
+    const b = Buffer.from(expected);
+    // timingSafeEqual lanza RangeError si las longitudes difieren.
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
   }
 
   private importService: any;

@@ -80,7 +80,22 @@ export class ProductsController {
         "Solo el vendedor del catálogo o un admin pueden modificarlo",
       );
     }
-    return this.productsService.update(id, updateProductDto);
+
+    let dto = updateProductDto;
+    if (user.role !== UserRole.ADMIN) {
+      // El vendedor no puede auto-marcarse "verified" ni saltarse la
+      // auditoría (pending → published): solo pausar/reactivar el listado
+      // (PUBLISHED <-> DRAFT). El resto de cambios de estado es de admin.
+      const { status, ...rest } = updateProductDto;
+      delete rest.verified;
+      const publishable = [ProductStatus.PUBLISHED, ProductStatus.DRAFT];
+      const canToggleStatus =
+        status !== undefined &&
+        publishable.includes(status) &&
+        publishable.includes(product.status);
+      dto = { ...rest, ...(canToggleStatus ? { status } : {}) };
+    }
+    return this.productsService.update(id, dto);
   }
 
   @Delete(":id")
@@ -143,7 +158,7 @@ export class ProductsController {
     @Request() req: ExpressRequest,
   ) {
     await this.assertProductOwner(id, req);
-    return this.productsService.updateVariation(variationId, dto);
+    return this.productsService.updateVariation(id, variationId, dto);
   }
 
   @Delete(":id/variations/:variationId")
@@ -157,7 +172,7 @@ export class ProductsController {
     @Request() req: ExpressRequest,
   ) {
     await this.assertProductOwner(id, req);
-    return this.productsService.removeVariation(variationId);
+    return this.productsService.removeVariation(id, variationId);
   }
 
   private async assertProductOwner(id: string, req: ExpressRequest) {

@@ -9,6 +9,9 @@ import { AppModule } from "./app.module";
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ["error", "warn", "log", "debug", "verbose"],
+    // Conserva el body crudo en req.rawBody: necesario para verificar las
+    // firmas HMAC de los webhooks (firmar el JSON ya parseado nunca coincide).
+    rawBody: true,
   });
 
   const configService = app.get(ConfigService);

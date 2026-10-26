@@ -6,7 +6,6 @@ import {
   Body,
   Query,
   UseGuards,
-  Request,
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
@@ -20,22 +19,30 @@ import {
 } from "@nestjs/swagger";
 import {
   DeliveryPlanningService,
-  PlannedRoute,
   DailyPlanResult,
 } from "./delivery-planning.service";
 import { DeliveryRoute } from "./delivery-route.entity";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RolesGuard } from "../auth/guards/roles.guard";
+import { Roles } from "../auth/decorators/roles.decorator";
+import { UserRole } from "../users/user.entity";
 import { RouteStop } from "./delivery-route.entity";
 
+/**
+ * Operación de logística: solo administración.
+ * (Antes cualquier usuario autenticado veía direcciones/coords de compradores
+ * y podía autoasignarse rutas.)
+ */
 @ApiTags("Delivery Planning")
 @Controller("delivery-planning")
 export class DeliveryPlanningController {
   constructor(private readonly planning: DeliveryPlanningService) {}
 
   @Post("plan")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Planificar rutas para una fecha (manual)" })
+  @ApiOperation({ summary: "Planificar rutas para una fecha (manual, admin)" })
   @ApiQuery({
     name: "date",
     required: false,
@@ -49,9 +56,12 @@ export class DeliveryPlanningController {
   }
 
   @Get("routes")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Obtener rutas planificadas para una fecha" })
+  @ApiOperation({
+    summary: "Obtener rutas planificadas para una fecha (admin)",
+  })
   @ApiQuery({
     name: "date",
     required: false,
@@ -65,9 +75,10 @@ export class DeliveryPlanningController {
   }
 
   @Get("routes/:routeId")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Obtener detalle de una ruta con paradas" })
+  @ApiOperation({ summary: "Obtener detalle de una ruta con paradas (admin)" })
   @ApiParam({ name: "routeId", description: "ID de la ruta" })
   async getRoute(@Param("routeId") routeId: string): Promise<DeliveryRoute> {
     const route = await this.planning.getRouteWithStops(routeId);
@@ -76,18 +87,20 @@ export class DeliveryPlanningController {
   }
 
   @Get("routes/:routeId/progress")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Progreso en tiempo real de una ruta" })
+  @ApiOperation({ summary: "Progreso en tiempo real de una ruta (admin)" })
   @ApiParam({ name: "routeId", description: "ID de la ruta" })
   async getProgress(@Param("routeId") routeId: string) {
     return this.planning.getRouteProgress(routeId);
   }
 
   @Post("routes/:routeId/assign")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Asignar carrier/conductor a una ruta" })
+  @ApiOperation({ summary: "Asignar carrier/conductor a una ruta (admin)" })
   @ApiParam({ name: "routeId", description: "ID de la ruta" })
   @ApiBody({
     schema: {
@@ -121,18 +134,20 @@ export class DeliveryPlanningController {
   }
 
   @Post("routes/:routeId/start")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Iniciar ruta (estado IN_PROGRESS)" })
+  @ApiOperation({ summary: "Iniciar ruta (estado IN_PROGRESS, admin)" })
   @ApiParam({ name: "routeId", description: "ID de la ruta" })
   async startRoute(@Param("routeId") routeId: string): Promise<DeliveryRoute> {
     return this.planning.startRoute(routeId);
   }
 
   @Post("stops/:stopId/complete")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Marcar parada como entregada o fallida" })
+  @ApiOperation({ summary: "Marcar parada como entregada o fallida (admin)" })
   @ApiParam({ name: "stopId", description: "ID de la parada" })
   @ApiBody({
     schema: {

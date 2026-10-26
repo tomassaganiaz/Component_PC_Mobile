@@ -3,7 +3,7 @@ import { MercadoLibreController } from "./mercadolibre.controller";
 import { MercadoLibreService } from "./mercadolibre.service";
 import { MlImportService } from "./ml-import.service";
 import { MlWebhookRetryService } from "./ml-webhook-retry.service";
-import { BadRequestException } from "@nestjs/common";
+import { BadRequestException, UnauthorizedException } from "@nestjs/common";
 
 describe("MercadoLibreController", () => {
   let controller: MercadoLibreController;
@@ -21,6 +21,7 @@ describe("MercadoLibreController", () => {
     updateItem: jest.fn(),
     getItem: jest.fn(),
     handleWebhook: jest.fn(),
+    assertWebhookSignature: jest.fn(),
     subscribeTopics: jest.fn(),
     listSubscriptions: jest.fn(),
     unsubscribeTopic: jest.fn(),
@@ -272,6 +273,19 @@ describe("MercadoLibreController", () => {
 
       expect(result.processed).toBe(false);
       expect(result.message).toContain("Missing required");
+      expect(mockWebhookRetry.enqueueWebhook).not.toHaveBeenCalled();
+    });
+
+    it("rejects an invalid signature BEFORE enqueueing (401)", async () => {
+      mockService.assertWebhookSignature.mockImplementationOnce(() => {
+        throw new UnauthorizedException("Firma del webhook inválida");
+      });
+
+      await expect(
+        controller.webhook("bad-sig", "orders_v2", "/orders/123", "user-123", {
+          body: {},
+        } as any),
+      ).rejects.toThrow(UnauthorizedException);
       expect(mockWebhookRetry.enqueueWebhook).not.toHaveBeenCalled();
     });
   });

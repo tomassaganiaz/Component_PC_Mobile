@@ -113,7 +113,7 @@ export class AuthService {
 
   async requestOtp(
     otpToken: string,
-  ): Promise<{ otpSent: boolean; code: string }> {
+  ): Promise<{ otpSent: boolean; code?: string }> {
     const payload = this.jwtService.verify(otpToken);
     if (payload.purpose !== "otp") {
       throw new BadRequestException("Token inválido");
@@ -128,7 +128,11 @@ export class AuthService {
       new Date(Date.now() + OTP_TTL_MS),
     );
 
-    // Demo: no hay SMS/email, se devuelve el código para poder probar el flujo
+    // Demo/dev/test: no hay SMS/email, se devuelve el código para poder probar
+    // el flujo. En producción jamás se expone (haría inútil el 2FA).
+    if (process.env.NODE_ENV === "production") {
+      return { otpSent: true };
+    }
     return { otpSent: true, code };
   }
 

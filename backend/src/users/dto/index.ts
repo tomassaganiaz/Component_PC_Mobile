@@ -2,14 +2,14 @@ import {
   IsString,
   IsEmail,
   IsOptional,
-  IsEnum,
+  IsIn,
   MinLength,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { UserRole } from "../user.entity";
 
 export class CreateUserDto {
-  @ApiProperty({ example: "Juan Pérez" })
+  @ApiProperty({ example: "Juan PǸrez" })
   @IsString()
   name: string;
 
@@ -27,9 +27,14 @@ export class CreateUserDto {
   @IsString()
   phone?: string;
 
-  @ApiPropertyOptional({ enum: UserRole, default: UserRole.BUYER })
+  // El registro público solo permite comprador/vendedor: los admins se crean
+  // por otro camino (evita la escalada de rol al registrarse).
+  @ApiPropertyOptional({
+    enum: [UserRole.BUYER, UserRole.SELLER],
+    default: UserRole.BUYER,
+  })
   @IsOptional()
-  @IsEnum(UserRole)
+  @IsIn([UserRole.BUYER, UserRole.SELLER])
   role?: UserRole;
 }
 

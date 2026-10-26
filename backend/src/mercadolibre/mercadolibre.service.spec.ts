@@ -517,7 +517,10 @@ describe("MercadoLibreService", () => {
         }),
       });
 
-      const result = await service.getCategoryAttributesForLocal("gpu");
+      const result = await service.getCategoryAttributesForLocal(
+        "gpu",
+        "user-123",
+      );
 
       expect(result.mlCategoryId).toBe("MLA1744");
       expect(result.required.length).toBe(1);

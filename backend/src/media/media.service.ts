@@ -102,17 +102,28 @@ export class MediaService {
     if (!file?.buffer?.length) {
       throw new BadRequestException("Archivo faltante");
     }
-    if (file.mimetype && !file.mimetype.startsWith("image/")) {
+    // El mimetype debe existir e indicar imagen (antes un archivo sin
+    // mimetype pasaba cualquier cosa).
+    if (!file.mimetype?.startsWith("image/")) {
       throw new BadRequestException("Solo se permiten imágenes");
     }
 
     const dir = join(process.cwd(), "public", "uploads");
     await fs.promises.mkdir(dir, { recursive: true });
 
-    const rawExt = (file.originalname?.split(".").pop() ?? "jpg")
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "");
-    const ext = rawExt || "jpg";
+    // La extensión se deriva SIEMPRE del mimetype (nunca del nombre del
+    // cliente): evita servir SVG/HTML u otros formatos desde /static.
+    const extByMime: Record<string, string> = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+    };
+    const ext = extByMime[file.mimetype];
+    if (!ext) {
+      throw new BadRequestException(
+        "Formato no soportado: usá JPG, PNG o WebP",
+      );
+    }
     const name = `${randomUUID()}.${ext}`;
     await fs.promises.writeFile(join(dir, name), file.buffer);
 

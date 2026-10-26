@@ -22,8 +22,12 @@ export class MediaController {
   @Post("upload")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @UseInterceptors(FileInterceptor("file"))
-  @ApiOperation({ summary: "Subir imagen de producto (multipart)" })
+  // Límite de 5 MB: sin él, cualquier usuario autenticado podía subir
+  // archivos de gigas (DoS de memoria/disco).
+  @UseInterceptors(
+    FileInterceptor("file", { limits: { fileSize: 5 * 1024 * 1024 } }),
+  )
+  @ApiOperation({ summary: "Subir imagen de producto (multipart, máx 5 MB)" })
   upload(@UploadedFile() file: any) {
     return this.mediaService.saveUpload(file);
   }

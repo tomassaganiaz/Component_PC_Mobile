@@ -131,8 +131,13 @@ export class MlWebhookRetryService {
           return;
         }
 
-        // No procesado pero sin error -> considerar completado
-        webhook.status = WebhookStatus.COMPLETED;
+        // No procesado: una firma inválida es permanente → FAILED (visible en
+        // las métricas de salud y la DLQ) en vez de COMPLETED silencioso.
+        // El resto de "no procesados" se da por manejado como antes.
+        const permanent = result.message === "Invalid signature";
+        webhook.status = permanent
+          ? WebhookStatus.FAILED
+          : WebhookStatus.COMPLETED;
         webhook.lastError = result.message;
         webhook.processingTimeMs = processingTime;
         webhook.updatedAt = new Date();

@@ -29,6 +29,9 @@ import { MercadoLibreService } from "./mercadolibre.service";
 import { MlImportService } from "./ml-import.service";
 import { MlWebhookRetryService } from "./ml-webhook-retry.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RolesGuard } from "../auth/guards/roles.guard";
+import { Roles } from "../auth/decorators/roles.decorator";
+import { UserRole } from "../users/user.entity";
 import { Logger } from "@nestjs/common";
 
 @ApiTags("Mercado Libre")
@@ -197,10 +200,17 @@ export class MercadoLibreController {
     @Query("user_id") userId: string,
     @Req() req: ExpressRequest,
   ) {
-    const rawBody = JSON.stringify(req.body ?? {});
+    // Body crudo real (rawBody de Nest): el HMAC se calcula sobre los bytes
+    // exactos que envió ML, no sobre un JSON re-serializado (eso nunca coincide).
+    const raw = (req as ExpressRequest & { rawBody?: Buffer }).rawBody;
+    const rawBody = raw ? raw.toString("utf8") : JSON.stringify(req.body ?? {});
     this.logger.log(
       `Webhook ML: topic=${topic} resource=${resource} user_id=${userId}`,
     );
+    // Verificar ANTES de encolar: con secreto configurado, una firma ausente
+    // o inválida devuelve 401 y jamás entra a la cola (antes se encolaba y el
+    // retry lo marcaba COMPLETED descartándolo en silencio).
+    this.service.assertWebhookSignature(rawBody, signature);
     if (!topic || !resource || !userId) {
       return {
         processed: false,
@@ -299,21 +309,28 @@ export class MercadoLibreController {
     @Request() req: ExpressRequest,
     @Param("category") category: string,
   ) {
-    return this.service.getCategoryAttributesForLocal(category);
+    return this.service.getCategoryAttributesForLocal(
+      category,
+      (req.user as any).id,
+    );
   }
 
   @Get("webhook/health")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Métricas de salud del sistema de webhooks" })
+  @ApiOperation({
+    summary: "Métricas de salud del sistema de webhooks (admin)",
+  })
   async webhookHealth() {
     return this.webhookRetry.getWebhookHealth();
   }
 
   @Get("webhook/dead-letter")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Listar webhooks en Dead Letter Queue" })
+  @ApiOperation({ summary: "Listar webhooks en Dead Letter Queue (admin)" })
   @ApiQuery({
     name: "limit",
     required: false,
@@ -336,9 +353,12 @@ export class MercadoLibreController {
   }
 
   @Post("webhook/dead-letter/:id/replay")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Reprocesar un webhook de Dead Letter Queue" })
+  @ApiOperation({
+    summary: "Reprocesar un webhook de Dead Letter Queue (admin)",
+  })
   @ApiParam({ name: "id", description: "ID del registro en Dead Letter Queue" })
   async replayDeadLetter(@Param("id") id: string) {
     const success = await this.webhookRetry.replayDeadLetter(id);

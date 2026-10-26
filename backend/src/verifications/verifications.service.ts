@@ -40,13 +40,13 @@ export class VerificationsService {
     const savedVerification =
       await this.verificationRepository.save(verification);
 
-    const newStatus =
-      createVerificationDto.result === VerificationResult.PASS
-        ? ProductStatus.VERIFIED
-        : ProductStatus.DRAFT;
+    const passed = createVerificationDto.result === VerificationResult.PASS;
 
     await this.productsService.update(product.id, {
-      status: newStatus,
+      // PASS: el producto queda PUBLICADO con el check (antes pasaba a
+      // VERIFIED y desaparecía del catálogo, que solo lista PUBLISHED).
+      status: passed ? ProductStatus.PUBLISHED : ProductStatus.DRAFT,
+      verified: passed,
       hoursOfUse: createVerificationDto.hoursOfUse,
       physicalState: createVerificationDto.physicalState,
     });
